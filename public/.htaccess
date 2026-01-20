@@ -5,6 +5,19 @@
 
     RewriteEngine On
 
+    # ============================================
+    # CONTOURNEMENT TIGER PROTECT POUR LES ROUTES API
+    # ============================================
+    
+    # Désactiver mod_security pour les routes API (si disponible et autorisé)
+    <IfModule mod_security.c>
+        # Note: Ces directives peuvent ne pas fonctionner si mod_security est en mode "DetectionOnly"
+        # ou si les règles sont désactivées au niveau serveur
+        <If "%{REQUEST_URI} =~ m#^/api/#">
+            SecRuleEngine Off
+        </If>
+    </IfModule>
+
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
@@ -22,4 +35,25 @@
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [L]
+</IfModule>
+
+# ============================================
+# HEADERS POUR LES ROUTES API
+# ============================================
+
+# Headers supplémentaires pour simuler un navigateur (si mod_headers est disponible)
+<IfModule mod_headers.c>
+    # Pour les requêtes vers /api/*, ajouter des headers de navigateur
+    # Note: Ces headers sont ajoutés après que la requête soit passée par Tiger Protect
+    # Ils peuvent ne pas suffire à contourner la protection
+    
+    # Utiliser SetEnvIf pour détecter les routes API
+    SetEnvIf Request_URI "^/api/" is_api_request
+    
+    # Ajouter des headers conditionnels pour les routes API
+    Header set User-Agent "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1" env=is_api_request
+    Header set Accept "application/json, text/html, application/xhtml+xml, */*" env=is_api_request
+    Header set Accept-Language "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7" env=is_api_request
+    Header set Accept-Encoding "gzip, deflate, br" env=is_api_request
+    Header set X-Requested-With "XMLHttpRequest" env=is_api_request
 </IfModule>
