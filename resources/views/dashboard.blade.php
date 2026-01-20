@@ -1,181 +1,245 @@
 @extends('layouts.app')
 
-@section('title', 'Dashboard')
+@section('title', 'Dashboard - Teranga Pass')
 
 @push('vendor-css')
 <link rel="stylesheet" href="{{ asset('assets/vendor/libs/apex-charts/apex-charts.css') }}" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+    .metric-card {
+        background: white;
+        border-radius: 12px;
+        padding: 16px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        margin-bottom: 0;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+    .metric-card-wrapper {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-content: flex-start;
+    }
+    .metric-card-wrapper .col-md-6 {
+        display: flex;
+        flex-direction: column;
+        flex: 0 0 calc(50% - 6px);
+        margin-bottom: 0;
+        min-height: 150px;
+    }
+    .metric-value {
+        font-size: 28px;
+        font-weight: bold;
+        color: #1a1a1a;
+        margin: 8px 0;
+    }
+    .metric-label {
+        font-size: 14px;
+        color: #6b7280;
+        margin-bottom: 8px;
+    }
+    .metric-change {
+        font-size: 12px;
+        font-weight: 600;
+    }
+    .metric-change.positive { color: #10b981; }
+    .metric-change.negative { color: #ef4444; }
+    #map {
+        height: 500px;
+        border-radius: 12px;
+        margin-top: 0;
+    }
+    .chart-container {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+    .table-container {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+</style>
 @endpush
 
 @section('content')
-<div class="row">
-    <div class="col-lg-8 mb-4 order-0">
-        <div class="card">
-            <div class="d-flex align-items-end row">
-                <div class="col-sm-7">
-                    <div class="card-body">
-                        <h5 class="card-title text-primary">Welcome! 🎉</h5>
-                        <p class="mb-4">
-                            You have done <span class="fw-bold">72%</span> more sales today. Check your new badge in your profile.
-                        </p>
-                        <a href="javascript:;" class="btn btn-sm btn-outline-primary">View Badges</a>
+<!-- Première ligne : Carte à gauche, Widgets à droite -->
+<div class="row mb-4">
+    <!-- Carte (colonne gauche) -->
+    <div class="col-lg-6 mb-4">
+        <div class="chart-container">
+            <h5 class="mb-3">Carte de bord</h5>
+            <div id="map"></div>
+            <div class="d-flex justify-content-between align-items-center mt-3">
+                <div class="d-flex gap-3">
+                    <span><span class="badge bg-danger">SOS {{ count($mapData['sos']) }}</span></span>
+                    <span><span class="badge bg-primary">Alertes</span></span>
+                    <span><span class="badge bg-warning">Hôtels</span></span>
+                    <span><span class="badge bg-success">Restos -{{ count($mapData['restaurants']) }}</span></span>
+                </div>
+                <div class="progress" style="width: 150px; height: 8px;">
+                    <div class="progress-bar bg-success" style="width: 68.8%"></div>
+                </div>
+                <span class="small">68.8%</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Widgets de métriques (colonne droite) -->
+    <div class="col-lg-6 mb-4">
+        <div class="row metric-card-wrapper">
+            <!-- Mesures audio -->
+            <div class="col-md-6 mb-3">
+                <div class="metric-card">
+                    <div class="metric-label">Mesures audio</div>
+                    <div class="metric-value">{{ number_format($stats['audio_announcements']) }}</div>
+                    <div class="d-flex align-items-center">
+                        <i class="bx bx-volume-full text-success fs-4 me-2"></i>
+                        <span class="small text-muted">Audio notifications énctáir S-5%</span>
                     </div>
                 </div>
-                <div class="col-sm-5 text-center text-sm-left">
-                    <div class="card-body pb-0 px-0 px-md-4">
-                        <img src="{{ asset('assets/img/illustrations/man-with-laptop-light.png') }}" height="140" alt="View Badge User" data-app-dark-img="illustrations/man-with-laptop-dark.png" data-app-light-img="illustrations/man-with-laptop-light.png" />
+            </div>
+
+            <!-- Alertes SOS -->
+            <div class="col-md-6 mb-3">
+                <div class="metric-card">
+                    <div class="metric-label">Alertes SOS</div>
+                    <div class="metric-value">{{ number_format($stats['sos_alerts']) }}</div>
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <span class="metric-change positive">+{{ $variations['sos_increase'] }}%</span>
+                            <div class="small text-muted">Alertes ouvertes patte (Dakar: 3.3%)</div>
+                        </div>
+                        <i class="bx bx-error-circle text-danger fs-4"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notifications envoyées -->
+            <div class="col-md-6 mb-3">
+                <div class="metric-card">
+                    <div class="metric-label">Notifications envoyées</div>
+                    <div class="metric-value">{{ number_format($stats['notifications_sent']) }}</div>
+                    <div class="d-flex align-items-center">
+                        <i class="bx bx-bell text-primary fs-4 me-2"></i>
+                        <span class="small text-muted">Notifications envoyées</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Signalements d'incidents -->
+            <div class="col-md-6 mb-3">
+                <div class="metric-card">
+                    <div class="metric-label">Signalements d'incidents</div>
+                    <div class="metric-value">{{ number_format($stats['incidents']) }}</div>
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <span class="metric-change positive">+{{ $variations['incidents_increase'] }}%</span>
+                            <div class="small text-muted">Perte, accident, attucatión suspecte</div>
+                        </div>
+                        <i class="bx bx-right-arrow-alt text-primary"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Publicité sponsors -->
+            <div class="col-md-6 mb-3">
+                <div class="metric-card">
+                    <div class="metric-label">Publicité sponsors</div>
+                    <div class="metric-value">{{ number_format($stats['sponsor_ads']) }}</div>
+                    <div class="small text-muted">CTR: 11%</div>
+                    <div class="progress mt-2" style="height: 4px;">
+                        <div class="progress-bar bg-warning" style="width: 11%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Utilisateurs JOJ -->
+            <div class="col-md-6 mb-3">
+                <div class="metric-card">
+                    <div class="metric-label">Utilisateurs JOJ</div>
+                    <div class="metric-value">{{ number_format($stats['total_users']) }}</div>
+                    <div class="small text-muted">
+                        @foreach($usersByCountry->take(2) as $country)
+                        {{ $country->country }}: {{ number_format($country->count) }}@if(!$loop->last), @endif
+                        @endforeach
                     </div>
                 </div>
             </div>
         </div>
     </div>
-    <div class="col-lg-4 col-md-4 order-1">
-        <div class="row">
-            <div class="col-lg-6 col-md-12 col-6 mb-4">
-                <div class="card">
-                    <div class="card-body">
-                        <div class="card-title d-flex align-items-start justify-content-between">
-                            <div class="avatar flex-shrink-0">
-                                <img src="{{ asset('assets/img/icons/unicons/chart-success.png') }}" alt="chart success" class="rounded" />
                             </div>
-                            <div class="dropdown">
-                                <button class="btn p-0" type="button" id="cardOpt3" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                    <i class="bx bx-dots-vertical-rounded"></i>
-                                </button>
-                                <div class="dropdown-menu dropdown-menu-end" aria-labelledby="cardOpt3">
-                                    <a class="dropdown-item" href="javascript:void(0);">View More</a>
-                                    <a class="dropdown-item" href="javascript:void(0);">Delete</a>
+
+<!-- Deuxième ligne : Tableaux et Graphiques -->
+<div class="row mb-4">
+    <!-- Notifications/Signalements géolocalisés -->
+    <div class="col-lg-6 mb-4">
+        <div class="table-container">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0">Notifications / Signalements géolocalisés</h5>
+                <button class="btn btn-sm btn-outline-primary">Voir Carte</button>
+                                </div>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Localisation</th>
+                            <th>Incidents</th>
+                            <th>Alertes</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($geolocatedData as $data)
+                        <tr>
+                            <td>{{ $data['site'] }}</td>
+                            <td>{{ $data['incidents'] }}</td>
+                            <td>{{ $data['alerts'] }}</td>
+                            <td class="fw-bold">{{ $data['total'] }}</td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+            <div class="d-flex justify-content-center mt-3">
+                <nav>
+                    <ul class="pagination pagination-sm mb-0">
+                        <li class="page-item"><a class="page-link" href="#">1</a></li>
+                        <li class="page-item"><a class="page-link" href="#">2</a></li>
+                        <li class="page-item"><a class="page-link" href="#">3</a></li>
+                    </ul>
+                </nav>
                                 </div>
                             </div>
                         </div>
-                        <span class="fw-semibold d-block mb-1">Profit</span>
-                        <h3 class="card-title mb-2">$12,628</h3>
-                        <small class="text-success fw-semibold"><i class="bx bx-up-arrow-alt"></i> +72.80%</small>
-                    </div>
-                </div>
+
+<!-- Graphiques -->
+<div class="row mb-4">
+    <!-- Annonces et alertes -->
+    <div class="col-lg-6 mb-4">
+        <div class="chart-container">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0">Annonces et alertes (sem)</h5>
+                <button class="btn btn-sm btn-link"><i class="bx bx-refresh"></i></button>
             </div>
-            <div class="col-lg-6 col-md-12 col-6 mb-4">
-                <div class="card">
-                    <div class="card-body">
-                        <div class="card-title d-flex align-items-start justify-content-between">
-                            <div class="avatar flex-shrink-0">
-                                <img src="{{ asset('assets/img/icons/unicons/wallet-info.png') }}" alt="Credit Card" class="rounded" />
-                            </div>
-                            <div class="dropdown">
-                                <button class="btn p-0" type="button" id="cardOpt6" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                    <i class="bx bx-dots-vertical-rounded"></i>
-                                </button>
-                                <div class="dropdown-menu dropdown-menu-end" aria-labelledby="cardOpt6">
-                                    <a class="dropdown-item" href="javascript:void(0);">View More</a>
-                                    <a class="dropdown-item" href="javascript:void(0);">Delete</a>
-                                </div>
-                            </div>
-                        </div>
-                        <span>Sales</span>
-                        <h3 class="card-title text-nowrap mb-1">$4,679</h3>
-                        <small class="text-success fw-semibold"><i class="bx bx-up-arrow-alt"></i> +28.42%</small>
+            <div id="announcementsChart" style="height: 300px;"></div>
                     </div>
                 </div>
+
+    <!-- Sources de trafic -->
+    <div class="col-lg-6 mb-4">
+        <div class="chart-container">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0">Sources de trafic (hebdo -noki AOZ):1</h5>
+                <button class="btn btn-sm btn-outline-primary">Serdiós</button>
             </div>
-        </div>
-    </div>
-    <!-- Total Revenue -->
-    <div class="col-12 col-lg-8 order-2 order-md-3 order-lg-2 mb-4">
-        <div class="card">
-            <div class="row row-bordered g-0">
-                <div class="col-md-8">
-                    <h5 class="card-header m-0 me-2 pb-3">Total Revenue</h5>
-                    <div id="totalRevenueChart" class="px-2"></div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card-body">
-                        <div class="text-center">
-                            <div class="dropdown">
-                                <button class="btn btn-sm btn-outline-primary dropdown-toggle" type="button" id="growthReportId" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                    2024
-                                </button>
-                                <div class="dropdown-menu dropdown-menu-end" aria-labelledby="growthReportId">
-                                    <a class="dropdown-item" href="javascript:void(0);">2023</a>
-                                    <a class="dropdown-item" href="javascript:void(0);">2022</a>
-                                    <a class="dropdown-item" href="javascript:void(0);">2021</a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div id="growthChart"></div>
-                    <div class="text-center fw-semibold pt-3 mb-2">62% Company Growth</div>
-                    <div class="d-flex px-xxl-4 px-lg-2 p-4 gap-xxl-3 gap-lg-1 gap-3 justify-content-between">
-                        <div class="d-flex">
-                            <div class="me-2">
-                                <span class="badge bg-label-primary p-2"><i class="bx bx-dollar text-primary"></i></span>
-                            </div>
-                            <div class="d-flex flex-column">
-                                <small>2024</small>
-                                <h6 class="mb-0">$32.5k</h6>
-                            </div>
-                        </div>
-                        <div class="d-flex">
-                            <div class="me-2">
-                                <span class="badge bg-label-info p-2"><i class="bx bx-wallet text-info"></i></span>
-                            </div>
-                            <div class="d-flex flex-column">
-                                <small>2023</small>
-                                <h6 class="mb-0">$41.2k</h6>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <!--/ Total Revenue -->
-    <div class="col-12 col-md-8 col-lg-4 order-3 order-md-2">
-        <div class="row">
-            <div class="col-6 mb-4">
-                <div class="card">
-                    <div class="card-body">
-                        <div class="card-title d-flex align-items-start justify-content-between">
-                            <div class="avatar flex-shrink-0">
-                                <img src="{{ asset('assets/img/icons/unicons/paypal.png') }}" alt="Credit Card" class="rounded" />
-                            </div>
-                            <div class="dropdown">
-                                <button class="btn p-0" type="button" id="cardOpt4" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                    <i class="bx bx-dots-vertical-rounded"></i>
-                                </button>
-                                <div class="dropdown-menu dropdown-menu-end" aria-labelledby="cardOpt4">
-                                    <a class="dropdown-item" href="javascript:void(0);">View More</a>
-                                    <a class="dropdown-item" href="javascript:void(0);">Delete</a>
-                                </div>
-                            </div>
-                        </div>
-                        <span class="d-block mb-1">Payments</span>
-                        <h3 class="card-title text-nowrap mb-2">$2,456</h3>
-                        <small class="text-danger fw-semibold"><i class="bx bx-down-arrow-alt"></i> -14.82%</small>
-                    </div>
-                </div>
-            </div>
-            <div class="col-6 mb-4">
-                <div class="card">
-                    <div class="card-body">
-                        <div class="card-title d-flex align-items-start justify-content-between">
-                            <div class="avatar flex-shrink-0">
-                                <img src="{{ asset('assets/img/icons/unicons/cc-primary.png') }}" alt="Credit Card" class="rounded" />
-                            </div>
-                            <div class="dropdown">
-                                <button class="btn p-0" type="button" id="cardOpt1" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                    <i class="bx bx-dots-vertical-rounded"></i>
-                                </button>
-                                <div class="dropdown-menu" aria-labelledby="cardOpt1">
-                                    <a class="dropdown-item" href="javascript:void(0);">View More</a>
-                                    <a class="dropdown-item" href="javascript:void(0);">Delete</a>
-                                </div>
-                            </div>
-                        </div>
-                        <span class="fw-semibold d-block mb-1">Transactions</span>
-                        <h3 class="card-title mb-2">$14,857</h3>
-                        <small class="text-success fw-semibold"><i class="bx bx-up-arrow-alt"></i> +28.14%</small>
-                    </div>
-                </div>
-            </div>
+            <div id="trafficChart" style="height: 300px;"></div>
         </div>
     </div>
 </div>
@@ -183,9 +247,96 @@
 
 @push('vendor-js')
 <script src="{{ asset('assets/vendor/libs/apex-charts/apexcharts.js') }}"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 @endpush
 
 @push('page-js')
-<script src="{{ asset('assets/js/dashboards-analytics.js') }}"></script>
-@endpush
+<script>
+    // Initialiser la carte
+    var map = L.map('map').setView([14.7167, -17.4677], 12); // Dakar
+    
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
 
+    // Ajouter les marqueurs
+    @foreach($mapData['sos'] as $sos)
+    L.marker([{{ $sos->latitude }}, {{ $sos->longitude }}], {
+        icon: L.divIcon({
+            className: 'sos-marker',
+            html: '<div style="background: red; width: 20px; height: 20px; border-radius: 50%; border: 2px solid white;"></div>',
+            iconSize: [20, 20]
+        })
+    }).addTo(map);
+    @endforeach
+
+    @foreach($mapData['hotels'] as $hotel)
+    L.marker([{{ $hotel->latitude }}, {{ $hotel->longitude }}], {
+        icon: L.divIcon({
+            className: 'hotel-marker',
+            html: '<div style="background: orange; width: 15px; height: 15px; border-radius: 50%; border: 2px solid white;"></div>',
+            iconSize: [15, 15]
+        })
+    }).addTo(map);
+    @endforeach
+
+    @foreach($mapData['restaurants'] as $restaurant)
+    L.marker([{{ $restaurant->latitude }}, {{ $restaurant->longitude }}], {
+        icon: L.divIcon({
+            className: 'restaurant-marker',
+            html: '<div style="background: green; width: 15px; height: 15px; border-radius: 50%; border: 2px solid white;"></div>',
+            iconSize: [15, 15]
+        })
+    }).addTo(map);
+    @endforeach
+
+    // Graphique Annonces et alertes
+    var announcementsOptions = {
+        series: [{
+            name: 'Messages audio',
+            data: [@foreach($chartData['announcements_week'] as $day){{ $day['audio'] }},@endforeach]
+        }, {
+            name: 'Alertes / emails',
+            data: [@foreach($chartData['announcements_week'] as $day){{ $day['alerts'] }},@endforeach]
+        }],
+        chart: {
+            type: 'line',
+            height: 300
+        },
+        colors: ['#FCD116', '#00853F'],
+        xaxis: {
+            categories: [@foreach($chartData['announcements_week'] as $day)'{{ $day['date'] }}',@endforeach]
+        },
+        stroke: {
+            curve: 'smooth'
+        }
+    };
+    var announcementsChart = new ApexCharts(document.querySelector("#announcementsChart"), announcementsOptions);
+    announcementsChart.render();
+
+    // Graphique Sources de trafic
+    var trafficOptions = {
+        series: [
+            @foreach($chartData['traffic_sources']['sources'] as $index => $source)
+            {
+                name: '{{ $source }}',
+                data: [@foreach($chartData['traffic_sources']['data'] as $day){{ $day[$source] }},@endforeach]
+            }@if(!$loop->last),@endif
+            @endforeach
+        ],
+        chart: {
+            type: 'line',
+            height: 300
+        },
+        colors: ['#00853F', '#CE1126', '#0066CC', '#FCD116'],
+        xaxis: {
+            categories: [@foreach($chartData['traffic_sources']['data'] as $day)'{{ $day['date'] }}',@endforeach]
+        },
+        stroke: {
+            curve: 'smooth'
+        }
+    };
+    var trafficChart = new ApexCharts(document.querySelector("#trafficChart"), trafficOptions);
+    trafficChart.render();
+</script>
+@endpush
