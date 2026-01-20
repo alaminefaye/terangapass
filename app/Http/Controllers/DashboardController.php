@@ -98,29 +98,63 @@ class DashboardController extends Controller
 
     private function getGeolocatedData()
     {
-        // Sites de compétition avec leurs données
-        $sites = [
-            'Stade Mbour 4',
-            'Village Athlètes',
-            'Fan Zone, Place de l\'Indépendance',
-            'Stade Olympique',
-            'Hôtel King Fahd Palace',
-        ];
-
+        // Récupérer les sites de compétition réels
+        $competitionSites = \App\Models\CompetitionSite::all();
+        
         $data = [];
-        foreach ($sites as $site) {
-            // Simulation des données - à remplacer par des vraies données géolocalisées
-            $data[] = [
-                'site' => $site,
-                'incidents' => rand(15, 40),
-                'alerts' => rand(14, 30),
-                'total' => 0, // Calculé après
-            ];
-        }
-
-        // Calculer les totaux
-        foreach ($data as &$item) {
-            $item['total'] = $item['incidents'] + $item['alerts'];
+        
+        // Si on a des sites de compétition, utiliser leurs données
+        if ($competitionSites->isNotEmpty()) {
+            foreach ($competitionSites as $site) {
+                // Compter les incidents dans un rayon de 5km (approximation)
+                $incidents = Incident::selectRaw('*, (
+                    6371 * acos(
+                        cos(radians(?)) * cos(radians(latitude)) *
+                        cos(radians(longitude) - radians(?)) +
+                        sin(radians(?)) * sin(radians(latitude))
+                    )
+                ) AS distance', [$site->latitude, $site->longitude, $site->latitude])
+                    ->having('distance', '<', 5)
+                    ->count();
+                
+                // Compter les alertes dans le même rayon
+                $alerts = Alert::selectRaw('*, (
+                    6371 * acos(
+                        cos(radians(?)) * cos(radians(latitude)) *
+                        cos(radians(longitude) - radians(?)) +
+                        sin(radians(?)) * sin(radians(latitude))
+                    )
+                ) AS distance', [$site->latitude, $site->longitude, $site->latitude])
+                    ->having('distance', '<', 5)
+                    ->count();
+                
+                if ($incidents > 0 || $alerts > 0) {
+                    $data[] = [
+                        'site' => $site->name,
+                        'incidents' => $incidents,
+                        'alerts' => $alerts,
+                        'total' => $incidents + $alerts,
+                    ];
+                }
+            }
+        } else {
+            // Fallback: utiliser les données réelles groupées par zone
+            $incidentsByZone = Incident::selectRaw('address, COUNT(*) as count')
+                ->whereNotNull('address')
+                ->groupBy('address')
+                ->orderByDesc('count')
+                ->limit(5)
+                ->get();
+            
+            foreach ($incidentsByZone as $item) {
+                $alerts = Alert::where('address', $item->address)->count();
+                $data[] = [
+                    'site' => $item->address ?? 'Zone inconnue',
+                    'incidents' => $item->count,
+                    'alerts' => $alerts,
+                    'total' => $item->count + $alerts,
+                ];
+            }
         }
 
         // Trier par total décroissant

@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Incident;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class IncidentController extends Controller
 {
@@ -19,10 +21,34 @@ class IncidentController extends Controller
             'accuracy' => 'nullable|numeric',
             'address' => 'nullable|string',
             'photos' => 'nullable|array',
+            'photos.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120', // 5MB max
+            'audio' => 'nullable|file|mimes:mp3,wav,m4a,aac|max:10240', // 10MB max
             'audio_url' => 'nullable|string',
         ]);
 
         $user = $this->getUserFromToken($request);
+        
+        // Gérer l'upload des photos
+        $photoUrls = [];
+        if ($request->hasFile('photos')) {
+            foreach ($request->file('photos') as $photo) {
+                $filename = Str::uuid() . '.' . $photo->getClientOriginalExtension();
+                $path = $photo->storeAs('incidents/photos', $filename, 'public');
+                $photoUrls[] = Storage::url($path);
+            }
+        } elseif ($request->has('photos') && is_array($request->photos)) {
+            // Si les photos sont déjà des URLs (depuis l'app mobile)
+            $photoUrls = $request->photos;
+        }
+        
+        // Gérer l'upload de l'audio
+        $audioUrl = $request->audio_url;
+        if ($request->hasFile('audio')) {
+            $audio = $request->file('audio');
+            $filename = Str::uuid() . '.' . $audio->getClientOriginalExtension();
+            $path = $audio->storeAs('incidents/audio', $filename, 'public');
+            $audioUrl = Storage::url($path);
+        }
         
         $incident = Incident::create([
             'user_id' => $user ? $user->id : 1,
@@ -32,14 +58,15 @@ class IncidentController extends Controller
             'longitude' => $request->longitude,
             'accuracy' => $request->accuracy,
             'address' => $request->address,
-            'photos' => $request->photos,
-            'audio_url' => $request->audio_url,
+            'photos' => !empty($photoUrls) ? $photoUrls : null,
+            'audio_url' => $audioUrl,
             'status' => 'pending',
         ]);
 
         return response()->json([
+            'success' => true,
             'message' => 'Incident reported successfully',
-            'incident' => $incident,
+            'data' => $incident,
         ], 201);
     }
 

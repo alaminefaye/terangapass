@@ -45,5 +45,9 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Cette application a besoin d'accéder à votre localisation pour vous permettre d'envoyer des alertes SOS et de signaler des incidents avec votre position précise.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Cette application a besoin d'accéder à votre localisation pour vous permettre d'envoyer des alertes SOS et de signaler des incidents avec votre position précise.</string>
 </dict>
 </plist>
