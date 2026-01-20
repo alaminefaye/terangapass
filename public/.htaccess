@@ -5,29 +5,6 @@
 
     RewriteEngine On
 
-    # ============================================
-    # CONTOURNEMENT TIGER PROTECT POUR LES ROUTES API
-    # ============================================
-    
-    # Désactiver mod_security pour les routes API (si disponible)
-    <IfModule mod_security.c>
-        # Exclure les routes API de mod_security
-        SecRuleRemoveById 300000-999999
-        SecRuleEngine Off
-    </IfModule>
-    
-    # Pour les routes API, ajouter des headers pour simuler un navigateur
-    <IfModule mod_headers.c>
-        # Routes API - Ajouter des headers de navigateur
-        <FilesMatch "^(api|api/.*)$">
-            Header set User-Agent "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1"
-            Header set Accept "application/json, text/html, */*"
-            Header set Accept-Language "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7"
-            Header set Accept-Encoding "gzip, deflate, br"
-            Header set X-Requested-With "XMLHttpRequest"
-        </FilesMatch>
-    </IfModule>
-
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
@@ -45,31 +22,4 @@
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [L]
-</IfModule>
-
-# ============================================
-# RÈGLES SPÉCIFIQUES POUR LES ROUTES API
-# ============================================
-
-# Désactiver certaines vérifications pour les routes API
-<IfModule mod_security.c>
-    # Désactiver mod_security pour /api/*
-    <LocationMatch "^/api/">
-        SecRuleEngine Off
-    </LocationMatch>
-</IfModule>
-
-# Headers supplémentaires pour les routes API
-<IfModule mod_headers.c>
-    # Pour toutes les requêtes vers /api/*
-    <LocationMatch "^/api/">
-        # Simuler un navigateur avec JavaScript activé
-        Header set User-Agent "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1"
-        Header set Accept "application/json, text/html, application/xhtml+xml, */*"
-        Header set Accept-Language "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7"
-        Header set Accept-Encoding "gzip, deflate, br"
-        Header set X-Requested-With "XMLHttpRequest"
-        Header set Referer "%{HTTP_HOST}/"
-        Header set Origin "%{HTTP_HOST}"
-    </LocationMatch>
 </IfModule>
