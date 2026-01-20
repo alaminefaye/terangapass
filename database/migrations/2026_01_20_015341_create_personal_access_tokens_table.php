@@ -11,6 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Migration déjà exécutée par 2026_01_20_015244_create_personal_access_tokens_table
+        // Cette migration est vide pour éviter les conflits
         if (!Schema::hasTable('personal_access_tokens')) {
             Schema::create('personal_access_tokens', function (Blueprint $table) {
                 $table->id();
