@@ -13,12 +13,27 @@ use App\Http\Controllers\Api\TourismController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\DeviceTokenController;
 
-// Routes publiques
-Route::post('/auth/register', [AuthController::class, 'register']);
-Route::post('/auth/login', [AuthController::class, 'login']);
+/*
+|--------------------------------------------------------------------------
+| API Routes
+|--------------------------------------------------------------------------
+|
+| Here is where you can register API routes for your application. These
+| routes are loaded by the RouteServiceProvider and all of them will
+| be assigned to the "api" middleware group. Make something great!
+|
+*/
 
-// Routes protégées - Pour l'instant sans authentification API (à ajouter Sanctum plus tard)
-Route::middleware([])->group(function () {
+// Routes publiques (sans authentification)
+Route::prefix('v1')->group(function () {
+    // Authentification
+    Route::post('/auth/login', [AuthController::class, 'login']);
+    Route::post('/auth/register', [AuthController::class, 'register']);
+});
+
+// Routes protégées (nécessitent une authentification)
+// TODO: Ajouter 'auth:sanctum' quand Sanctum sera configuré
+Route::middleware([])->prefix('v1')->group(function () {
     // Auth
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::get('/user/profile', [UserController::class, 'profile']);

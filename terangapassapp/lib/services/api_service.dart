@@ -20,6 +20,14 @@ class ApiService {
   late Dio _dio;
 
   ApiService._internal() {
+    // Log de l'URL de base utilisée
+    print('=== API SERVICE INITIALIZATION ===');
+    print('Base URL: $_effectiveBaseUrl');
+    print(
+      'Mode: ${ApiConstants.baseUrl == _effectiveBaseUrl ? "ApiConstants" : "Custom"}',
+    );
+    print('==================================');
+
     _dio = Dio(
       BaseOptions(
         baseUrl: _effectiveBaseUrl,
@@ -28,6 +36,12 @@ class ApiService {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
+          'User-Agent': 'TerangaPass-Mobile/1.0',
+        },
+        validateStatus: (status) {
+          // Laisser Dio gérer les erreurs (codes >= 400 sont considérés comme erreurs)
+          // On les capture dans le catch et on les gère dans _handleError
+          return status != null && status < 400;
         },
       ),
     );
@@ -40,10 +54,12 @@ class ApiService {
           if (token != null) {
             options.headers['Authorization'] = 'Bearer $token';
           }
-          // Log de la requête pour debugging
-          print(
-            'API Request: ${options.method} ${options.baseUrl}${options.path}',
-          );
+          // Log détaillé de la requête pour debugging
+          print('=== API REQUEST ===');
+          print('URL: ${options.method} ${options.baseUrl}${options.path}');
+          print('Headers: ${options.headers}');
+          print('Data: ${options.data}');
+          print('==================');
           return handler.next(options);
         },
         onResponse: (response, handler) {
@@ -54,14 +70,23 @@ class ApiService {
           return handler.next(response);
         },
         onError: (error, handler) {
-          // Log de l'erreur pour debugging
+          // Log détaillé de l'erreur pour debugging
+          print('=== API ERROR ===');
+          print('Status Code: ${error.response?.statusCode}');
+          print('Path: ${error.requestOptions.path}');
           print(
-            'API Error: ${error.response?.statusCode} - ${error.requestOptions.path}',
+            'Full URL: ${error.requestOptions.baseUrl}${error.requestOptions.path}',
           );
-          print('API Error Message: ${error.message}');
+          print('Error Type: ${error.type}');
+          print('Error Message: ${error.message}');
+          print('Request Headers: ${error.requestOptions.headers}');
           if (error.response != null) {
-            print('API Error Data: ${error.response?.data}');
+            print('Response Headers: ${error.response?.headers}');
+            print('Response Data: ${error.response?.data}');
+          } else {
+            print('No response received - connection issue');
           }
+          print('==================');
           // Gestion des erreurs
           if (error.response?.statusCode == 401) {
             // Token expiré ou invalide
@@ -101,13 +126,23 @@ class ApiService {
         data: {'email': email, 'password': password},
       );
 
-      if (response.data['token'] != null) {
-        await _saveToken(response.data['token']);
+      // Gérer le nouveau format de réponse standardisé (comme chantix)
+      final responseData = response.data as Map<String, dynamic>;
+
+      if (responseData['success'] == true && responseData['token'] != null) {
+        await _saveToken(responseData['token'] as String);
+        return responseData;
+      } else if (responseData['token'] != null) {
+        // Compatibilité avec l'ancien format
+        await _saveToken(responseData['token'] as String);
+        return responseData;
       }
 
-      return response.data;
+      throw Exception(responseData['message'] ?? 'Échec de la connexion');
     } on DioException catch (e) {
       throw _handleError(e);
+    } catch (e) {
+      throw Exception(e.toString());
     }
   }
 
@@ -123,13 +158,23 @@ class ApiService {
         data: {'name': name, 'email': email, 'password': password},
       );
 
-      if (response.data['token'] != null) {
-        await _saveToken(response.data['token']);
+      // Gérer le nouveau format de réponse standardisé (comme chantix)
+      final responseData = response.data as Map<String, dynamic>;
+
+      if (responseData['success'] == true && responseData['token'] != null) {
+        await _saveToken(responseData['token'] as String);
+        return responseData;
+      } else if (responseData['token'] != null) {
+        // Compatibilité avec l'ancien format
+        await _saveToken(responseData['token'] as String);
+        return responseData;
       }
 
-      return response.data;
+      throw Exception(responseData['message'] ?? 'Échec de l\'inscription');
     } on DioException catch (e) {
       throw _handleError(e);
+    } catch (e) {
+      throw Exception(e.toString());
     }
   }
 
@@ -398,41 +443,91 @@ class ApiService {
 
   // ==================== GESTION DES ERREURS ====================
 
-  String _handleError(DioException error) {
+  Exception _handleError(DioException error) {
+    // Erreur avec réponse du serveur
     if (error.response != null) {
-      // Erreur avec réponse du serveur
       final statusCode = error.response!.statusCode;
       final data = error.response!.data;
 
+      // Si le serveur retourne un message d'erreur, l'utiliser
+      String message;
       if (data is Map && data.containsKey('message')) {
-        return data['message'] as String;
+        message = data['message'] as String;
+      } else if (data is Map && data.containsKey('error')) {
+        message = data['error'] as String;
+      } else {
+        switch (statusCode) {
+          case 400:
+            message = 'Requête invalide';
+            break;
+          case 401:
+            message = 'Non autorisé. Veuillez vous reconnecter.';
+            break;
+          case 403:
+            message = 'Accès refusé';
+            break;
+          case 404:
+            message = 'Ressource non trouvée';
+            break;
+          case 422:
+            message = 'Données invalides';
+            break;
+          case 500:
+            message = 'Erreur serveur. Veuillez réessayer plus tard.';
+            break;
+          case 502:
+            message =
+                'Bad Gateway. Le serveur est temporairement indisponible.';
+            break;
+          case 503:
+            message =
+                'Service temporairement indisponible. Veuillez réessayer dans quelques instants.';
+            break;
+          case 504:
+            message =
+                'Gateway Timeout. Le serveur prend trop de temps à répondre.';
+            break;
+          default:
+            message = 'Une erreur est survenue (${statusCode})';
+        }
       }
-
-      switch (statusCode) {
-        case 400:
-          return 'Requête invalide';
-        case 401:
-          return 'Non autorisé. Veuillez vous reconnecter.';
-        case 403:
-          return 'Accès refusé';
-        case 404:
-          return 'Ressource non trouvée';
-        case 422:
-          return 'Données invalides';
-        case 500:
-          return 'Erreur serveur. Veuillez réessayer plus tard.';
-        case 503:
-          return 'Service temporairement indisponible. Veuillez réessayer dans quelques instants.';
+      return Exception(message);
+    }
+    // Erreurs de connexion sans réponse
+    else {
+      String message;
+      switch (error.type) {
+        case DioExceptionType.connectionTimeout:
+          message =
+              'Délai de connexion dépassé. Vérifiez votre connexion internet.';
+          break;
+        case DioExceptionType.sendTimeout:
+          message =
+              'Délai d\'envoi dépassé. Vérifiez votre connexion internet.';
+          break;
+        case DioExceptionType.receiveTimeout:
+          message =
+              'Délai de réception dépassé. Le serveur prend trop de temps à répondre.';
+          break;
+        case DioExceptionType.connectionError:
+          message =
+              'Erreur de connexion. Vérifiez votre connexion internet et réessayez.';
+          break;
+        case DioExceptionType.badCertificate:
+          message =
+              'Erreur de certificat SSL. Vérifiez la configuration du serveur.';
+          break;
+        case DioExceptionType.badResponse:
+          message = 'Réponse invalide du serveur.';
+          break;
+        case DioExceptionType.cancel:
+          message = 'Requête annulée.';
+          break;
         default:
-          return 'Une erreur est survenue (${statusCode})';
+          message =
+              'Une erreur est survenue: ${error.message ?? "Erreur inconnue"}';
       }
-    } else if (error.type == DioExceptionType.connectionTimeout ||
-        error.type == DioExceptionType.receiveTimeout) {
-      return 'Timeout. Vérifiez votre connexion internet.';
-    } else if (error.type == DioExceptionType.connectionError) {
-      return 'Erreur de connexion. Vérifiez votre connexion internet.';
-    } else {
-      return 'Une erreur est survenue: ${error.message}';
+      return Exception(message);
     }
   }
 }

@@ -4,23 +4,23 @@ class ApiConstants {
   // Configuration de l'URL de base selon l'environnement
   //
   // IMPORTANT : Changez ces valeurs selon votre configuration :
-  // - Pour Android Emulator : utilisez 'http://10.0.2.2:8000/api'
-  // - Pour iOS Simulator : utilisez 'http://localhost:8000/api'
-  // - Pour appareil physique : utilisez l'IP de votre machine (ex: 'http://192.168.1.100:8000/api')
-  // - Pour production : utilisez votre URL de production (ex: 'https://api.terangapass.sn/api')
+  // - Pour Android Emulator : utilisez 'http://10.0.2.2:8000/api/v1'
+  // - Pour iOS Simulator : utilisez 'http://localhost:8000/api/v1'
+  // - Pour appareil physique : utilisez l'IP de votre machine (ex: 'http://192.168.1.100:8000/api/v1')
+  // - Pour production : utilisez votre URL de production avec /api/v1 (ex: 'https://terangapass.universaltechnologiesafrica.com/api/v1')
 
   // URL de développement local
-  static const String _devUrl = 'http://localhost:8000/api';
+  static const String _devUrl = 'http://localhost:8000/api/v1';
 
   // URL pour Android Emulator
-  static const String _androidEmulatorUrl = 'http://10.0.2.2:8000/api';
+  static const String _androidEmulatorUrl = 'http://10.0.2.2:8000/api/v1';
 
   // URL pour appareil physique (remplacez par votre IP locale)
-  static const String _physicalDeviceUrl = 'http://192.168.1.100:8000/api';
+  static const String _physicalDeviceUrl = 'http://192.168.1.100:8000/api/v1';
 
   // URL de production
   static const String _productionUrl =
-      'https://terangapass.universaltechnologiesafrica.com/api';
+      'https://terangapass.universaltechnologiesafrica.com/api/v1';
 
   // Mode de configuration
   // Options: 'dev', 'android_emulator', 'physical_device', 'production'
