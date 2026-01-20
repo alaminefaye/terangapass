@@ -20,9 +20,13 @@ class ApiService {
   late Dio _dio;
 
   ApiService._internal() {
+    // Calcul de l'URL de base pour les headers
+    final baseUrlForHeaders = _effectiveBaseUrl.replaceAll('/api/v1', '');
+
     // Log de l'URL de base utilisée
     print('=== API SERVICE INITIALIZATION ===');
     print('Base URL: $_effectiveBaseUrl');
+    print('Base URL for headers: $baseUrlForHeaders');
     print(
       'Mode: ${ApiConstants.baseUrl == _effectiveBaseUrl ? "ApiConstants" : "Custom"}',
     );
@@ -36,7 +40,13 @@ class ApiService {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
-          'User-Agent': 'TerangaPass-Mobile/1.0',
+          // User-Agent de navigateur pour contourner Tiger Protect (o2switch)
+          'User-Agent':
+              'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1',
+          'Accept-Language': 'fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7',
+          'Accept-Encoding': 'gzip, deflate, br',
+          'Origin': baseUrlForHeaders,
+          'Referer': '$baseUrlForHeaders/',
         },
         validateStatus: (status) {
           // Laisser Dio gérer les erreurs (codes >= 400 sont considérés comme erreurs)
@@ -79,13 +89,39 @@ class ApiService {
           );
           print('Error Type: ${error.type}');
           print('Error Message: ${error.message}');
+          print('Error toString: ${error.toString()}');
           print('Request Headers: ${error.requestOptions.headers}');
+          print('Request Data: ${error.requestOptions.data}');
           if (error.response != null) {
+            print('Response Status Code: ${error.response?.statusCode}');
             print('Response Headers: ${error.response?.headers}');
             print('Response Data: ${error.response?.data}');
+            print('Response Status Message: ${error.response?.statusMessage}');
           } else {
             print('No response received - connection issue');
+            print('Error Type Details:');
+            print(
+              '  - connectionTimeout: ${error.type == DioExceptionType.connectionTimeout}',
+            );
+            print(
+              '  - sendTimeout: ${error.type == DioExceptionType.sendTimeout}',
+            );
+            print(
+              '  - receiveTimeout: ${error.type == DioExceptionType.receiveTimeout}',
+            );
+            print(
+              '  - connectionError: ${error.type == DioExceptionType.connectionError}',
+            );
+            print(
+              '  - badCertificate: ${error.type == DioExceptionType.badCertificate}',
+            );
+            print(
+              '  - badResponse: ${error.type == DioExceptionType.badResponse}',
+            );
+            print('  - cancel: ${error.type == DioExceptionType.cancel}');
+            print('  - unknown: ${error.type == DioExceptionType.unknown}');
           }
+          print('Stack Trace: ${error.stackTrace}');
           print('==================');
           // Gestion des erreurs
           if (error.response?.statusCode == 401) {
