@@ -5,18 +5,18 @@ import '../constants/api_constants.dart';
 class ApiService {
   static final ApiService _instance = ApiService._internal();
   factory ApiService() => _instance;
-  
+
   // Utilise ApiConstants pour la configuration centralisée
   static String get baseUrl => ApiConstants.baseUrl;
-  
+
   /// Configure l'URL de base de l'API (override de ApiConstants)
   static String? _customBaseUrl;
   static void setBaseUrl(String url) {
     _customBaseUrl = url;
   }
-  
+
   static String get _effectiveBaseUrl => _customBaseUrl ?? ApiConstants.baseUrl;
-  
+
   late Dio _dio;
 
   ApiService._internal() {
@@ -32,7 +32,7 @@ class ApiService {
       ),
     );
 
-    // Intercepteur pour ajouter le token d'authentification
+    // Intercepteur pour ajouter le token d'authentification et logging
     _dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
@@ -40,9 +40,28 @@ class ApiService {
           if (token != null) {
             options.headers['Authorization'] = 'Bearer $token';
           }
+          // Log de la requête pour debugging
+          print(
+            'API Request: ${options.method} ${options.baseUrl}${options.path}',
+          );
           return handler.next(options);
         },
+        onResponse: (response, handler) {
+          // Log de la réponse pour debugging
+          print(
+            'API Response: ${response.statusCode} ${response.requestOptions.path}',
+          );
+          return handler.next(response);
+        },
         onError: (error, handler) {
+          // Log de l'erreur pour debugging
+          print(
+            'API Error: ${error.response?.statusCode} - ${error.requestOptions.path}',
+          );
+          print('API Error Message: ${error.message}');
+          if (error.response != null) {
+            print('API Error Data: ${error.response?.data}');
+          }
           // Gestion des erreurs
           if (error.response?.statusCode == 401) {
             // Token expiré ou invalide
@@ -79,10 +98,7 @@ class ApiService {
     try {
       final response = await _dio.post(
         '/auth/login',
-        data: {
-          'email': email,
-          'password': password,
-        },
+        data: {'email': email, 'password': password},
       );
 
       if (response.data['token'] != null) {
@@ -97,15 +113,14 @@ class ApiService {
 
   /// Inscription
   Future<Map<String, dynamic>> register(
-      String name, String email, String password) async {
+    String name,
+    String email,
+    String password,
+  ) async {
     try {
       final response = await _dio.post(
         '/auth/register',
-        data: {
-          'name': name,
-          'email': email,
-          'password': password,
-        },
+        data: {'name': name, 'email': email, 'password': password},
       );
 
       if (response.data['token'] != null) {
@@ -217,10 +232,7 @@ class ApiService {
           'photos': photos.map((photo) => MultipartFile.fromFileSync(photo)),
       });
 
-      final response = await _dio.post(
-        '/incidents/report',
-        data: formData,
-      );
+      final response = await _dio.post('/incidents/report', data: formData);
 
       return response.data;
     } on DioException catch (e) {
@@ -345,7 +357,8 @@ class ApiService {
 
   /// Met à jour le profil utilisateur
   Future<Map<String, dynamic>> updateUserProfile(
-      Map<String, dynamic> data) async {
+    Map<String, dynamic> data,
+  ) async {
     try {
       final response = await _dio.put('/user/profile', data: data);
       return response.data['data'] ?? {};
@@ -364,10 +377,7 @@ class ApiService {
     try {
       await _dio.post(
         '/device-tokens/register',
-        data: {
-          'token': token,
-          'platform': platform,
-        },
+        data: {'token': token, 'platform': platform},
       );
     } on DioException catch (e) {
       // Erreur silencieuse (non bloquante) - on log juste l'erreur
@@ -379,12 +389,7 @@ class ApiService {
   /// Désenregistre le token de device
   Future<void> unregisterDeviceToken(String token) async {
     try {
-      await _dio.post(
-        '/device-tokens/unregister',
-        data: {
-          'token': token,
-        },
-      );
+      await _dio.post('/device-tokens/unregister', data: {'token': token});
     } on DioException catch (e) {
       // Erreur silencieuse (non bloquante)
       print('Erreur désenregistrement token: ${_handleError(e)}');
@@ -416,6 +421,8 @@ class ApiService {
           return 'Données invalides';
         case 500:
           return 'Erreur serveur. Veuillez réessayer plus tard.';
+        case 503:
+          return 'Service temporairement indisponible. Veuillez réessayer dans quelques instants.';
         default:
           return 'Une erreur est survenue (${statusCode})';
       }
