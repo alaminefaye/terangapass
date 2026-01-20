@@ -50,11 +50,11 @@ class _AuthWrapperState extends State<AuthWrapper> {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('auth_token');
       final isAuthenticated = token != null && token.isNotEmpty;
-      
+
       setState(() {
         _isAuthenticated = isAuthenticated;
       });
-      
+
       // Si l'utilisateur est authentifié, enregistrer le device token
       if (isAuthenticated) {
         _registerDeviceToken();
@@ -76,10 +76,10 @@ class _AuthWrapperState extends State<AuthWrapper> {
   Future<void> _registerDeviceToken() async {
     try {
       // TODO: Décommenter et configurer quand Firebase est configuré
-      // 
+      //
       // import 'package:firebase_messaging/firebase_messaging.dart';
       // import 'dart:io';
-      // 
+      //
       // final apiService = ApiService();
       // final fcmToken = await FirebaseMessaging.instance.getToken();
       // if (fcmToken != null) {
@@ -89,7 +89,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
       //   );
       //   debugPrint('Device token enregistré avec succès');
       // }
-      
+
       // Pour l'instant, on peut utiliser un token de test ou attendre Firebase
       // Exemple avec un token de test (à remplacer par le vrai token FCM)
       // final apiService = ApiService();
@@ -97,8 +97,10 @@ class _AuthWrapperState extends State<AuthWrapper> {
       //   token: 'test_token_${DateTime.now().millisecondsSinceEpoch}',
       //   platform: Platform.isAndroid ? 'Android' : Platform.isIOS ? 'iOS' : 'Web',
       // );
-      
-      debugPrint('Device token registration: En attente de configuration Firebase');
+
+      debugPrint(
+        'Device token registration: En attente de configuration Firebase',
+      );
     } catch (e) {
       // Erreur silencieuse - ne pas bloquer l'application
       debugPrint('Erreur enregistrement device token: $e');
@@ -108,9 +110,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     return _isAuthenticated ? const HomeScreen() : const LoginScreen();
