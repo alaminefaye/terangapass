@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../theme/app_theme.dart';
 import '../services/api_service.dart';
+import '../services/location_service.dart';
 
 class TourismScreen extends StatefulWidget {
   const TourismScreen({super.key});
@@ -27,6 +29,11 @@ class _TourismScreenState extends State<TourismScreen>
   List<Map<String, dynamic>> _pointsOfInterest = [];
   bool _isLoading = true;
   String? _errorMessage;
+  double? _userLatitude;
+  double? _userLongitude;
+  String? _locationError;
+  bool _locationDeniedForever = false;
+  bool _locationServiceDisabled = false;
 
   @override
   void initState() {
@@ -49,9 +56,35 @@ class _TourismScreenState extends State<TourismScreen>
 
     try {
       final apiService = ApiService();
-      final points = await apiService.getPointsOfInterest();
+      String? locationError;
+      bool locationDeniedForever = false;
+      bool locationServiceDisabled = false;
+      double? latitude;
+      double? longitude;
+      try {
+        final position = await LocationService().getCurrentPosition();
+        latitude = position.latitude;
+        longitude = position.longitude;
+      } catch (e) {
+        latitude = null;
+        longitude = null;
+        locationError = e.toString().replaceAll('Exception: ', '').trim();
+        final msg = locationError.toLowerCase();
+        locationDeniedForever = msg.contains('définitivement');
+        locationServiceDisabled = msg.contains('désactivés');
+      }
+
+      final points = await apiService.getPointsOfInterest(
+        latitude: latitude,
+        longitude: longitude,
+      );
       if (!mounted) return;
       setState(() {
+        _userLatitude = latitude;
+        _userLongitude = longitude;
+        _locationError = locationError;
+        _locationDeniedForever = locationDeniedForever;
+        _locationServiceDisabled = locationServiceDisabled;
         _pointsOfInterest = points
             .map((p) => p as Map<String, dynamic>)
             .toList();
@@ -116,6 +149,165 @@ class _TourismScreenState extends State<TourismScreen>
     if (raw is! List) return const [];
     final urls = raw.map(_normalizeMediaUrl).whereType<String>().toList();
     return urls;
+  }
+
+  double? _toDouble(Object? value) {
+    if (value == null) return null;
+    if (value is num) return value.toDouble();
+    final s = value.toString().trim();
+    if (s.isEmpty) return null;
+    return double.tryParse(s);
+  }
+
+  String _formatDistanceMeters(double meters) {
+    if (meters.isNaN || meters.isInfinite) return '—';
+    if (meters < 1000) return '${meters.round()} m';
+    final km = meters / 1000.0;
+    return '${km.toStringAsFixed(1)} km';
+  }
+
+  String _distanceLabelForPoint(Map<String, dynamic> point) {
+    final pointLat = _toDouble(point['latitude'] ?? point['lat']);
+    final pointLng = _toDouble(point['longitude'] ?? point['lng']);
+    if (pointLat == null || pointLng == null) {
+      return 'Coordonnées manquantes';
+    }
+    if (_userLatitude == null || _userLongitude == null) {
+      return 'Activer la localisation';
+    }
+
+    final meters = LocationService().calculateDistance(
+      _userLatitude!,
+      _userLongitude!,
+      pointLat,
+      pointLng,
+    );
+    return _formatDistanceMeters(meters);
+  }
+
+  Widget _buildLocationBanner() {
+    final message =
+        (_locationError ?? 'Activer la localisation').toString().trim().isEmpty
+        ? 'Activer la localisation'
+        : (_locationError ?? 'Activer la localisation').toString().trim();
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 14,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Colors.orange.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+              Icons.my_location_rounded,
+              color: Colors.orange,
+              size: 18,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Distance indisponible',
+                  style: GoogleFonts.poppins(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  message,
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 8,
+                  children: [
+                    OutlinedButton(
+                      onPressed: _loadPointsOfInterest,
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppTheme.primaryGreen,
+                        side: BorderSide(
+                          color: AppTheme.primaryGreen.withValues(alpha: 0.35),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Text('Réessayer', style: GoogleFonts.poppins()),
+                    ),
+                    if (_locationDeniedForever)
+                      ElevatedButton(
+                        onPressed: () async {
+                          await Geolocator.openAppSettings();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.primaryGreen,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: Text('Paramètres', style: GoogleFonts.poppins()),
+                      ),
+                    if (_locationServiceDisabled && !_locationDeniedForever)
+                      ElevatedButton(
+                        onPressed: () async {
+                          await Geolocator.openLocationSettings();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.primaryGreen,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: Text(
+                          'Activer GPS',
+                          style: GoogleFonts.poppins(),
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   IconData _getCategoryIcon(String category) {
@@ -382,15 +574,21 @@ class _TourismScreenState extends State<TourismScreen>
       );
     }
 
+    final showBanner = _locationError != null;
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 100),
-      itemCount: points.length,
+      itemCount: points.length + (showBanner ? 1 : 0),
       itemBuilder: (context, index) {
-        final point = points[index];
+        if (showBanner && index == 0) {
+          return _buildLocationBanner();
+        }
+
+        final point = points[index - (showBanner ? 1 : 0)];
         final cat = (point['category'] ?? '').toString().trim();
         final icon = _getCategoryIcon(cat);
         final color = _getCategoryColor(cat);
         final iconUrl = _getPointIconUrl(point);
+        final distanceLabel = _distanceLabelForPoint(point);
 
         return Container(
           margin: const EdgeInsets.only(bottom: 14),
@@ -450,24 +648,23 @@ class _TourismScreenState extends State<TourismScreen>
                             ),
                           ),
                           const SizedBox(height: 4),
-                          if ((point['distance'] as String? ?? '').isNotEmpty)
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.location_on,
-                                  size: 13,
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.location_on,
+                                size: 13,
+                                color: AppTheme.textSecondary,
+                              ),
+                              const SizedBox(width: 3),
+                              Text(
+                                distanceLabel,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 12,
                                   color: AppTheme.textSecondary,
                                 ),
-                                const SizedBox(width: 3),
-                                Text(
-                                  point['distance'] as String,
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 12,
-                                    color: AppTheme.textSecondary,
-                                  ),
-                                ),
-                              ],
-                            ),
+                              ),
+                            ],
+                          ),
                           if (point['rating'] != null) ...[
                             const SizedBox(height: 4),
                             Row(
@@ -517,7 +714,7 @@ class _TourismScreenState extends State<TourismScreen>
   void _showPointDetails(Map<String, dynamic> point) {
     final name = (point['name'] as String? ?? '').trim();
     final category = (point['category'] as String? ?? '').trim();
-    final distance = (point['distance'] as String? ?? '').trim();
+    final distance = _distanceLabelForPoint(point);
     final rating = point['rating'];
     final address = point['address'] as String?;
     final phone = point['phone'] as String?;
@@ -686,21 +883,32 @@ class _TourismScreenState extends State<TourismScreen>
                                   const SizedBox(width: 10),
                               itemBuilder: (context, index) {
                                 final url = photos[index];
-                                return ClipRRect(
-                                  borderRadius: BorderRadius.circular(14),
-                                  child: Image.network(
-                                    url,
-                                    width: 130,
-                                    height: 96,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) {
-                                      return Container(
+                                return Material(
+                                  color: Colors.transparent,
+                                  child: InkWell(
+                                    borderRadius: BorderRadius.circular(14),
+                                    onTap: () => _openPhotoPreview(
+                                      photos: photos,
+                                      initialIndex: index,
+                                    ),
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(14),
+                                      child: Image.network(
+                                        url,
                                         width: 130,
                                         height: 96,
-                                        color: Colors.white,
-                                        child: const Icon(Icons.image),
-                                      );
-                                    },
+                                        fit: BoxFit.cover,
+                                        errorBuilder:
+                                            (context, error, stackTrace) {
+                                              return Container(
+                                                width: 130,
+                                                height: 96,
+                                                color: Colors.white,
+                                                child: const Icon(Icons.image),
+                                              );
+                                            },
+                                      ),
+                                    ),
                                   ),
                                 );
                               },
@@ -708,7 +916,7 @@ class _TourismScreenState extends State<TourismScreen>
                           ),
                           const SizedBox(height: 14),
                         ],
-                        if (distance.isNotEmpty && distance != 'N/A')
+                        if (distance.isNotEmpty)
                           _detailInfoTile(
                             icon: Icons.near_me_rounded,
                             color: AppTheme.primaryGreen,
@@ -913,6 +1121,107 @@ class _TourismScreenState extends State<TourismScreen>
           ),
         ],
       ),
+    );
+  }
+
+  void _openPhotoPreview({
+    required List<String> photos,
+    required int initialIndex,
+  }) {
+    if (photos.isEmpty) return;
+    final safeInitialIndex = initialIndex.clamp(
+      0,
+      (photos.length - 1).clamp(0, 999999),
+    );
+    final pageController = PageController(initialPage: safeInitialIndex);
+    int currentIndex = safeInitialIndex;
+
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierColor: Colors.black.withValues(alpha: 0.92),
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Material(
+              color: Colors.transparent,
+              child: SafeArea(
+                child: Stack(
+                  children: [
+                    PageView.builder(
+                      controller: pageController,
+                      itemCount: photos.length,
+                      onPageChanged: (i) => setState(() => currentIndex = i),
+                      itemBuilder: (context, index) {
+                        final url = photos[index];
+                        return Center(
+                          child: InteractiveViewer(
+                            minScale: 1,
+                            maxScale: 4,
+                            child: Image.network(
+                              url,
+                              fit: BoxFit.contain,
+                              errorBuilder: (context, error, stackTrace) {
+                                return const Icon(
+                                  Icons.broken_image_rounded,
+                                  color: Colors.white70,
+                                  size: 70,
+                                );
+                              },
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                    Positioned(
+                      top: 6,
+                      right: 6,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.35),
+                          shape: BoxShape.circle,
+                        ),
+                        child: IconButton(
+                          onPressed: () => Navigator.of(dialogContext).pop(),
+                          icon: const Icon(
+                            Icons.close_rounded,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      bottom: 18,
+                      child: Center(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.35),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Text(
+                            '${currentIndex + 1}/${photos.length}',
+                            style: GoogleFonts.poppins(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 

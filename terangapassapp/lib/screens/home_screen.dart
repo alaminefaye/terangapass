@@ -1,6 +1,12 @@
+import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:audioplayers/audioplayers.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../theme/app_theme.dart';
 import '../constants/app_constants.dart';
+import '../constants/api_constants.dart';
+import '../services/api_service.dart';
 import 'sos_screen.dart';
 import 'medical_alert_screen.dart';
 import 'incident_report_screen.dart';
@@ -10,25 +16,312 @@ import 'joj_info_screen.dart';
 import 'transport_screen.dart';
 import 'tourism_screen.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
+  Map<String, dynamic>? _officialAnnouncement;
+  bool _isLoadingOfficialAnnouncement = false;
+  final AudioPlayer _officialPlayer = AudioPlayer();
+  bool _isOfficialPlaying = false;
+  Duration _officialDuration = Duration.zero;
+  Duration _officialPosition = Duration.zero;
+  double _officialProgress = 0.0;
+  String? _officialAudioUrl;
+  List<Map<String, dynamic>> _competitionSites = [];
+  bool _isLoadingCompetitionSites = false;
+  String? _competitionSitesError;
+  GoogleMapController? _jojMapController;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _bindOfficialPlayerListeners();
+    _loadOfficialAnnouncement();
+    _loadCompetitionSites();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _officialPlayer.dispose();
+    _jojMapController?.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _loadOfficialAnnouncement();
+      _loadCompetitionSites();
+    }
+  }
+
+  Future<void> _loadOfficialAnnouncement() async {
+    if (_isLoadingOfficialAnnouncement) return;
+    setState(() {
+      _isLoadingOfficialAnnouncement = true;
+    });
+
+    try {
+      final apiService = ApiService();
+      final announcements = await apiService.getAudioAnnouncements();
+      if (mounted) {
+        setState(() {
+          final next = announcements.isNotEmpty
+              ? (announcements.first as Map<String, dynamic>)
+              : null;
+
+          final nextUrl = _extractAudioUrl(next);
+          if (nextUrl != null && nextUrl != _officialAudioUrl) {
+            _resetOfficialPlayer();
+            _officialAudioUrl = nextUrl;
+          } else if (next == null && _officialAnnouncement != null) {
+            _resetOfficialPlayer();
+            _officialAudioUrl = null;
+          }
+
+          _officialAnnouncement = next;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        _resetOfficialPlayer();
+        _officialAudioUrl = null;
+        setState(() {
+          _officialAnnouncement = null;
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingOfficialAnnouncement = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _loadCompetitionSites() async {
+    if (_isLoadingCompetitionSites) return;
+    setState(() {
+      _isLoadingCompetitionSites = true;
+      _competitionSitesError = null;
+    });
+
+    try {
+      final apiService = ApiService();
+      final sites = await apiService.getCompetitionSites();
+      if (mounted) {
+        setState(() {
+          _competitionSites = sites
+              .map((s) => s as Map<String, dynamic>)
+              .toList();
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _competitionSites = [];
+          _competitionSitesError = e.toString().replaceAll('Exception: ', '');
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingCompetitionSites = false;
+        });
+      }
+    }
+  }
+
+  void _bindOfficialPlayerListeners() {
+    _officialPlayer.onDurationChanged.listen((d) {
+      if (!mounted) return;
+      setState(() {
+        _officialDuration = d;
+        _officialProgress = _officialDuration.inMilliseconds == 0
+            ? 0.0
+            : (_officialPosition.inMilliseconds /
+                      _officialDuration.inMilliseconds)
+                  .clamp(0.0, 1.0);
+      });
+    });
+
+    _officialPlayer.onPositionChanged.listen((p) {
+      if (!mounted) return;
+      setState(() {
+        _officialPosition = p;
+        _officialProgress = _officialDuration.inMilliseconds == 0
+            ? 0.0
+            : (_officialPosition.inMilliseconds /
+                      _officialDuration.inMilliseconds)
+                  .clamp(0.0, 1.0);
+      });
+    });
+
+    _officialPlayer.onPlayerComplete.listen((_) {
+      if (!mounted) return;
+      setState(() {
+        _isOfficialPlaying = false;
+        _officialPosition = Duration.zero;
+        _officialProgress = 0.0;
+      });
+    });
+  }
+
+  void _resetOfficialPlayer() {
+    _officialPlayer.stop();
+    _isOfficialPlaying = false;
+    _officialDuration = Duration.zero;
+    _officialPosition = Duration.zero;
+    _officialProgress = 0.0;
+  }
+
+  String? _extractAudioUrl(Map<String, dynamic>? announcement) {
+    if (announcement == null) return null;
+    final raw =
+        (announcement['audio_url'] ??
+                announcement['audioUrl'] ??
+                announcement['audio_path'] ??
+                announcement['audioPath'])
+            ?.toString()
+            .trim();
+    if (raw == null || raw.isEmpty) return null;
+    return _normalizeAudioUrl(raw);
+  }
+
+  String? _normalizeAudioUrl(String url) {
+    final trimmed = url.trim();
+    if (trimmed.isEmpty) return null;
+    if (trimmed.startsWith('https://')) return trimmed;
+    if (trimmed.startsWith('http://')) {
+      return 'https://${trimmed.substring('http://'.length)}';
+    }
+    final baseDomain = ApiConstants.baseUrl.replaceAll('/api/v1', '');
+    if (trimmed.startsWith('/')) {
+      return '${baseDomain.replaceAll(RegExp(r"/+$"), "")}$trimmed';
+    }
+    return '${baseDomain.replaceAll(RegExp(r"/+$"), "")}/${trimmed.replaceAll(RegExp(r"^/+"), "")}';
+  }
+
+  String _formatDuration(Duration duration) {
+    final minutes = duration.inMinutes;
+    final seconds = duration.inSeconds % 60;
+    return "$minutes:${seconds.toString().padLeft(2, '0')}";
+  }
+
+  double? _toDouble(Object? value) {
+    if (value == null) return null;
+    if (value is num) return value.toDouble();
+    final s = value.toString().trim();
+    if (s.isEmpty) return null;
+    return double.tryParse(s);
+  }
+
+  LatLng? _siteLatLng(Map<String, dynamic> site) {
+    final lat = _toDouble(site['latitude'] ?? site['lat']);
+    final lng = _toDouble(site['longitude'] ?? site['lng']);
+    if (lat == null || lng == null) return null;
+    return LatLng(lat, lng);
+  }
+
+  Set<Marker> _buildSiteMarkers() {
+    final markers = <Marker>{};
+    for (final site in _competitionSites) {
+      final pos = _siteLatLng(site);
+      if (pos == null) continue;
+      final id = (site['id'] ?? site['name'] ?? pos.toString()).toString();
+      final name = (site['name'] ?? '').toString().trim();
+      final location = (site['location'] ?? '').toString().trim();
+      markers.add(
+        Marker(
+          markerId: MarkerId(id),
+          position: pos,
+          infoWindow: InfoWindow(
+            title: name.isEmpty ? 'Site' : name,
+            snippet: location.isEmpty ? null : location,
+          ),
+        ),
+      );
+    }
+    return markers;
+  }
+
+  void _fitMapToMarkers(GoogleMapController controller, Set<Marker> markers) {
+    if (markers.isEmpty) return;
+    if (markers.length == 1) {
+      final pos = markers.first.position;
+      controller.moveCamera(
+        CameraUpdate.newCameraPosition(CameraPosition(target: pos, zoom: 13)),
+      );
+      return;
+    }
+
+    double? minLat;
+    double? maxLat;
+    double? minLng;
+    double? maxLng;
+
+    for (final m in markers) {
+      final lat = m.position.latitude;
+      final lng = m.position.longitude;
+      minLat = minLat == null ? lat : (lat < minLat ? lat : minLat);
+      maxLat = maxLat == null ? lat : (lat > maxLat ? lat : maxLat);
+      minLng = minLng == null ? lng : (lng < minLng ? lng : minLng);
+      maxLng = maxLng == null ? lng : (lng > maxLng ? lng : maxLng);
+    }
+
+    final bounds = LatLngBounds(
+      southwest: LatLng(minLat!, minLng!),
+      northeast: LatLng(maxLat!, maxLng!),
+    );
+    controller.moveCamera(CameraUpdate.newLatLngBounds(bounds, 44));
+  }
+
+  Future<void> _toggleOfficialPlayback() async {
+    final url = _officialAudioUrl;
+    if (url == null) return;
+
+    if (_isOfficialPlaying) {
+      await _officialPlayer.pause();
+      if (!mounted) return;
+      setState(() {
+        _isOfficialPlaying = false;
+      });
+      return;
+    }
+
+    await _officialPlayer.play(UrlSource(url));
+    if (!mounted) return;
+    setState(() {
+      _isOfficialPlaying = true;
+    });
+  }
+
+  String _formatSeconds(Object? value) {
+    if (value is int && value > 0) {
+      final minutes = value ~/ 60;
+      final seconds = value % 60;
+      return "$minutes:${seconds.toString().padLeft(2, '0')}";
+    }
+    return '--:--';
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Stack(
         children: [
-          // Image de fond en haut
           _buildHeaderImage(context),
-
-          // Contenu scrollable
           SingleChildScrollView(
             child: Column(
               children: [
-                // Espace pour l'image header
                 const SizedBox(height: 280),
-
-                // Contenu principal
                 Container(
                   decoration: const BoxDecoration(
                     color: AppTheme.backgroundColor,
@@ -45,21 +338,16 @@ class HomeScreen extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Boutons d'urgence horizontaux
                         _buildEmergencyButtonsRow(context),
                         const SizedBox(height: 0),
-
-                        // Grille de fonctionnalités
                         _buildMainFeaturesSection(context),
                         const SizedBox(height: 8),
-
-                        // Annonce officielle
-                        _buildOfficialAnnouncementSection(context),
-                        const SizedBox(height: 8),
-
-                        // Infos JOJ avec carte
+                        if (_officialAnnouncement != null) ...[
+                          _buildOfficialAnnouncementSection(context),
+                          const SizedBox(height: 8),
+                        ],
                         _buildJOJInfoSection(context),
-                        const SizedBox(height: 80), // Espace pour la bottom nav
+                        const SizedBox(height: 80),
                       ],
                     ),
                   ),
@@ -528,83 +816,133 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _buildOfficialAnnouncementSection(BuildContext context) {
+    final announcement = _officialAnnouncement;
+    if (announcement == null) return const SizedBox.shrink();
+
+    final title = (announcement['title'] ?? 'Annonce Officielle')
+        .toString()
+        .trim();
+    final content = (announcement['content'] ?? '').toString().trim();
+    final durationLabel = _officialDuration.inSeconds > 0
+        ? _formatDuration(_officialDuration)
+        : _formatSeconds(announcement['duration']);
+    final positionLabel = _formatDuration(_officialPosition);
+
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                // Drapeau du Sénégal
-                _buildSenegalFlagSmall(),
-                const SizedBox(width: 8),
-                Text(
-                  'Annonce Officielle',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-                ),
-              ],
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const AudioAnnouncementsScreen(),
             ),
-            const SizedBox(height: 12),
-            Text(
-              'Suivez les consignes de sécurité JOJ Dakar',
-              style: Theme.of(context).textTheme.bodyLarge,
-            ),
-            const SizedBox(height: 12),
-            // Lecteur audio
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppTheme.primaryGreen,
-                    shape: BoxShape.circle,
+          );
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  _buildSenegalFlagSmall(),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      title.isEmpty ? 'Annonce Officielle' : title,
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
-                  child: const Icon(
-                    Icons.play_arrow,
-                    color: Colors.white,
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    children: [
-                      LinearProgressIndicator(
-                        value: 0.15,
-                        backgroundColor: AppTheme.backgroundColor,
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          AppTheme.primaryGreen,
+                  const SizedBox(width: 8),
+                  IconButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              const AudioAnnouncementsScreen(),
                         ),
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            '0:15',
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                          Text(
-                            '1:02',
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                        ],
-                      ),
-                    ],
+                      );
+                    },
+                    icon: const Icon(Icons.chevron_right_rounded),
                   ),
+                ],
+              ),
+              if (content.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Text(
+                  content,
+                  style: Theme.of(context).textTheme.bodyLarge,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
-            ),
-          ],
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  InkWell(
+                    onTap: _toggleOfficialPlayback,
+                    borderRadius: BorderRadius.circular(999),
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: const BoxDecoration(
+                        color: AppTheme.primaryGreen,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        _isOfficialPlaying ? Icons.pause : Icons.play_arrow,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      children: [
+                        LinearProgressIndicator(
+                          value: _officialProgress,
+                          backgroundColor: AppTheme.backgroundColor,
+                          valueColor: const AlwaysStoppedAnimation<Color>(
+                            AppTheme.primaryGreen,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              positionLabel,
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                            Text(
+                              durationLabel,
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
   Widget _buildJOJInfoSection(BuildContext context) {
+    final markers = _buildSiteMarkers();
+    final hasCoords = markers.isNotEmpty;
+    final previewSites = _competitionSites.take(3).toList();
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -667,7 +1005,6 @@ class HomeScreen extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 16),
-            // Carte placeholder
             Container(
               height: 200,
               decoration: BoxDecoration(
@@ -677,74 +1014,136 @@ class HomeScreen extends StatelessWidget {
                   color: AppTheme.textSecondary.withValues(alpha: 0.2),
                 ),
               ),
-              child: Stack(
-                children: [
-                  Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.map_outlined,
-                          size: 48,
-                          color: AppTheme.textSecondary,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: _isLoadingCompetitionSites
+                    ? const Center(child: CircularProgressIndicator())
+                    : _competitionSitesError != null
+                    ? Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.wifi_off_rounded,
+                                size: 40,
+                                color: AppTheme.textSecondary,
+                              ),
+                              const SizedBox(height: 10),
+                              Text(
+                                _competitionSitesError!,
+                                textAlign: TextAlign.center,
+                                style: Theme.of(context).textTheme.bodySmall
+                                    ?.copyWith(color: AppTheme.textSecondary),
+                              ),
+                              const SizedBox(height: 10),
+                              ElevatedButton(
+                                onPressed: _loadCompetitionSites,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppTheme.primaryGreen,
+                                ),
+                                child: const Text('Réessayer'),
+                              ),
+                            ],
+                          ),
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Carte des sites',
-                          style: Theme.of(context).textTheme.bodyMedium,
+                      )
+                    : hasCoords
+                    ? GoogleMap(
+                        initialCameraPosition: CameraPosition(
+                          target: markers.first.position,
+                          zoom: 12,
                         ),
-                      ],
-                    ),
-                  ),
-                  // Légende de la carte
-                  Positioned(
-                    bottom: 12,
-                    left: 12,
-                    right: 12,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        _buildMapLegendItem(
-                          Icons.location_on,
-                          AppTheme.primaryGreen,
-                          'JOJ Villages',
+                        markers: markers,
+                        myLocationButtonEnabled: false,
+                        zoomControlsEnabled: false,
+                        mapToolbarEnabled: false,
+                        onMapCreated: (c) {
+                          _jojMapController = c;
+                          _fitMapToMarkers(c, markers);
+                        },
+                        gestureRecognizers: {
+                          Factory<OneSequenceGestureRecognizer>(
+                            () => EagerGestureRecognizer(),
+                          ),
+                        },
+                      )
+                    : Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.map_outlined,
+                                size: 48,
+                                color: AppTheme.textSecondary,
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                _competitionSites.isEmpty
+                                    ? 'Aucun site actif'
+                                    : 'Ajoute latitude/longitude dans le dashboard',
+                                textAlign: TextAlign.center,
+                                style: Theme.of(context).textTheme.bodyMedium
+                                    ?.copyWith(color: AppTheme.textSecondary),
+                              ),
+                            ],
+                          ),
                         ),
-                        _buildMapLegendItem(
-                          Icons.sports_soccer,
-                          Colors.blue,
-                          'Sites Sportifs',
-                        ),
-                        _buildMapLegendItem(
-                          Icons.restaurant,
-                          AppTheme.primaryRed,
-                          'Hôtels & Restos',
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+                      ),
               ),
             ),
+            if (previewSites.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              ...previewSites.map((site) {
+                final name = (site['name'] ?? '').toString().trim();
+                final location = (site['location'] ?? '').toString().trim();
+                final dates = (site['dates'] ?? '').toString().trim();
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.place_rounded,
+                        size: 18,
+                        color: AppTheme.primaryGreen,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              name.isEmpty ? 'Site' : name,
+                              style: Theme.of(context).textTheme.bodyMedium
+                                  ?.copyWith(fontWeight: FontWeight.w700),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              [
+                                if (location.isNotEmpty) location,
+                                if (dates.isNotEmpty) dates,
+                              ].join(' • '),
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(color: AppTheme.textSecondary),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }),
+            ],
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildMapLegendItem(IconData icon, Color color, String label) {
-    return Row(
-      children: [
-        Icon(icon, color: color, size: 16),
-        const SizedBox(width: 4),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 10,
-            color: AppTheme.textSecondary,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
     );
   }
 
