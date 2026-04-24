@@ -1,0 +1,5 @@
+# Ce dossier contiendra les fichiers audio pour les alertes SOS
+# Pour ajouter des sons :
+# 1. Ajoutez beep.mp3 pour le décompte
+# 2. Ajoutez alert.mp3 pour le son d'alerte continu
+# Format recommandé : MP3, 44.1kHz, mono ou stéréo

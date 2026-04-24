@@ -12,8 +12,10 @@ class NotificationsScreen extends StatefulWidget {
 
 class _NotificationsScreenState extends State<NotificationsScreen> {
   String _selectedZone = 'Toutes les zones';
+  List<String> _zones = const ['Toutes les zones'];
   List<Map<String, dynamic>> _notifications = [];
   bool _isLoading = true;
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -24,6 +26,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   Future<void> _loadNotifications() async {
     setState(() {
       _isLoading = true;
+      _errorMessage = null;
     });
 
     try {
@@ -35,61 +38,84 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         _notifications = notifications
             .map((n) => n as Map<String, dynamic>)
             .toList();
+        _zones = [
+          'Toutes les zones',
+          ...{
+            for (final n in _notifications) (n['zone'] ?? '').toString().trim(),
+          }.where((z) => z.isNotEmpty),
+        ];
       });
     } catch (e) {
-      // Données de démonstration en cas d'erreur
       setState(() {
-        _notifications = [
-          {
-            'id': 1,
-            'type': 'Sécurité',
-            'title': 'Alerte Sécurité: Stadium Assane vigilance!',
-            'description':
-                'Renforcement de la sécurité autour du stade. Soyez vigilant.',
-            'time': 'Il y a 5 min',
-            'zone': 'Dakar Centre',
-            'icon': Icons.security_rounded,
-            'color': AppTheme.primaryRed,
-          },
-          {
-            'id': 2,
-            'type': 'Transport',
-            'title': 'Navettes Gratuites JOJ 2026',
-            'description':
-                'Navettes gratuites disponibles tous les jours de 08:30 à 19:30.',
-            'time': 'Il y a 15 min',
-            'zone': 'Dakar Centre',
-            'icon': Icons.directions_bus_rounded,
-            'color': AppTheme.primaryGreen,
-          },
-          {
-            'id': 3,
-            'type': 'Météo',
-            'title': 'Météo: Chaleur importante ce midi',
-            'description': 'Température: 35°C. Pensez à vous hydrater.',
-            'time': 'Il y a 1h',
-            'zone': 'Toutes les zones',
-            'icon': Icons.wb_sunny_rounded,
-            'color': Colors.orange,
-          },
-          {
-            'id': 4,
-            'type': 'Sécurité routière',
-            'title': 'Sécurité routière: Pose de dispositifs de sécurité',
-            'description':
-                'Travaux en cours sur la route principale. Ralentissez.',
-            'time': 'Il y a 2h',
-            'zone': 'Plateau',
-            'icon': Icons.construction_rounded,
-            'color': Colors.blue,
-          },
-        ];
+        _notifications = [];
+        _zones = const ['Toutes les zones'];
+        _errorMessage = e.toString().replaceAll('Exception: ', '');
       });
     } finally {
       setState(() {
         _isLoading = false;
       });
     }
+  }
+
+  IconData _iconForType(String type) {
+    final t = type.toLowerCase();
+    if (t.contains('sécur') || t.contains('secur')) {
+      return Icons.security_rounded;
+    }
+    if (t.contains('transport') || t.contains('navette')) {
+      return Icons.directions_bus_rounded;
+    }
+    if (t.contains('météo') || t.contains('meteo')) {
+      return Icons.wb_sunny_rounded;
+    }
+    if (t.contains('rout')) return Icons.construction_rounded;
+    if (t.contains('médic') || t.contains('medic')) {
+      return Icons.medical_services_rounded;
+    }
+    return Icons.notifications_rounded;
+  }
+
+  Color _colorForType(String type) {
+    final t = type.toLowerCase();
+    if (t.contains('sécur') || t.contains('secur')) return AppTheme.primaryRed;
+    if (t.contains('transport') || t.contains('navette')) {
+      return AppTheme.primaryGreen;
+    }
+    if (t.contains('météo') || t.contains('meteo')) return Colors.orange;
+    if (t.contains('rout')) return Colors.blue;
+    if (t.contains('médic') || t.contains('medic')) return Colors.purple;
+    return AppTheme.textSecondary;
+  }
+
+  DateTime? _parseDate(dynamic value) {
+    if (value == null) return null;
+    if (value is DateTime) return value;
+    final s = value.toString().trim();
+    if (s.isEmpty) return null;
+    return DateTime.tryParse(s);
+  }
+
+  String _relativeTimeFrom(dynamic createdAt) {
+    final dt = _parseDate(createdAt);
+    if (dt == null) return '';
+    final now = DateTime.now();
+    final diff = now.difference(dt.isAfter(now) ? now : dt);
+    if (diff.inMinutes < 1) return 'À l’instant';
+    if (diff.inMinutes < 60) return 'Il y a ${diff.inMinutes} min';
+    if (diff.inHours < 24) return 'Il y a ${diff.inHours} h';
+    return 'Il y a ${diff.inDays} j';
+  }
+
+  String _displayTime(Map<String, dynamic> notification) {
+    final createdAt =
+        notification['created_at'] ??
+        notification['createdAt'] ??
+        notification['date'];
+    final rel = _relativeTimeFrom(createdAt);
+    if (rel.isNotEmpty) return rel;
+    final t = (notification['time'] ?? '').toString().trim();
+    return t;
   }
 
   @override
@@ -115,7 +141,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           IconButton(
             icon: const Icon(Icons.filter_list, color: Colors.white),
             onPressed: () {
-              // TODO: Ouvrir le filtre
+              _showZoneFilterSheet();
             },
           ),
         ],
@@ -141,12 +167,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     value: _selectedZone,
                     isExpanded: true,
                     underline: Container(),
-                    items: [
-                      'Toutes les zones',
-                      'Dakar Centre',
-                      'M\'Bour 4 Stadium',
-                      'Plateau',
-                    ].map((String zone) {
+                    items: _zones.map((String zone) {
                       return DropdownMenuItem<String>(
                         value: zone,
                         child: Text(
@@ -173,46 +194,91 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
-                : _notifications.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.notifications_off_rounded,
-                              size: 64,
+                : _errorMessage != null
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.wifi_off_rounded,
+                            size: 64,
+                            color: AppTheme.textSecondary,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            _errorMessage!,
+                            style: GoogleFonts.poppins(
+                              fontSize: 14,
                               color: AppTheme.textSecondary,
                             ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'Aucune notification',
-                              style: GoogleFonts.poppins(
-                                fontSize: 16,
-                                color: AppTheme.textSecondary,
-                              ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 16),
+                          ElevatedButton(
+                            onPressed: _loadNotifications,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppTheme.primaryGreen,
                             ),
-                          ],
-                        ),
-                      )
-                    : ListView.builder(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: _notifications.length,
-                        itemBuilder: (context, index) {
-                          final notification = _notifications[index];
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: _buildNotificationCard(
-                              type: notification['type'] as String,
-                              title: notification['title'] as String,
-                              description: notification['description'] as String,
-                              time: notification['time'] as String,
-                              zone: notification['zone'] as String,
-                              icon: notification['icon'] as IconData,
-                              color: notification['color'] as Color,
+                            child: Text(
+                              'Réessayer',
+                              style: GoogleFonts.poppins(),
                             ),
-                          );
-                        },
+                          ),
+                        ],
                       ),
+                    ),
+                  )
+                : _notifications.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.notifications_off_rounded,
+                          size: 64,
+                          color: AppTheme.textSecondary,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Aucune notification',
+                          style: GoogleFonts.poppins(
+                            fontSize: 16,
+                            color: AppTheme.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: _notifications.length,
+                    itemBuilder: (context, index) {
+                      final notification = _notifications[index];
+                      final type = (notification['type'] ?? '').toString();
+                      final title = (notification['title'] ?? '').toString();
+                      final description = (notification['description'] ?? '')
+                          .toString();
+                      final zone = (notification['zone'] ?? '').toString();
+                      final time = _displayTime(notification);
+                      final icon = _iconForType(type);
+                      final color = _colorForType(type);
+
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: _buildNotificationCard(
+                          type: type.isEmpty ? 'Notification' : type,
+                          title: title.isEmpty ? 'Notification' : title,
+                          description: description,
+                          time: time,
+                          zone: zone.isEmpty ? '—' : zone,
+                          icon: icon,
+                          color: color,
+                        ),
+                      );
+                    },
+                  ),
           ),
         ],
       ),
@@ -230,9 +296,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }) {
     return Card(
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -246,7 +310,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
+                    color: color.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
@@ -334,5 +398,60 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _showZoneFilterSheet() async {
+    final zones = [
+      'Toutes les zones',
+      'Dakar Centre',
+      'M\'Bour 4 Stadium',
+      'Plateau',
+    ];
+
+    final selected = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: ListView(
+            shrinkWrap: true,
+            children: [
+              const SizedBox(height: 8),
+              Center(
+                child: Container(
+                  width: 44,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              ...zones.map(
+                (z) => ListTile(
+                  title: Text(z, style: GoogleFonts.poppins()),
+                  trailing: z == _selectedZone
+                      ? const Icon(Icons.check_rounded)
+                      : null,
+                  onTap: () => Navigator.of(context).pop(z),
+                ),
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (selected == null) return;
+    if (selected == _selectedZone) return;
+    setState(() {
+      _selectedZone = selected;
+    });
+    await _loadNotifications();
   }
 }

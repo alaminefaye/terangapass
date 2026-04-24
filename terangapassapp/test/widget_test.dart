@@ -6,21 +6,21 @@
 // tree, read text, and verify that the values of widget properties are correct.
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:teranga_pass/main.dart';
 
 void main() {
   testWidgets('Teranga Pass app loads correctly', (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({});
+
     // Build our app and trigger a frame.
     await tester.pumpWidget(const TerangaPassApp());
+    await tester.pumpAndSettle();
 
-    // Verify that the app name is displayed
+    // Verify that the login screen is displayed
     expect(find.text('Teranga Pass'), findsOneWidget);
-
-    // Verify that SOS button is present
-    expect(find.text('SOS'), findsOneWidget);
-
-    // Verify that Alerte button is present
-    expect(find.text('Alerte'), findsOneWidget);
+    expect(find.text('Se connecter'), findsOneWidget);
+    expect(find.text('Email'), findsOneWidget);
   });
 }

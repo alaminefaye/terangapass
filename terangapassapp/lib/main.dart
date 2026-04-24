@@ -4,8 +4,13 @@ import 'theme/app_theme.dart';
 import 'screens/home_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/register_screen.dart';
+import 'services/notification_service.dart';
 
-void main() {
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await NotificationService().initialize(navigatorKey: navigatorKey);
   runApp(const TerangaPassApp());
 }
 
@@ -18,6 +23,7 @@ class TerangaPassApp extends StatelessWidget {
       title: 'Teranga Pass',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
+      navigatorKey: navigatorKey,
       home: const AuthWrapper(),
       routes: {
         '/home': (context) => const HomeScreen(),
@@ -71,7 +77,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
   }
 
   /// Enregistre le device token pour les push notifications
-  /// TODO: Implémenter quand Firebase Messaging sera configuré
+  /// NOTE: Implémenter quand Firebase Messaging sera configuré
   /// Pour l'instant, cette méthode est vide car Firebase n'est pas encore configuré
   Future<void> _registerDeviceToken() async {
     // Cette méthode sera implémentée quand Firebase Messaging sera configuré

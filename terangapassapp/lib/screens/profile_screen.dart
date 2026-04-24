@@ -16,6 +16,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _isLoading = true;
   int _alertsCount = 0;
   int _reportsCount = 0;
+  String? _errorMessage;
+  List<Map<String, dynamic>> _recentActivities = [];
 
   @override
   void initState() {
@@ -26,29 +28,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _loadProfile() async {
     setState(() {
       _isLoading = true;
+      _errorMessage = null;
     });
 
     try {
       final apiService = ApiService();
       _userProfile = await apiService.getUserProfile();
-      
+
       // Charger les statistiques
       final alerts = await apiService.getAlertsHistory();
       final reports = await apiService.getIncidentsHistory();
-      
+
       setState(() {
         _alertsCount = alerts.length;
         _reportsCount = reports.length;
+        _recentActivities = _buildRecentActivities(alerts, reports);
       });
     } catch (e) {
-      // Données par défaut
       setState(() {
-        _userProfile = {
-          'name': 'Utilisateur',
-          'email': 'utilisateur@example.com',
-          'language': 'Français',
-          'user_type': 'Visiteur',
-        };
+        _userProfile = null;
+        _alertsCount = 0;
+        _reportsCount = 0;
+        _errorMessage = e.toString().replaceAll('Exception: ', '');
+        _recentActivities = [];
       });
     } finally {
       setState(() {
@@ -57,11 +59,97 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  DateTime? _parseDate(dynamic value) {
+    if (value == null) return null;
+    if (value is DateTime) return value;
+    final s = value.toString().trim();
+    if (s.isEmpty) return null;
+    return DateTime.tryParse(s);
+  }
+
+  String _relativeTime(DateTime dt) {
+    final now = DateTime.now();
+    final diff = now.difference(dt.isAfter(now) ? now : dt);
+    if (diff.inMinutes < 1) return 'À l’instant';
+    if (diff.inMinutes < 60) return 'Il y a ${diff.inMinutes} min';
+    if (diff.inHours < 24) return 'Il y a ${diff.inHours} h';
+    return 'Il y a ${diff.inDays} j';
+  }
+
+  List<Map<String, dynamic>> _buildRecentActivities(
+    List<dynamic> alerts,
+    List<dynamic> reports,
+  ) {
+    Map<String, dynamic> buildItem({
+      required Map<String, dynamic> raw,
+      required String defaultTitle,
+      required IconData icon,
+      required Color color,
+    }) {
+      final createdAt = _parseDate(
+        raw['created_at'] ??
+            raw['createdAt'] ??
+            raw['date'] ??
+            raw['timestamp'],
+      );
+      final title =
+          (raw['title'] ?? raw['type'] ?? raw['category'] ?? defaultTitle)
+              .toString()
+              .trim();
+      return {
+        'title': title.isEmpty ? defaultTitle : title,
+        'createdAt': createdAt,
+        'icon': icon,
+        'color': color,
+      };
+    }
+
+    final items = <Map<String, dynamic>>[
+      ...alerts.whereType<Map<String, dynamic>>().map(
+        (a) => buildItem(
+          raw: a,
+          defaultTitle: 'Alerte SOS',
+          icon: Icons.warning_rounded,
+          color: AppTheme.primaryRed,
+        ),
+      ),
+      ...reports.whereType<Map<String, dynamic>>().map(
+        (r) => buildItem(
+          raw: r,
+          defaultTitle: 'Signalement',
+          icon: Icons.report_rounded,
+          color: AppTheme.primaryGreen,
+        ),
+      ),
+    ];
+
+    items.sort((a, b) {
+      final adt = a['createdAt'] as DateTime?;
+      final bdt = b['createdAt'] as DateTime?;
+      if (adt == null && bdt == null) return 0;
+      if (adt == null) return 1;
+      if (bdt == null) return -1;
+      return bdt.compareTo(adt);
+    });
+
+    final trimmed = items.take(3).toList();
+    return trimmed
+        .map(
+          (it) => {
+            ...it,
+            'time': (it['createdAt'] as DateTime?) == null
+                ? ''
+                : _relativeTime(it['createdAt'] as DateTime),
+          },
+        )
+        .toList();
+  }
+
   Future<void> _logout() async {
     try {
       final apiService = ApiService();
       await apiService.logout();
-      
+
       if (mounted) {
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (context) => const LoginScreen()),
@@ -83,7 +171,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     if (_isLoading) {
       return Scaffold(
-        backgroundColor: AppTheme.backgroundColor,
+        backgroundColor: const Color(
+          0xFFF5F7FA,
+        ), // Light grey background for 3D effect
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_errorMessage != null || _userProfile == null) {
+      return Scaffold(
+        backgroundColor: const Color(0xFFF5F7FA),
         appBar: AppBar(
           backgroundColor: AppTheme.primaryGreen,
           elevation: 0,
@@ -92,174 +189,352 @@ class _ProfileScreenState extends State<ProfileScreen> {
             onPressed: () => Navigator.of(context).pop(),
           ),
           title: Text(
-            'Profil',
+            'Mon Profil',
             style: GoogleFonts.poppins(
               color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 20,
+              fontWeight: FontWeight.w600,
+              fontSize: 18,
             ),
           ),
         ),
-        body: const Center(child: CircularProgressIndicator()),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.wifi_off_rounded,
+                  size: 64,
+                  color: AppTheme.textSecondary,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  (_errorMessage ?? 'Profil indisponible').trim(),
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    color: AppTheme.textSecondary,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: _loadProfile,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryGreen,
+                  ),
+                  child: Text('Réessayer', style: GoogleFonts.poppins()),
+                ),
+              ],
+            ),
+          ),
+        ),
       );
     }
 
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: const Color(0xFFF5F7FA),
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        backgroundColor: AppTheme.primaryGreen,
+        backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: Text(
-          'Profil',
-          style: GoogleFonts.poppins(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 20,
+        centerTitle: true,
+        leading: Container(
+          margin: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.2),
+            shape: BoxShape.circle,
+          ),
+          child: IconButton(
+            icon: const Icon(
+              Icons.arrow_back_ios_new,
+              color: Colors.white,
+              size: 18,
+            ),
+            onPressed: () => Navigator.of(context).pop(),
           ),
         ),
+        title: Text(
+          'Mon Profil',
+          style: GoogleFonts.poppins(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+            fontSize: 18,
+          ),
+        ),
+        actions: [
+          Container(
+            margin: const EdgeInsets.only(right: 16, top: 8, bottom: 8),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.2),
+              shape: BoxShape.circle,
+            ),
+            child: IconButton(
+              icon: const Icon(
+                Icons.edit_rounded,
+                color: Colors.white,
+                size: 20,
+              ),
+              onPressed: _userProfile == null ? null : _showEditProfileSheet,
+            ),
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // Header avec photo de profil
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(30),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    AppTheme.primaryGreen,
-                    AppTheme.primaryGreen.withOpacity(0.8),
-                  ],
+            // Header 3D Design
+            Stack(
+              alignment: Alignment.center,
+              clipBehavior: Clip.none,
+              children: [
+                // Background Gradient with Curve
+                Container(
+                  height: 330, // Hauteur augmentée pour plus d'espace
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        const Color(0xFF00A86B), // Primary Green
+                        const Color(0xFF008C5E), // Darker Green
+                        Colors.teal.shade700,
+                      ],
+                    ),
+                    borderRadius: const BorderRadius.only(
+                      bottomLeft: Radius.circular(40),
+                      bottomRight: Radius.circular(40),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF00A86B).withValues(alpha: 0.4),
+                        blurRadius: 20,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              child: Column(
-                children: [
-                  CircleAvatar(
-                    radius: 50,
-                    backgroundColor: Colors.white,
-                    child: Icon(
-                      Icons.person,
-                      size: 50,
-                      color: AppTheme.primaryGreen,
-                    ),
+
+                // Profile Info
+                Positioned(
+                  top: 110, // Position ajustée pour ne pas toucher le titre
+                  child: Column(
+                    children: [
+                      // 3D Profile Picture
+                      Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 4),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.2),
+                              blurRadius: 20,
+                              offset: const Offset(0, 10),
+                            ),
+                          ],
+                        ),
+                        child: CircleAvatar(
+                          radius: 55, // Taille augmentée
+                          backgroundColor: Colors.white,
+                          child: Icon(
+                            Icons.person_rounded,
+                            size:
+                                80, // Icône beaucoup plus grande pour remplir le cercle
+                            color: AppTheme.primaryGreen.withValues(alpha: 0.8),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        ((_userProfile?['name'] ??
+                                        _userProfile?['full_name'] ??
+                                        _userProfile?['fullName']) ??
+                                    '')
+                                .toString()
+                                .trim()
+                                .isEmpty
+                            ? '—'
+                            : ((_userProfile?['name'] ??
+                                          _userProfile?['full_name'] ??
+                                          _userProfile?['fullName']) ??
+                                      '')
+                                  .toString()
+                                  .trim(),
+                        style: GoogleFonts.poppins(
+                          color: Colors.white,
+                          fontSize: 24, // Taille police rétablie
+                          fontWeight: FontWeight.bold,
+                          shadows: [
+                            Shadow(
+                              color: Colors.black.withValues(alpha: 0.1),
+                              offset: const Offset(0, 2),
+                              blurRadius: 4,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16, // Padding horizontal augmenté
+                          vertical: 6, // Padding vertical augmenté
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.25),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          ((_userProfile?['email'] ?? _userProfile?['mail']) ??
+                                      '')
+                                  .toString()
+                                  .trim()
+                                  .isEmpty
+                              ? '—'
+                              : ((_userProfile?['email'] ??
+                                            _userProfile?['mail']) ??
+                                        '')
+                                    .toString()
+                                    .trim(),
+                          style: GoogleFonts.poppins(
+                            color: Colors.white.withValues(alpha: 0.95),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 15),
-                  Text(
-                    _userProfile?['name'] as String? ?? 'Utilisateur',
-                    style: GoogleFonts.poppins(
-                      color: Colors.white,
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 5),
-                  Text(
-                    _userProfile?['email'] as String? ?? 'utilisateur@example.com',
-                    style: GoogleFonts.poppins(
-                      color: Colors.white.withOpacity(0.9),
-                      fontSize: 14,
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
 
-            // Informations personnelles
+            const SizedBox(height: 20),
+
+            // Content Body
             Padding(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Informations personnelles',
-                    style: GoogleFonts.poppins(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                      color: AppTheme.textPrimary,
+                  // Informations personnelles
+                  Padding(
+                    padding: const EdgeInsets.only(left: 6, bottom: 10),
+                    child: Text(
+                      'Informations personnelles',
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: const Color(0xFF2D3436),
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 15),
-                  _buildInfoCard(
-                    'Nom',
-                    'À définir',
-                    Icons.person_outline,
-                  ),
-                  const SizedBox(height: 12),
-                  _buildInfoCard(
-                    'Prénom',
-                    'À définir',
-                    Icons.person_outline,
-                  ),
-                  const SizedBox(height: 12),
-                  _buildInfoCard(
-                    'Langue préférée',
-                    _userProfile?['language'] as String? ?? 'Français',
-                    Icons.language,
-                  ),
-                  const SizedBox(height: 12),
-                  _buildInfoCard(
-                    'Type d\'utilisateur',
-                    _userProfile?['user_type'] as String? ?? 'Visiteur',
-                    Icons.badge,
+                  _buildPersonalInfoBox(
+                    identity: (() {
+                      final firstName =
+                          ((_userProfile?['first_name'] ??
+                                      _userProfile?['firstName'] ??
+                                      _userProfile?['prenom']) ??
+                                  '')
+                              .toString()
+                              .trim();
+                      final lastName =
+                          ((_userProfile?['last_name'] ??
+                                      _userProfile?['lastName'] ??
+                                      _userProfile?['nom']) ??
+                                  '')
+                              .toString()
+                              .trim();
+                      final full = '$firstName $lastName'.trim();
+                      return full.isEmpty ? '—' : full;
+                    })(),
+                    language: (() {
+                      final lang =
+                          ((_userProfile?['language'] ??
+                                      _userProfile?['lang']) ??
+                                  '')
+                              .toString()
+                              .trim();
+                      return lang.isEmpty ? '—' : lang;
+                    })(),
+                    userType: (() {
+                      final type =
+                          ((_userProfile?['user_type'] ??
+                                      _userProfile?['userType'] ??
+                                      _userProfile?['type']) ??
+                                  '')
+                              .toString()
+                              .trim();
+                      return type.isEmpty ? '—' : type;
+                    })(),
                   ),
 
                   const SizedBox(height: 30),
 
                   // Paramètres
-                  Text(
-                    'Paramètres',
-                    style: GoogleFonts.poppins(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                      color: AppTheme.textPrimary,
+                  Padding(
+                    padding: const EdgeInsets.only(left: 6, bottom: 10),
+                    child: Text(
+                      'Paramètres',
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: const Color(0xFF2D3436),
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 15),
                   _buildSettingTile(
                     'Notifications',
                     Icons.notifications_outlined,
                     true,
                   ),
-                  const SizedBox(height: 12),
                   _buildSettingTile(
                     'Géolocalisation',
                     Icons.location_on_outlined,
                     true,
                   ),
-                  const SizedBox(height: 12),
                   _buildSettingTile(
                     'Confidentialité',
-                    Icons.lock_outline,
+                    Icons.lock_outline_rounded,
                     false,
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const PrivacyScreen(),
+                        ),
+                      );
+                    },
                   ),
 
                   const SizedBox(height: 30),
 
                   // Statistiques
-                  Text(
-                    'Statistiques',
-                    style: GoogleFonts.poppins(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                      color: AppTheme.textPrimary,
+                  Padding(
+                    padding: const EdgeInsets.only(left: 6, bottom: 10),
+                    child: Text(
+                      'Aperçu',
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: const Color(0xFF2D3436),
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 15),
                   Row(
                     children: [
                       Expanded(
-                        child: _buildStatCard('Alertes', '$_alertsCount', Icons.warning),
+                        child: _buildStatCard(
+                          'Alertes',
+                          '$_alertsCount',
+                          Icons.warning_amber_rounded,
+                        ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 16),
                       Expanded(
-                        child: _buildStatCard('Signalements', '$_reportsCount', Icons.report),
+                        child: _buildStatCard(
+                          'Signalements',
+                          '$_reportsCount',
+                          Icons.report_gmailerrorred_rounded,
+                        ),
                       ),
                     ],
                   ),
@@ -267,58 +542,95 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   const SizedBox(height: 30),
 
                   // Historique
-                  Text(
-                    'Historique',
-                    style: GoogleFonts.poppins(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                      color: AppTheme.textPrimary,
+                  Padding(
+                    padding: const EdgeInsets.only(left: 6, bottom: 10),
+                    child: Text(
+                      'Activités Récentes',
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: const Color(0xFF2D3436),
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 15),
-                  _buildHistoryTile(
-                    'Alerte SOS',
-                    'Il y a 2 jours',
-                    Icons.warning_rounded,
-                    AppTheme.primaryRed,
-                  ),
-                  const SizedBox(height: 12),
-                  _buildHistoryTile(
-                    'Signalement',
-                    'Il y a 5 jours',
-                    Icons.report_rounded,
-                    AppTheme.primaryGreen,
-                  ),
+                  if (_recentActivities.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 4,
+                        vertical: 8,
+                      ),
+                      child: Center(
+                        child: Text(
+                          'Aucune activité récente',
+                          style: GoogleFonts.poppins(
+                            fontSize: 13,
+                            color: AppTheme.textSecondary,
+                          ),
+                        ),
+                      ),
+                    )
+                  else
+                    ..._recentActivities.map(
+                      (a) => _buildHistoryTile(
+                        (a['title'] ?? '').toString(),
+                        (a['time'] ?? '').toString(),
+                        a['icon'] as IconData,
+                        a['color'] as Color,
+                      ),
+                    ),
 
-                  const SizedBox(height: 30),
+                  const SizedBox(height: 40),
 
-                  // Bouton Déconnexion
-                  SizedBox(
+                  // Bouton Déconnexion 3D
+                  Container(
                     width: double.infinity,
-                    child: OutlinedButton(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppTheme.primaryRed.withValues(alpha: 0.3),
+                          offset: const Offset(0, 10),
+                          blurRadius: 20,
+                        ),
+                      ],
+                    ),
+                    child: ElevatedButton(
                       onPressed: _logout,
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        side: const BorderSide(
-                          color: AppTheme.primaryRed,
-                          width: 2,
-                        ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: AppTheme.primaryRed,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        elevation: 0,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(20),
+                          side: const BorderSide(
+                            color: AppTheme.primaryRed,
+                            width: 2,
+                          ),
                         ),
                       ),
-                      child: Text(
-                        'Déconnexion',
-                        style: GoogleFonts.poppins(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.primaryRed,
-                        ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.logout_rounded,
+                            color: AppTheme.primaryRed,
+                          ),
+                          const SizedBox(width: 10),
+                          Text(
+                            'Déconnexion',
+                            style: GoogleFonts.poppins(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.primaryRed,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
 
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 40),
                 ],
               ),
             ),
@@ -328,109 +640,486 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildInfoCard(String label, String value, IconData icon) {
-    return Card(
-      elevation: 1,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Icon(icon, color: AppTheme.primaryGreen, size: 24),
-            const SizedBox(width: 15),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    label,
-                    style: GoogleFonts.poppins(
-                      fontSize: 12,
-                      color: AppTheme.textSecondary,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    value,
-                    style: GoogleFonts.poppins(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.textPrimary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Icon(
-              Icons.chevron_right,
-              color: Colors.grey[400],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSettingTile(String title, IconData icon, bool hasSwitch) {
-    return Card(
-      elevation: 1,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+  Widget _buildSettingTile(
+    String title,
+    IconData icon,
+    bool hasSwitch, {
+    VoidCallback? onTap,
+  }) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withValues(alpha: 0.1),
+            offset: const Offset(0, 6),
+            blurRadius: 12,
+            spreadRadius: 0,
+          ),
+        ],
       ),
       child: ListTile(
-        leading: Icon(icon, color: AppTheme.primaryGreen),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+        onTap: hasSwitch ? null : onTap,
+        leading: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: AppTheme.primaryGreen.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, color: AppTheme.primaryGreen, size: 22),
+        ),
         title: Text(
           title,
           style: GoogleFonts.poppins(
             fontWeight: FontWeight.w600,
-            fontSize: 16,
+            fontSize: 14,
+            color: AppTheme.textPrimary,
           ),
         ),
         trailing: hasSwitch
-            ? Switch(
-                value: true,
-                onChanged: (value) {},
-                activeColor: AppTheme.primaryGreen,
+            ? Transform.scale(
+                scale: 0.9,
+                child: Switch(
+                  value: true,
+                  onChanged: (value) {},
+                  activeThumbColor: Colors.white,
+                  activeTrackColor: AppTheme.primaryGreen,
+                  inactiveThumbColor: Colors.white,
+                  inactiveTrackColor: Colors.grey.withValues(alpha: 0.3),
+                  trackOutlineColor: WidgetStateProperty.all(
+                    Colors.transparent,
+                  ),
+                ),
               )
-            : Icon(Icons.chevron_right, color: Colors.grey[400]),
+            : Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.grey.withValues(alpha: 0.05),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  color: Colors.grey[400],
+                  size: 16,
+                ),
+              ),
+      ),
+    );
+  }
+
+  Widget _buildPersonalInfoBox({
+    required String identity,
+    required String language,
+    required String userType,
+  }) {
+    final items = [
+      _PersonalInfoRowData(
+        icon: Icons.person_outline_rounded,
+        label: 'Identité',
+        value: identity,
+      ),
+      _PersonalInfoRowData(
+        icon: Icons.language_rounded,
+        label: 'Langue préférée',
+        value: language,
+      ),
+      _PersonalInfoRowData(
+        icon: Icons.badge_rounded,
+        label: 'Type d\'utilisateur',
+        value: userType,
+      ),
+    ];
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withValues(alpha: 0.1),
+            offset: const Offset(0, 6),
+            blurRadius: 12,
+            spreadRadius: 0,
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          for (var i = 0; i < items.length; i++) ...[
+            _buildPersonalInfoRow(items[i]),
+            if (i != items.length - 1)
+              Divider(
+                height: 1,
+                thickness: 1,
+                color: Colors.grey.withValues(alpha: 0.08),
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPersonalInfoRow(_PersonalInfoRowData data) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: AppTheme.primaryGreen.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(data.icon, color: AppTheme.primaryGreen, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  data.label,
+                  style: GoogleFonts.poppins(
+                    fontSize: 11,
+                    color: AppTheme.textSecondary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  data.value,
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildStatCard(String label, String value, IconData icon) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.primaryGreen.withValues(alpha: 0.1),
+            offset: const Offset(0, 8),
+            blurRadius: 16,
+            spreadRadius: -5,
+          ),
+        ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(14),
         child: Column(
           children: [
-            Icon(icon, color: AppTheme.primaryGreen, size: 32),
-            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    AppTheme.primaryGreen.withValues(alpha: 0.1),
+                    AppTheme.primaryGreen.withValues(alpha: 0.05),
+                  ],
+                ),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: AppTheme.primaryGreen, size: 28),
+            ),
+            const SizedBox(height: 12),
             Text(
               value,
               style: GoogleFonts.poppins(
-                fontSize: 24,
+                fontSize: 22,
                 fontWeight: FontWeight.bold,
-                color: AppTheme.primaryGreen,
+                color: AppTheme.textPrimary,
               ),
             ),
-            const SizedBox(height: 5),
+            const SizedBox(height: 4),
             Text(
               label,
               style: GoogleFonts.poppins(
                 fontSize: 12,
                 color: AppTheme.textSecondary,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ],
         ),
       ),
     );
+  }
+
+  Future<void> _showEditProfileSheet() async {
+    final profile = _userProfile ?? {};
+
+    String normalizeLanguage(dynamic value) {
+      final v = (value ?? '').toString().toLowerCase().trim();
+      if (v == 'fr' || v.contains('fran')) return 'fr';
+      if (v == 'en' || v.contains('eng')) return 'en';
+      if (v == 'es' || v.contains('esp')) return 'es';
+      return 'fr';
+    }
+
+    String normalizeUserType(dynamic value) {
+      final v = (value ?? '').toString().toLowerCase().trim();
+      if (v == 'athlete' || v.contains('athl')) return 'athlete';
+      if (v == 'citizen' || v.contains('citoy')) return 'citizen';
+      if (v == 'visitor' || v.contains('visit')) return 'visitor';
+      return 'visitor';
+    }
+
+    final nameController = TextEditingController(
+      text: profile['name']?.toString() ?? '',
+    );
+    final phoneController = TextEditingController(
+      text: profile['phone']?.toString() ?? '',
+    );
+
+    var language = normalizeLanguage(profile['language']);
+    var userType = normalizeUserType(profile['user_type']);
+    var isSaving = false;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 20,
+                right: 20,
+                top: 16,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 44,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'Modifier le profil',
+                      style: GoogleFonts.poppins(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.textPrimary,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: nameController,
+                    decoration: InputDecoration(
+                      labelText: 'Nom',
+                      labelStyle: GoogleFonts.poppins(),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    style: GoogleFonts.poppins(),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: phoneController,
+                    keyboardType: TextInputType.phone,
+                    decoration: InputDecoration(
+                      labelText: 'Téléphone',
+                      labelStyle: GoogleFonts.poppins(),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    style: GoogleFonts.poppins(),
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    initialValue: language,
+                    decoration: InputDecoration(
+                      labelText: 'Langue',
+                      labelStyle: GoogleFonts.poppins(),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: 'fr', child: Text('Français')),
+                      DropdownMenuItem(value: 'en', child: Text('English')),
+                      DropdownMenuItem(value: 'es', child: Text('Español')),
+                    ],
+                    onChanged: (v) {
+                      if (v == null) return;
+                      setModalState(() {
+                        language = v;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    initialValue: userType,
+                    decoration: InputDecoration(
+                      labelText: 'Type d\'utilisateur',
+                      labelStyle: GoogleFonts.poppins(),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    items: const [
+                      DropdownMenuItem(
+                        value: 'visitor',
+                        child: Text('Visiteur'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'citizen',
+                        child: Text('Citoyen'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'athlete',
+                        child: Text('Athlète'),
+                      ),
+                    ],
+                    onChanged: (v) {
+                      if (v == null) return;
+                      setModalState(() {
+                        userType = v;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 18),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 52,
+                    child: ElevatedButton(
+                      onPressed: isSaving
+                          ? null
+                          : () async {
+                              final navigator = Navigator.of(context);
+                              final messenger = ScaffoldMessenger.of(context);
+                              final name = nameController.text.trim();
+                              if (name.isEmpty) {
+                                messenger.showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      'Le nom est requis',
+                                      style: GoogleFonts.poppins(),
+                                    ),
+                                    backgroundColor: AppTheme.primaryRed,
+                                  ),
+                                );
+                                return;
+                              }
+
+                              setModalState(() {
+                                isSaving = true;
+                              });
+
+                              try {
+                                final apiService = ApiService();
+                                final updated = await apiService
+                                    .updateUserProfile({
+                                      'name': name,
+                                      'phone':
+                                          phoneController.text.trim().isEmpty
+                                          ? null
+                                          : phoneController.text.trim(),
+                                      'language': language,
+                                      'user_type': userType,
+                                    });
+                                if (!mounted) return;
+                                setState(() {
+                                  _userProfile = updated;
+                                });
+                                setModalState(() {
+                                  isSaving = false;
+                                });
+                                navigator.pop();
+                                messenger.showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      'Profil mis à jour',
+                                      style: GoogleFonts.poppins(),
+                                    ),
+                                  ),
+                                );
+                              } catch (e) {
+                                if (!mounted) return;
+                                setModalState(() {
+                                  isSaving = false;
+                                });
+                                messenger.showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      e.toString().replaceAll(
+                                        'Exception: ',
+                                        '',
+                                      ),
+                                      style: GoogleFonts.poppins(),
+                                    ),
+                                    backgroundColor: AppTheme.primaryRed,
+                                  ),
+                                );
+                              }
+                            },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.primaryGreen,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      child: isSaving
+                          ? const SizedBox(
+                              height: 22,
+                              width: 22,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.5,
+                                color: Colors.white,
+                              ),
+                            )
+                          : Text(
+                              'Enregistrer',
+                              style: GoogleFonts.poppins(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    nameController.dispose();
+    phoneController.dispose();
   }
 
   Widget _buildHistoryTile(
@@ -439,18 +1128,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
     IconData icon,
     Color color,
   ) {
-    return Card(
-      elevation: 1,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withValues(alpha: 0.1),
+            offset: const Offset(0, 6),
+            blurRadius: 12,
+            spreadRadius: 0,
+          ),
+        ],
       ),
       child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
         leading: Container(
-          width: 40,
-          height: 40,
+          width: 42,
+          height: 42,
           decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(10),
+            color: color.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(14),
           ),
           child: Icon(icon, color: color, size: 22),
         ),
@@ -458,17 +1157,188 @@ class _ProfileScreenState extends State<ProfileScreen> {
           title,
           style: GoogleFonts.poppins(
             fontWeight: FontWeight.w600,
-            fontSize: 16,
+            fontSize: 14,
+            color: AppTheme.textPrimary,
           ),
         ),
-        subtitle: Text(
-          time,
+        subtitle: time.trim().isEmpty
+            ? null
+            : Text(
+                time,
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  color: AppTheme.textSecondary,
+                ),
+              ),
+        trailing: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.grey.withValues(alpha: 0.05),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            Icons.arrow_forward_ios_rounded,
+            color: Colors.grey[400],
+            size: 14,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PersonalInfoRowData {
+  const _PersonalInfoRowData({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+}
+
+class PrivacyScreen extends StatelessWidget {
+  const PrivacyScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF5F7FA),
+      appBar: AppBar(
+        backgroundColor: AppTheme.primaryGreen,
+        elevation: 0,
+        title: Text(
+          'Confidentialité',
           style: GoogleFonts.poppins(
-            fontSize: 12,
-            color: AppTheme.textSecondary,
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+            fontSize: 18,
           ),
         ),
-        trailing: Icon(Icons.chevron_right, color: Colors.grey[400]),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withValues(alpha: 0.1),
+                  offset: const Offset(0, 6),
+                  blurRadius: 12,
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Données personnelles',
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Teranga Pass utilise vos informations pour améliorer votre expérience (ex: profil, notifications, sécurité). Vous pouvez gérer certaines autorisations depuis votre téléphone.',
+                  style: GoogleFonts.poppins(
+                    fontSize: 13,
+                    height: 1.4,
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withValues(alpha: 0.1),
+                  offset: const Offset(0, 6),
+                  blurRadius: 12,
+                ),
+              ],
+            ),
+            child: Column(
+              children: [
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryGreen.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.location_on_outlined,
+                      color: AppTheme.primaryGreen,
+                      size: 22,
+                    ),
+                  ),
+                  title: Text(
+                    'Géolocalisation',
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.textPrimary,
+                    ),
+                  ),
+                  subtitle: Text(
+                    'Autoriser pour afficher les points proches.',
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      color: AppTheme.textSecondary,
+                    ),
+                  ),
+                ),
+                Divider(
+                  height: 1,
+                  thickness: 1,
+                  color: Colors.grey.withValues(alpha: 0.08),
+                ),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryGreen.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.notifications_outlined,
+                      color: AppTheme.primaryGreen,
+                      size: 22,
+                    ),
+                  ),
+                  title: Text(
+                    'Notifications',
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.textPrimary,
+                    ),
+                  ),
+                  subtitle: Text(
+                    'Recevoir des alertes et informations utiles.',
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      color: AppTheme.textSecondary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

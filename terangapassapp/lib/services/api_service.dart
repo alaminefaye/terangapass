@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../constants/api_constants.dart';
 
@@ -19,18 +20,25 @@ class ApiService {
 
   late Dio _dio;
 
+  void _debugLog(Object? message) {
+    assert(() {
+      debugPrint(message?.toString() ?? '');
+      return true;
+    }());
+  }
+
   ApiService._internal() {
     // Calcul de l'URL de base pour les headers
     final baseUrlForHeaders = _effectiveBaseUrl.replaceAll('/api/v1', '');
 
     // Log de l'URL de base utilisée
-    print('=== API SERVICE INITIALIZATION ===');
-    print('Base URL: $_effectiveBaseUrl');
-    print('Base URL for headers: $baseUrlForHeaders');
-    print(
+    _debugLog('=== API SERVICE INITIALIZATION ===');
+    _debugLog('Base URL: $_effectiveBaseUrl');
+    _debugLog('Base URL for headers: $baseUrlForHeaders');
+    _debugLog(
       'Mode: ${ApiConstants.baseUrl == _effectiveBaseUrl ? "ApiConstants" : "Custom"}',
     );
-    print('==================================');
+    _debugLog('==================================');
 
     _dio = Dio(
       BaseOptions(
@@ -65,64 +73,66 @@ class ApiService {
             options.headers['Authorization'] = 'Bearer $token';
           }
           // Log détaillé de la requête pour debugging
-          print('=== API REQUEST ===');
-          print('URL: ${options.method} ${options.baseUrl}${options.path}');
-          print('Headers: ${options.headers}');
-          print('Data: ${options.data}');
-          print('==================');
+          _debugLog('=== API REQUEST ===');
+          _debugLog('URL: ${options.method} ${options.baseUrl}${options.path}');
+          _debugLog('Headers: ${options.headers}');
+          _debugLog('Data: ${options.data}');
+          _debugLog('==================');
           return handler.next(options);
         },
         onResponse: (response, handler) {
           // Log de la réponse pour debugging
-          print(
+          _debugLog(
             'API Response: ${response.statusCode} ${response.requestOptions.path}',
           );
           return handler.next(response);
         },
         onError: (error, handler) {
           // Log détaillé de l'erreur pour debugging
-          print('=== API ERROR ===');
-          print('Status Code: ${error.response?.statusCode}');
-          print('Path: ${error.requestOptions.path}');
-          print(
+          _debugLog('=== API ERROR ===');
+          _debugLog('Status Code: ${error.response?.statusCode}');
+          _debugLog('Path: ${error.requestOptions.path}');
+          _debugLog(
             'Full URL: ${error.requestOptions.baseUrl}${error.requestOptions.path}',
           );
-          print('Error Type: ${error.type}');
-          print('Error Message: ${error.message}');
-          print('Error toString: ${error.toString()}');
-          print('Request Headers: ${error.requestOptions.headers}');
-          print('Request Data: ${error.requestOptions.data}');
+          _debugLog('Error Type: ${error.type}');
+          _debugLog('Error Message: ${error.message}');
+          _debugLog('Error toString: ${error.toString()}');
+          _debugLog('Request Headers: ${error.requestOptions.headers}');
+          _debugLog('Request Data: ${error.requestOptions.data}');
           if (error.response != null) {
-            print('Response Status Code: ${error.response?.statusCode}');
-            print('Response Headers: ${error.response?.headers}');
-            print('Response Data: ${error.response?.data}');
-            print('Response Status Message: ${error.response?.statusMessage}');
+            _debugLog('Response Status Code: ${error.response?.statusCode}');
+            _debugLog('Response Headers: ${error.response?.headers}');
+            _debugLog('Response Data: ${error.response?.data}');
+            _debugLog(
+              'Response Status Message: ${error.response?.statusMessage}',
+            );
           } else {
-            print('No response received - connection issue');
-            print('Error Type Details:');
-            print(
+            _debugLog('No response received - connection issue');
+            _debugLog('Error Type Details:');
+            _debugLog(
               '  - connectionTimeout: ${error.type == DioExceptionType.connectionTimeout}',
             );
-            print(
+            _debugLog(
               '  - sendTimeout: ${error.type == DioExceptionType.sendTimeout}',
             );
-            print(
+            _debugLog(
               '  - receiveTimeout: ${error.type == DioExceptionType.receiveTimeout}',
             );
-            print(
+            _debugLog(
               '  - connectionError: ${error.type == DioExceptionType.connectionError}',
             );
-            print(
+            _debugLog(
               '  - badCertificate: ${error.type == DioExceptionType.badCertificate}',
             );
-            print(
+            _debugLog(
               '  - badResponse: ${error.type == DioExceptionType.badResponse}',
             );
-            print('  - cancel: ${error.type == DioExceptionType.cancel}');
-            print('  - unknown: ${error.type == DioExceptionType.unknown}');
+            _debugLog('  - cancel: ${error.type == DioExceptionType.cancel}');
+            _debugLog('  - unknown: ${error.type == DioExceptionType.unknown}');
           }
-          print('Stack Trace: ${error.stackTrace}');
-          print('==================');
+          _debugLog('Stack Trace: ${error.stackTrace}');
+          _debugLog('==================');
           // Gestion des erreurs
           if (error.response?.statusCode == 401) {
             // Token expiré ou invalide
@@ -296,6 +306,7 @@ class ApiService {
     required double latitude,
     required double longitude,
     List<String>? photos,
+    String? audioPath,
     String? audioUrl,
     double? accuracy,
     String? address,
@@ -308,6 +319,7 @@ class ApiService {
         'longitude': longitude,
         'accuracy': accuracy,
         'address': address,
+        if (audioPath != null) 'audio': MultipartFile.fromFileSync(audioPath),
         if (audioUrl != null) 'audio_url': audioUrl,
         if (photos != null)
           'photos': photos.map((photo) => MultipartFile.fromFileSync(photo)),
@@ -395,7 +407,27 @@ class ApiService {
   Future<List<dynamic>> getShuttleSchedules() async {
     try {
       final response = await _dio.get('/transport/shuttles');
-      return response.data['data'] ?? [];
+
+      // Log pour debugging
+      _debugLog('=== SHUTTLES RESPONSE ===');
+      _debugLog('Status: ${response.statusCode}');
+      _debugLog('Data: ${response.data}');
+      _debugLog('Data type: ${response.data.runtimeType}');
+      _debugLog('=======================');
+
+      if (response.data == null) {
+        _debugLog('Warning: response.data is null');
+        return [];
+      }
+
+      // Gérer différents formats de réponse
+      if (response.data is Map) {
+        return response.data['data'] ?? [];
+      } else if (response.data is List) {
+        return response.data;
+      }
+
+      return [];
     } on DioException catch (e) {
       throw _handleError(e);
     }
@@ -462,7 +494,7 @@ class ApiService {
       );
     } on DioException catch (e) {
       // Erreur silencieuse (non bloquante) - on log juste l'erreur
-      print('Erreur enregistrement token: ${_handleError(e)}');
+      _debugLog('Erreur enregistrement token: ${_handleError(e)}');
       // Ne pas throw pour ne pas bloquer l'application
     }
   }
@@ -473,7 +505,7 @@ class ApiService {
       await _dio.post('/device-tokens/unregister', data: {'token': token});
     } on DioException catch (e) {
       // Erreur silencieuse (non bloquante)
-      print('Erreur désenregistrement token: ${_handleError(e)}');
+      _debugLog('Erreur désenregistrement token: ${_handleError(e)}');
     }
   }
 
@@ -524,7 +556,7 @@ class ApiService {
                 'Gateway Timeout. Le serveur prend trop de temps à répondre.';
             break;
           default:
-            message = 'Une erreur est survenue (${statusCode})';
+            message = 'Une erreur est survenue ($statusCode)';
         }
       }
       return Exception(message);

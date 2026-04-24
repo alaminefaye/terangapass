@@ -32,49 +32,34 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      print('=== LOGIN ATTEMPT ===');
-      print('Email: ${_emailController.text.trim()}');
-      print('Password length: ${_passwordController.text.length}');
-      
       final apiService = ApiService();
-      final result = await apiService.login(
+      await apiService.login(
         _emailController.text.trim(),
         _passwordController.text,
       );
-
-      print('=== LOGIN SUCCESS ===');
-      print('Result: $result');
 
       if (mounted) {
         // Navigation vers l'écran d'accueil
         Navigator.of(context).pushReplacementNamed('/home');
       }
-    } catch (e, stackTrace) {
-      print('=== LOGIN ERROR ===');
-      print('Error: $e');
-      print('Error Type: ${e.runtimeType}');
-      print('Stack Trace: $stackTrace');
-      
+    } catch (e) {
       if (mounted) {
         String errorMessage = 'Une erreur est survenue';
-        
+
         if (e is Exception) {
           errorMessage = e.toString().replaceAll('Exception: ', '');
         } else {
           errorMessage = e.toString();
         }
-        
-        // Si le message est vide, utiliser un message par défaut
+
         if (errorMessage.isEmpty || errorMessage == 'Exception') {
-          errorMessage = 'Erreur de connexion. Vérifiez votre connexion internet et réessayez.';
+          errorMessage =
+              'Erreur de connexion. Vérifiez votre connexion internet et réessayez.';
         }
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              errorMessage,
-              style: GoogleFonts.poppins(),
-            ),
+            content: Text(errorMessage, style: GoogleFonts.poppins()),
             backgroundColor: AppTheme.primaryRed,
             duration: const Duration(seconds: 5),
           ),
@@ -111,7 +96,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: AppTheme.primaryGreen.withOpacity(0.3),
+                        color: AppTheme.primaryGreen.withValues(alpha: 0.3),
                         blurRadius: 20,
                         offset: const Offset(0, 10),
                       ),

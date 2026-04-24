@@ -82,7 +82,7 @@ class HomeScreen extends StatelessWidget {
           image: const AssetImage('assets/images/africaine.png'),
           fit: BoxFit.cover,
           colorFilter: ColorFilter.mode(
-            Colors.black.withOpacity(0.3),
+            Colors.black.withValues(alpha: 0.3),
             BlendMode.darken,
           ),
         ),
@@ -102,7 +102,7 @@ class HomeScreen extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
+                          color: Colors.white.withValues(alpha: 0.2),
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(
@@ -300,9 +300,9 @@ class HomeScreen extends StatelessWidget {
     final gradientColors = [
       color,
       Color.fromRGBO(
-        (color.red - 25).clamp(0, 255),
-        (color.green - 15).clamp(0, 255),
-        (color.blue - 15).clamp(0, 255),
+        ((color.r * 255).round() - 25).clamp(0, 255),
+        ((color.g * 255).round() - 15).clamp(0, 255),
+        ((color.b * 255).round() - 15).clamp(0, 255),
         1.0,
       ),
     ];
@@ -323,13 +323,13 @@ class HomeScreen extends StatelessWidget {
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: color.withOpacity(0.4),
+                color: color.withValues(alpha: 0.4),
                 blurRadius: 12,
                 offset: const Offset(0, 6),
                 spreadRadius: 0,
               ),
               BoxShadow(
-                color: Colors.black.withOpacity(0.1),
+                color: Colors.black.withValues(alpha: 0.1),
                 blurRadius: 4,
                 offset: const Offset(0, 2),
               ),
@@ -342,11 +342,11 @@ class HomeScreen extends StatelessWidget {
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.25),
+                  color: Colors.white.withValues(alpha: 0.25),
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
+                      color: Colors.black.withValues(alpha: 0.1),
                       blurRadius: 4,
                       offset: const Offset(0, 2),
                     ),
@@ -422,7 +422,7 @@ class HomeScreen extends StatelessWidget {
         crossAxisCount: 3,
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
-        childAspectRatio: 1.0,
+        childAspectRatio: 0.85,
       ),
       itemCount: features.length,
       itemBuilder: (context, index) {
@@ -486,13 +486,14 @@ class HomeScreen extends StatelessWidget {
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: (feature['gradient'] as List<Color>)[0]
-                          .withOpacity(0.4),
+                      color: (feature['gradient'] as List<Color>)[0].withValues(
+                        alpha: 0.4,
+                      ),
                       blurRadius: 12,
                       offset: const Offset(0, 4),
                     ),
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
+                      color: Colors.black.withValues(alpha: 0.1),
                       blurRadius: 6,
                       offset: const Offset(0, 2),
                     ),
@@ -504,17 +505,20 @@ class HomeScreen extends StatelessWidget {
                   size: 36,
                 ),
               ),
-              const SizedBox(height: 12),
-              Text(
-                feature['title'] as String,
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: AppTheme.textPrimary,
-                  fontWeight: FontWeight.w600,
+              const SizedBox(height: 8),
+              SizedBox(
+                height: 36, // Hauteur fixe pour 2 lignes de texte
+                child: Text(
+                  feature['title'] as String,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppTheme.textPrimary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),
@@ -670,7 +674,7 @@ class HomeScreen extends StatelessWidget {
                 color: AppTheme.backgroundColor,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: AppTheme.textSecondary.withOpacity(0.2),
+                  color: AppTheme.textSecondary.withValues(alpha: 0.2),
                 ),
               ),
               child: Stack(
@@ -750,7 +754,7 @@ class HomeScreen extends StatelessWidget {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, -2),
             spreadRadius: 0,
@@ -825,9 +829,18 @@ class HomeScreen extends StatelessWidget {
                       colors: [
                         AppTheme.primaryRed,
                         Color.fromRGBO(
-                          (AppTheme.primaryRed.red - 25).clamp(0, 255),
-                          (AppTheme.primaryRed.green - 15).clamp(0, 255),
-                          (AppTheme.primaryRed.blue - 15).clamp(0, 255),
+                          ((AppTheme.primaryRed.r * 255).round() - 25).clamp(
+                            0,
+                            255,
+                          ),
+                          ((AppTheme.primaryRed.g * 255).round() - 15).clamp(
+                            0,
+                            255,
+                          ),
+                          ((AppTheme.primaryRed.b * 255).round() - 15).clamp(
+                            0,
+                            255,
+                          ),
                           1.0,
                         ),
                       ],
@@ -835,13 +848,13 @@ class HomeScreen extends StatelessWidget {
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: AppTheme.primaryRed.withOpacity(0.6),
+                        color: AppTheme.primaryRed.withValues(alpha: 0.6),
                         blurRadius: 20,
                         offset: const Offset(0, 8),
                         spreadRadius: 2,
                       ),
                       BoxShadow(
-                        color: AppTheme.primaryRed.withOpacity(0.3),
+                        color: AppTheme.primaryRed.withValues(alpha: 0.3),
                         blurRadius: 10,
                         offset: const Offset(0, 4),
                         spreadRadius: 1,
@@ -904,7 +917,7 @@ class HomeScreen extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
         decoration: BoxDecoration(
           color: isActive
-              ? AppTheme.primaryGreen.withOpacity(0.1)
+              ? AppTheme.primaryGreen.withValues(alpha: 0.1)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
         ),
@@ -922,9 +935,18 @@ class HomeScreen extends StatelessWidget {
                   colors: [
                     AppTheme.primaryGreen,
                     Color.fromRGBO(
-                      (AppTheme.primaryGreen.red - 20).clamp(0, 255),
-                      (AppTheme.primaryGreen.green - 20).clamp(0, 255),
-                      (AppTheme.primaryGreen.blue - 20).clamp(0, 255),
+                      ((AppTheme.primaryGreen.r * 255).round() - 20).clamp(
+                        0,
+                        255,
+                      ),
+                      ((AppTheme.primaryGreen.g * 255).round() - 20).clamp(
+                        0,
+                        255,
+                      ),
+                      ((AppTheme.primaryGreen.b * 255).round() - 20).clamp(
+                        0,
+                        255,
+                      ),
                       1.0,
                     ),
                   ],
@@ -932,7 +954,7 @@ class HomeScreen extends StatelessWidget {
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: AppTheme.primaryGreen.withOpacity(0.3),
+                    color: AppTheme.primaryGreen.withValues(alpha: 0.3),
                     blurRadius: 6,
                     offset: const Offset(0, 3),
                   ),

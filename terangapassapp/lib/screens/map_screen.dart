@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../theme/app_theme.dart';
+import '../services/location_service.dart';
+import '../services/api_service.dart';
 
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
@@ -11,6 +14,91 @@ class MapScreen extends StatefulWidget {
 
 class _MapScreenState extends State<MapScreen> {
   String _selectedFilter = 'Tous';
+  bool _isLocating = false;
+  double? _currentLat;
+  double? _currentLng;
+  bool _isLoadingPoints = true;
+  String? _pointsErrorMessage;
+  List<Map<String, dynamic>> _pointsOfInterest = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPointsOfInterest();
+  }
+
+  String? _categoryForFilter(String filter) {
+    if (filter == 'Tous') return null;
+    return filter;
+  }
+
+  Future<void> _loadPointsOfInterest() async {
+    setState(() {
+      _isLoadingPoints = true;
+      _pointsErrorMessage = null;
+    });
+
+    try {
+      final apiService = ApiService();
+      final points = await apiService.getPointsOfInterest(
+        category: _categoryForFilter(_selectedFilter),
+        latitude: _currentLat,
+        longitude: _currentLng,
+      );
+      if (!mounted) return;
+      setState(() {
+        _pointsOfInterest = points
+            .map((p) => p as Map<String, dynamic>)
+            .toList();
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _pointsOfInterest = [];
+        _pointsErrorMessage = e.toString().replaceAll('Exception: ', '');
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingPoints = false;
+        });
+      }
+    }
+  }
+
+  IconData _iconForCategory(String category) {
+    final c = category.toLowerCase();
+    if (c.contains('secours') || c.contains('urgence')) {
+      return Icons.emergency_rounded;
+    }
+    if (c.contains('hôpital') || c.contains('hopital')) {
+      return Icons.local_hospital_rounded;
+    }
+    if (c.contains('pharm')) return Icons.local_pharmacy_rounded;
+    if (c.contains('hôtel') || c.contains('hotel')) return Icons.hotel_rounded;
+    if (c.contains('restaurant')) return Icons.restaurant_rounded;
+    if (c.contains('site') || c.contains('joj') || c.contains('stade')) {
+      return Icons.stadium_rounded;
+    }
+    return Icons.place_rounded;
+  }
+
+  Color _colorForCategory(String category) {
+    final c = category.toLowerCase();
+    if (c.contains('secours') || c.contains('urgence')) {
+      return AppTheme.primaryRed;
+    }
+    if (c.contains('hôpital') || c.contains('hopital')) {
+      return AppTheme.primaryRed;
+    }
+    if (c.contains('pharm')) return Colors.blue;
+    if (c.contains('hôtel') || c.contains('hotel')) return Colors.purple;
+    if (c.contains('restaurant')) return Colors.orange;
+    if (c.contains('site') || c.contains('joj') || c.contains('stade')) {
+      return AppTheme.primaryGreen;
+    }
+    return AppTheme.textSecondary;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,7 +123,7 @@ class _MapScreenState extends State<MapScreen> {
           IconButton(
             icon: const Icon(Icons.my_location, color: Colors.white),
             onPressed: () {
-              // TODO: Centrer sur la position actuelle
+              _centerOnCurrentLocation();
             },
           ),
         ],
@@ -76,11 +164,7 @@ class _MapScreenState extends State<MapScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(
-                      Icons.map_rounded,
-                      size: 80,
-                      color: Colors.grey[400],
-                    ),
+                    Icon(Icons.map_rounded, size: 80, color: Colors.grey[400]),
                     const SizedBox(height: 20),
                     Text(
                       'Carte interactive',
@@ -101,7 +185,13 @@ class _MapScreenState extends State<MapScreen> {
                     const SizedBox(height: 30),
                     ElevatedButton.icon(
                       onPressed: () {
-                        // TODO: Ouvrir Google Maps
+                        _openInMaps(
+                          latitude: _currentLat,
+                          longitude: _currentLng,
+                          query: _currentLat == null || _currentLng == null
+                              ? 'Dakar'
+                              : null,
+                        );
                       },
                       icon: const Icon(Icons.map),
                       label: Text(
@@ -144,31 +234,65 @@ class _MapScreenState extends State<MapScreen> {
                   ),
                 ),
                 Expanded(
-                  child: ListView(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    children: [
-                      _buildPointOfInterest(
-                        'Hôpital Principal de Dakar',
-                        '2.5 km',
-                        Icons.local_hospital_rounded,
-                        AppTheme.primaryRed,
-                      ),
-                      const SizedBox(height: 12),
-                      _buildPointOfInterest(
-                        'Stade Olympique',
-                        '1.2 km',
-                        Icons.stadium_rounded,
-                        AppTheme.primaryGreen,
-                      ),
-                      const SizedBox(height: 12),
-                      _buildPointOfInterest(
-                        'Pharmacie Medina',
-                        '0.8 km',
-                        Icons.local_pharmacy_rounded,
-                        Colors.blue,
-                      ),
-                    ],
-                  ),
+                  child: _isLoadingPoints
+                      ? const Center(child: CircularProgressIndicator())
+                      : _pointsErrorMessage != null
+                      ? Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.wifi_off_rounded,
+                                  size: 40,
+                                  color: AppTheme.textSecondary,
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  _pointsErrorMessage!,
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 12,
+                                    color: AppTheme.textSecondary,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(height: 12),
+                                ElevatedButton(
+                                  onPressed: _loadPointsOfInterest,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppTheme.primaryGreen,
+                                  ),
+                                  child: Text(
+                                    'Réessayer',
+                                    style: GoogleFonts.poppins(),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        )
+                      : _pointsOfInterest.isEmpty
+                      ? Center(
+                          child: Text(
+                            'Aucun point disponible',
+                            style: GoogleFonts.poppins(
+                              fontSize: 14,
+                              color: AppTheme.textSecondary,
+                            ),
+                          ),
+                        )
+                      : ListView.separated(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          itemCount: _pointsOfInterest.length,
+                          separatorBuilder: (context, index) =>
+                              const SizedBox(height: 12),
+                          itemBuilder: (context, index) {
+                            return _buildPointOfInterestFromData(
+                              _pointsOfInterest[index],
+                            );
+                          },
+                        ),
                 ),
               ],
             ),
@@ -194,6 +318,7 @@ class _MapScreenState extends State<MapScreen> {
         setState(() {
           _selectedFilter = label;
         });
+        _loadPointsOfInterest();
       },
       backgroundColor: Colors.white,
       selectedColor: AppTheme.primaryGreen,
@@ -201,22 +326,29 @@ class _MapScreenState extends State<MapScreen> {
       side: BorderSide(
         color: isSelected
             ? AppTheme.primaryGreen
-            : Colors.grey.withOpacity(0.3),
+            : Colors.grey.withValues(alpha: 0.3),
       ),
     );
   }
 
-  Widget _buildPointOfInterest(
-    String name,
-    String distance,
-    IconData icon,
-    Color color,
-  ) {
+  Widget _buildPointOfInterestFromData(Map<String, dynamic> point) {
+    final name = (point['name'] ?? '').toString().trim();
+    final category = (point['category'] ?? '').toString().trim();
+    final distance = (point['distance'] ?? '').toString().trim();
+    final lat = point['latitude'] ?? point['lat'];
+    final lng = point['longitude'] ?? point['lng'] ?? point['lon'];
+    final latitude = lat is num ? lat.toDouble() : double.tryParse('$lat');
+    final longitude = lng is num ? lng.toDouble() : double.tryParse('$lng');
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: () {
-          // TODO: Afficher les détails ou centrer sur la carte
+          if (latitude != null && longitude != null) {
+            _openInMaps(latitude: latitude, longitude: longitude);
+            return;
+          }
+          _openInMaps(query: name);
         },
         borderRadius: BorderRadius.circular(12),
         child: Container(
@@ -224,9 +356,7 @@ class _MapScreenState extends State<MapScreen> {
           decoration: BoxDecoration(
             color: Colors.grey[50],
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: Colors.grey.withOpacity(0.2),
-            ),
+            border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
           ),
           child: Row(
             children: [
@@ -234,10 +364,14 @@ class _MapScreenState extends State<MapScreen> {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  color: _colorForCategory(category).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(icon, color: color, size: 22),
+                child: Icon(
+                  _iconForCategory(category),
+                  color: _colorForCategory(category),
+                  size: 22,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -245,7 +379,7 @@ class _MapScreenState extends State<MapScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      name,
+                      name.isEmpty ? 'Point d’intérêt' : name,
                       style: GoogleFonts.poppins(
                         fontWeight: FontWeight.w600,
                         fontSize: 14,
@@ -253,7 +387,9 @@ class _MapScreenState extends State<MapScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      distance,
+                      distance.isNotEmpty
+                          ? distance
+                          : (category.isNotEmpty ? category : '—'),
                       style: GoogleFonts.poppins(
                         fontSize: 12,
                         color: AppTheme.textSecondary,
@@ -262,14 +398,80 @@ class _MapScreenState extends State<MapScreen> {
                   ],
                 ),
               ),
-              Icon(
-                Icons.chevron_right,
-                color: Colors.grey[400],
-              ),
+              Icon(Icons.chevron_right, color: Colors.grey[400]),
             ],
           ),
         ),
       ),
     );
+  }
+
+  Future<void> _centerOnCurrentLocation() async {
+    if (_isLocating) return;
+    setState(() {
+      _isLocating = true;
+    });
+    try {
+      final locationService = LocationService();
+      final pos = await locationService.getCurrentPosition();
+      if (!mounted) return;
+      setState(() {
+        _currentLat = pos.latitude;
+        _currentLng = pos.longitude;
+      });
+      _loadPointsOfInterest();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Position mise à jour', style: GoogleFonts.poppins()),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Impossible d\'obtenir la position',
+            style: GoogleFonts.poppins(),
+          ),
+          backgroundColor: AppTheme.primaryRed,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLocating = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _openInMaps({
+    String? query,
+    double? latitude,
+    double? longitude,
+  }) async {
+    final uri = (latitude != null && longitude != null)
+        ? Uri.parse(
+            'https://www.google.com/maps/search/?api=1&query=$latitude,$longitude',
+          )
+        : Uri.parse(
+            'https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(query ?? 'Dakar')}',
+          );
+
+    final ok = await canLaunchUrl(uri);
+    if (!ok) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Impossible d\'ouvrir Google Maps',
+            style: GoogleFonts.poppins(),
+          ),
+          backgroundColor: AppTheme.primaryRed,
+        ),
+      );
+      return;
+    }
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 }

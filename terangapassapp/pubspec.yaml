@@ -61,6 +61,15 @@ dependencies:
   # Notifications
   flutter_local_notifications: ^17.0.0
   
+  # Audio
+  audioplayers: ^6.1.0
+  record: ^6.0.0
+  path_provider: ^2.1.4
+  
+  # Media & intents
+  image_picker: ^1.1.2
+  url_launcher: ^6.3.1
+  
   # Icons
   flutter_svg: ^2.0.9
   font_awesome_flutter: ^10.6.0
@@ -93,6 +102,7 @@ flutter:
   # To add assets to your application, add an assets section, like this:
   assets:
     - assets/images/
+    - assets/sounds/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

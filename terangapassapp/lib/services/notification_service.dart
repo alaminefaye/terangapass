@@ -12,10 +12,12 @@ class NotificationService {
       FlutterLocalNotificationsPlugin();
 
   bool _initialized = false;
+  GlobalKey<NavigatorState>? _navigatorKey;
 
   /// Initialise le service de notifications
-  Future<void> initialize() async {
+  Future<void> initialize({GlobalKey<NavigatorState>? navigatorKey}) async {
     if (_initialized) return;
+    _navigatorKey = navigatorKey;
 
     // Demander les permissions
     await _requestPermissions();
@@ -53,8 +55,17 @@ class NotificationService {
 
   /// Callback lorsqu'une notification est tapée
   void _onNotificationTapped(NotificationResponse response) {
-    // TODO: Gérer la navigation selon le type de notification
-    print('Notification tapée: ${response.payload}');
+    final payload = response.payload;
+    final nav = _navigatorKey?.currentState;
+    if (nav == null) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (payload != null && payload.startsWith('/')) {
+        nav.pushNamed(payload);
+      } else {
+        nav.pushNamed('/home');
+      }
+    });
   }
 
   /// Affiche une notification locale
@@ -102,7 +113,7 @@ class NotificationService {
           importance: Importance.max,
           priority: Priority.max,
           icon: '@mipmap/ic_launcher',
-          color: const Color(0xFFCE1126), // Rouge
+          color: Color(0xFFCE1126), // Rouge
           playSound: true,
           enableVibration: true,
         ),
@@ -132,7 +143,7 @@ class NotificationService {
           importance: Importance.max,
           priority: Priority.max,
           icon: '@mipmap/ic_launcher',
-          color: const Color(0xFFFF8C00), // Orange
+          color: Color(0xFFFF8C00), // Orange
           playSound: true,
           enableVibration: true,
         ),
