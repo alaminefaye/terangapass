@@ -84,14 +84,14 @@
             </div>
 
             <!-- Photos -->
-            @if($incident->photos && count(json_decode($incident->photos, true)) > 0)
+            @if($incident->photos && count($incident->photos) > 0)
             <div class="card mb-4">
                 <div class="card-header">
                     <h5>Photos</h5>
                 </div>
                 <div class="card-body">
                     <div class="row">
-                        @foreach(json_decode($incident->photos, true) as $photo)
+                        @foreach($incident->photos as $photo)
                         <div class="col-md-4 mb-3">
                             <img src="{{ asset($photo) }}" alt="Photo" class="img-fluid rounded" style="max-height: 200px; width: 100%; object-fit: cover;">
                         </div>
