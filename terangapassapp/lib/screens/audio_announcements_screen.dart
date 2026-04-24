@@ -3,6 +3,7 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_theme.dart';
 import '../services/api_service.dart';
+import '../constants/api_constants.dart';
 
 class AudioAnnouncementsScreen extends StatefulWidget {
   const AudioAnnouncementsScreen({super.key});
@@ -110,10 +111,24 @@ class _AudioAnnouncementsScreenState extends State<AudioAnnouncementsScreen> {
     return '$minutes:${seconds.toString().padLeft(2, '0')}';
   }
 
+  /// Normalise une audio_url relative en URL absolue
+  String _normalizeAudioUrl(String url) {
+    final trimmed = url.trim();
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+      return trimmed;
+    }
+    // Extraire le domaine depuis l'URL de base de l'API (supprimer /api/v1)
+    final baseDomain = ApiConstants.baseUrl.replaceAll('/api/v1', '');
+    if (trimmed.startsWith('/')) {
+      return '$baseDomain$trimmed';
+    }
+    return '$baseDomain/$trimmed';
+  }
+
   Future<void> _togglePlay(int index) async {
     final announcement = _filteredAnnouncements[index];
-    final audioUrl = announcement['audio_url'] as String?;
-    if (audioUrl == null || audioUrl.trim().isEmpty) {
+    final rawAudioUrl = announcement['audio_url'] as String?;
+    if (rawAudioUrl == null || rawAudioUrl.trim().isEmpty) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -125,6 +140,8 @@ class _AudioAnnouncementsScreenState extends State<AudioAnnouncementsScreen> {
       );
       return;
     }
+
+    final audioUrl = _normalizeAudioUrl(rawAudioUrl);
 
     try {
       if (_playingIndex == index && _isPlaying) {
