@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -13,7 +14,8 @@ class AudioAnnouncementsScreen extends StatefulWidget {
       _AudioAnnouncementsScreenState();
 }
 
-class _AudioAnnouncementsScreenState extends State<AudioAnnouncementsScreen> {
+class _AudioAnnouncementsScreenState extends State<AudioAnnouncementsScreen>
+    with SingleTickerProviderStateMixin {
   List<Map<String, dynamic>> _announcements = [];
   bool _isLoading = true;
   String? _errorMessage;
@@ -24,15 +26,28 @@ class _AudioAnnouncementsScreenState extends State<AudioAnnouncementsScreen> {
   Duration _position = Duration.zero;
   double _progress = 0.0;
   String _selectedLanguage = 'all';
+  late AnimationController _waveController;
+  // Durées chargées depuis le player par index de carte
+  final Map<int, Duration> _loadedDurations = {};
 
   @override
   void initState() {
     super.initState();
+    _waveController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat();
+    // Configurer le contexte audio de l'instance (sans crash sur Android)
+    _configureAudioContext();
     _loadAnnouncements();
     _player.onDurationChanged.listen((d) {
       if (!mounted) return;
       setState(() {
         _duration = d;
+        // Sauvegarder la durée pour la carte courante
+        if (_playingIndex != null && d.inMilliseconds > 0) {
+          _loadedDurations[_playingIndex!] = d;
+        }
         _progress = _duration.inMilliseconds == 0
             ? 0.0
             : (_position.inMilliseconds / _duration.inMilliseconds).clamp(
@@ -101,14 +116,98 @@ class _AudioAnnouncementsScreenState extends State<AudioAnnouncementsScreen> {
 
   @override
   void dispose() {
+    _waveController.dispose();
     _player.dispose();
     super.dispose();
+  }
+
+  /// Configure l'audio context sur l'instance du player (protégé contre les crashes)
+  Future<void> _configureAudioContext() async {
+    try {
+      await _player.setAudioContext(
+        AudioContext(
+          iOS: AudioContextIOS(
+            category: AVAudioSessionCategory.playback,
+            options: const {AVAudioSessionOptions.defaultToSpeaker},
+          ),
+          android: AudioContextAndroid(
+            isSpeakerphoneOn: false,
+            stayAwake: true,
+            contentType: AndroidContentType.music,
+            usageType: AndroidUsageType.media,
+            audioFocus: AndroidAudioFocus.gain,
+          ),
+        ),
+      );
+    } catch (_) {
+      // Ignore si non supporté sur ce device
+    }
   }
 
   String _formatDuration(Duration duration) {
     final minutes = duration.inMinutes;
     final seconds = duration.inSeconds % 60;
     return '$minutes:${seconds.toString().padLeft(2, '0')}';
+  }
+
+  /// Retourne la durée affichable pour une carte (chargée ou depuis l'API)
+  String _getCardDuration(int index, Map<String, dynamic> announcement) {
+    if (_loadedDurations.containsKey(index)) {
+      return _formatDuration(_loadedDurations[index]!);
+    }
+    final dur = announcement['duration'];
+    if (dur != null && dur is int && dur > 0) {
+      return _formatDuration(Duration(seconds: dur));
+    }
+    return '--:--';
+  }
+
+  /// Barres d'onde animées pendant la lecture
+  Widget _buildWaveBars(bool isPlaying) {
+    if (!isPlaying) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: List.generate(
+          4,
+          (i) => Container(
+            width: 3,
+            height: 4,
+            margin: const EdgeInsets.symmetric(horizontal: 1.5),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade300,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+        ),
+      );
+    }
+    return AnimatedBuilder(
+      animation: _waveController,
+      builder: (context, _) {
+        final t = _waveController.value;
+        final heights = [
+          4.0 + (sin(t * pi * 2) * 7.0).abs(),
+          4.0 + (sin((t + 0.25) * pi * 2) * 10.0).abs(),
+          4.0 + (sin((t + 0.5) * pi * 2) * 7.0).abs(),
+          4.0 + (sin((t + 0.75) * pi * 2) * 10.0).abs(),
+        ];
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: List.generate(
+            4,
+            (i) => Container(
+              width: 3,
+              height: heights[i],
+              margin: const EdgeInsets.symmetric(horizontal: 1.5),
+              decoration: BoxDecoration(
+                color: AppTheme.primaryGreen,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 
   /// Normalise une audio_url relative en URL absolue
@@ -155,7 +254,8 @@ class _AudioAnnouncementsScreenState extends State<AudioAnnouncementsScreen> {
 
       if (_playingIndex != index) {
         await _player.stop();
-        await _player.play(UrlSource(audioUrl));
+        // Définir _playingIndex AVANT play() pour que onDurationChanged
+        // enregistre la durée sous le bon index
         if (!mounted) return;
         setState(() {
           _playingIndex = index;
@@ -164,6 +264,7 @@ class _AudioAnnouncementsScreenState extends State<AudioAnnouncementsScreen> {
           _duration = Duration.zero;
           _progress = 0.0;
         });
+        await _player.play(UrlSource(audioUrl));
         return;
       }
 
@@ -457,7 +558,13 @@ class _AudioAnnouncementsScreenState extends State<AudioAnnouncementsScreen> {
                                             ),
                                           ),
                                         ),
-                                        const SizedBox(width: 16),
+                                        const SizedBox(width: 12),
+                                        // Barres d'onde animées
+                                        SizedBox(
+                                          height: 24,
+                                          child: _buildWaveBars(isPlaying),
+                                        ),
+                                        const SizedBox(width: 12),
                                         // Barre de progression
                                         Expanded(
                                           child: Column(
@@ -499,17 +606,19 @@ class _AudioAnnouncementsScreenState extends State<AudioAnnouncementsScreen> {
                                                     ),
                                                   ),
                                                   Text(
-                                                    isPlaying
-                                                        ? _formatDuration(
-                                                            _duration,
-                                                          )
-                                                        : '0:00',
+                                                    _getCardDuration(
+                                                      index,
+                                                      announcement,
+                                                    ),
                                                     style: GoogleFonts.poppins(
                                                       fontSize: 12,
-                                                      color: AppTheme
-                                                          .textSecondary,
+                                                      color: isPlaying
+                                                          ? AppTheme
+                                                                .primaryGreen
+                                                          : AppTheme
+                                                                .textSecondary,
                                                       fontWeight:
-                                                          FontWeight.w500,
+                                                          FontWeight.w600,
                                                     ),
                                                   ),
                                                 ],

@@ -81,13 +81,15 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
 
   @override
   Widget build(BuildContext context) {
+    final topPadding = MediaQuery.of(context).padding.top;
+    final headerHeight = 170.0 + topPadding;
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       body: Stack(
         children: [
           // Contenu principal avec TabBarView
           Padding(
-            padding: const EdgeInsets.only(top: 170),
+            padding: EdgeInsets.only(top: headerHeight),
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : _errorMessage != null
@@ -142,14 +144,14 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
             left: 0,
             right: 0,
             child: Container(
-              height: 170,
+              height: headerHeight,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    const Color(0xFF00A86B), // Primary Green
-                    const Color(0xFF008C5E), // Darker Green
+                    const Color(0xFF00A86B),
+                    const Color(0xFF008C5E),
                     Colors.teal.shade700,
                   ],
                 ),
@@ -165,94 +167,93 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
                   ),
                 ],
               ),
-              child: SafeArea(
-                child: Column(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.2),
-                              shape: BoxShape.circle,
-                            ),
-                            child: IconButton(
-                              icon: const Icon(
-                                Icons.arrow_back_ios_new,
-                                color: Colors.white,
-                                size: 20,
-                              ),
-                              onPressed: () => Navigator.of(context).pop(),
-                            ),
+              child: Column(
+                children: [
+                  SizedBox(height: topPadding),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.2),
+                            shape: BoxShape.circle,
                           ),
-                          const SizedBox(width: 16),
-                          Text(
-                            'Infos JOJ',
-                            style: GoogleFonts.poppins(
+                          child: IconButton(
+                            icon: const Icon(
+                              Icons.arrow_back_ios_new,
                               color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 22,
-                              shadows: [
-                                Shadow(
-                                  color: Colors.black.withValues(alpha: 0.1),
-                                  offset: const Offset(0, 2),
-                                  blurRadius: 4,
-                                ),
-                              ],
+                              size: 20,
                             ),
+                            onPressed: () => Navigator.of(context).pop(),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Text(
+                          'Infos JOJ',
+                          style: GoogleFonts.poppins(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 22,
+                            shadows: [
+                              Shadow(
+                                color: Colors.black.withValues(alpha: 0.1),
+                                offset: const Offset(0, 2),
+                                blurRadius: 4,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Spacer(),
+                  Container(
+                    margin: const EdgeInsets.only(
+                      left: 16,
+                      right: 16,
+                      bottom: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(25),
+                    ),
+                    child: TabBar(
+                      controller: _tabController,
+                      labelColor: const Color(0xFF00A86B),
+                      unselectedLabelColor: Colors.white.withValues(alpha: 0.8),
+                      dividerColor: Colors.transparent,
+                      indicator: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(25),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.1),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
                           ),
                         ],
                       ),
+                      labelStyle: GoogleFonts.poppins(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                      unselectedLabelStyle: GoogleFonts.poppins(
+                        fontWeight: FontWeight.w500,
+                        fontSize: 12,
+                      ),
+                      indicatorSize: TabBarIndicatorSize.tab,
+                      tabs: [
+                        const Tab(text: 'Calendrier'),
+                        Tab(text: 'Sports (${_sports.length})'),
+                        const Tab(text: 'Accès'),
+                      ],
                     ),
-                    const Spacer(),
-                    Container(
-                      margin: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 10,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(25),
-                      ),
-                      child: TabBar(
-                        controller: _tabController,
-                        labelColor: const Color(0xFF00A86B),
-                        unselectedLabelColor: Colors.white.withValues(
-                          alpha: 0.8,
-                        ),
-                        indicator: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(25),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.1),
-                              blurRadius: 4,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        labelStyle: GoogleFonts.poppins(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
-                        ),
-                        unselectedLabelStyle: GoogleFonts.poppins(
-                          fontWeight: FontWeight.w500,
-                          fontSize: 12,
-                        ),
-                        indicatorSize: TabBarIndicatorSize.tab,
-                        tabs: [
-                          const Tab(text: 'Calendrier'),
-                          Tab(text: 'Sports (${_sports.length})'),
-                          const Tab(text: 'Accès'),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -262,50 +263,50 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
   }
 
   Widget _buildCalendarTab() {
+    if (_calendar.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(40),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(30),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.05),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  Icons.calendar_today_outlined,
+                  size: 64,
+                  color: AppTheme.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'Calendrier à venir',
+                style: GoogleFonts.poppins(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.textSecondary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 10, 20, 100),
-      children: [
-        if (_calendar.isEmpty)
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.all(40),
-              child: Column(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(30),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.05),
-                          blurRadius: 20,
-                          offset: const Offset(0, 10),
-                        ),
-                      ],
-                    ),
-                    child: Icon(
-                      Icons.calendar_today_outlined,
-                      size: 64,
-                      color: AppTheme.textSecondary,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    'Calendrier à venir',
-                    style: GoogleFonts.poppins(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          )
-        else
-          ..._calendar.map((event) => _buildCalendarEvent(event)),
-      ],
+      children: [..._calendar.map((event) => _buildCalendarEvent(event))],
     );
   }
 

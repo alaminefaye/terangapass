@@ -312,18 +312,37 @@ class ApiService {
     String? address,
   }) async {
     try {
-      final formData = FormData.fromMap({
-        'incident_type': incidentType,
-        'description': description,
-        'latitude': latitude,
-        'longitude': longitude,
-        'accuracy': accuracy,
-        'address': address,
-        if (audioPath != null) 'audio': MultipartFile.fromFileSync(audioPath),
-        if (audioUrl != null) 'audio_url': audioUrl,
-        if (photos != null)
-          'photos': photos.map((photo) => MultipartFile.fromFileSync(photo)),
-      });
+      final formData = FormData();
+
+      formData.fields.addAll([
+        MapEntry('incident_type', incidentType),
+        MapEntry('description', description),
+        MapEntry('latitude', latitude.toString()),
+        MapEntry('longitude', longitude.toString()),
+        if (accuracy != null) MapEntry('accuracy', accuracy.toString()),
+        if (address != null) MapEntry('address', address),
+        if (audioUrl != null) MapEntry('audio_url', audioUrl),
+      ]);
+
+      if (audioPath != null) {
+        formData.files.add(
+          MapEntry(
+            'audio',
+            await MultipartFile.fromFile(
+              audioPath,
+              filename: audioPath.split('/').last,
+            ),
+          ),
+        );
+      }
+
+      if (photos != null && photos.isNotEmpty) {
+        for (final photo in photos) {
+          formData.files.add(
+            MapEntry('photos[]', await MultipartFile.fromFile(photo)),
+          );
+        }
+      }
 
       final response = await _dio.post('/incidents/report', data: formData);
 

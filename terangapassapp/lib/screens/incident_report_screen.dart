@@ -44,11 +44,13 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
     try {
       final locationService = LocationService();
       final location = await locationService.getCurrentLocationWithAddress();
+      if (!mounted) return;
       setState(() {
         _currentLocation =
             location['address'] as String? ?? 'Position inconnue';
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _currentLocation = "Dakar Plateau, 9 Rue Carnot";
       });
@@ -261,7 +263,7 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
 
       final apiService = ApiService();
       await apiService.reportIncident(
-        incidentType: _selectedIncidentType!,
+        incidentType: _selectedIncidentType!.toLowerCase(),
         description: _descriptionController.text.trim(),
         latitude: location.latitude,
         longitude: location.longitude,
