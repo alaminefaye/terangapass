@@ -112,7 +112,12 @@
                     <h5>Localisation</h5>
                 </div>
                 <div class="card-body">
-                    <div id="tourismMap" style="height: 400px; border-radius: 8px;"></div>
+                    <div id="tourismMap"
+                         style="height: 400px; border-radius: 8px;"
+                         data-lat="{{ $tourism->latitude }}"
+                         data-lng="{{ $tourism->longitude }}"
+                         data-name="{{ $tourism->name }}"
+                         data-address="{{ $tourism->address }}"></div>
                     <div class="mt-3">
                         <div class="row">
                             <div class="col-md-6">
@@ -144,6 +149,44 @@
                     </div>
                 </div>
             </div>
+
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5>Médias</h5>
+                </div>
+                <div class="card-body">
+                    @php
+                        $icon = $tourism->icon_path ?: $tourism->logo_url;
+                        $photos = is_array($tourism->photos) ? $tourism->photos : [];
+                    @endphp
+
+                    <div class="mb-3">
+                        <strong>Icône</strong>
+                        <div class="mt-2">
+                            @if($icon)
+                                <img src="{{ $icon }}" alt="Icon" style="width:120px;height:120px;object-fit:cover;border-radius:16px;">
+                            @else
+                                <div style="width:120px;height:120px;background:#f1f3f5;border-radius:16px;"></div>
+                            @endif
+                        </div>
+                    </div>
+
+                    <div>
+                        <strong>Galerie ({{ count($photos) }})</strong>
+                        @if(count($photos) > 0)
+                            <div class="d-flex flex-wrap gap-2 mt-2">
+                                @foreach($photos as $photoUrl)
+                                    <a href="{{ $photoUrl }}" target="_blank">
+                                        <img src="{{ $photoUrl }}" alt="Photo" style="width:78px;height:78px;object-fit:cover;border-radius:12px;">
+                                    </a>
+                                @endforeach
+                            </div>
+                        @else
+                            <div class="text-muted mt-2">Aucune photo</div>
+                        @endif
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -156,16 +199,20 @@
 @push('page-js')
 @if($tourism->latitude && $tourism->longitude)
 <script>
-    // Initialiser la carte
-    var map = L.map('tourismMap').setView([{{ $tourism->latitude }}, {{ $tourism->longitude }}], 15);
-    
+    var mapEl = document.getElementById('tourismMap');
+    var lat = parseFloat(mapEl.dataset.lat);
+    var lng = parseFloat(mapEl.dataset.lng);
+    var name = mapEl.dataset.name || '';
+    var address = mapEl.dataset.address || '';
+
+    var map = L.map('tourismMap').setView([lat, lng], 15);
+
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap contributors'
     }).addTo(map);
 
-    // Ajouter un marqueur
-    var marker = L.marker([{{ $tourism->latitude }}, {{ $tourism->longitude }}]).addTo(map);
-    marker.bindPopup("<strong>{{ $tourism->name }}</strong><br>{{ $tourism->address }}").openPopup();
+    var marker = L.marker([lat, lng]).addTo(map);
+    marker.bindPopup("<strong>" + name + "</strong><br>" + address).openPopup();
 </script>
 @endif
 @endpush

@@ -15,7 +15,7 @@
 
     <div class="card">
         <div class="card-body">
-            <form action="{{ route('admin.tourism.store') }}" method="POST">
+            <form action="{{ route('admin.tourism.store') }}" method="POST" enctype="multipart/form-data">
                 @csrf
 
                 <div class="row">
@@ -109,6 +109,26 @@
                     @error('logo_url')
                     <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Photo icône (affichage dans l'app)</label>
+                        <input type="file" name="icon" class="form-control @error('icon') is-invalid @enderror" accept="image/*">
+                        @error('icon')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Galerie photos</label>
+                        <input type="file" name="photos[]" class="form-control @error('photos') is-invalid @enderror" accept="image/*" multiple>
+                        @error('photos')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                        @error('photos.*')
+                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                        @enderror
+                    </div>
                 </div>
 
                 <div class="mb-3">

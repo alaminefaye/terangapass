@@ -15,7 +15,7 @@
 
     <div class="card">
         <div class="card-body">
-            <form action="{{ route('admin.tourism.update', $tourism) }}" method="POST">
+            <form action="{{ route('admin.tourism.update', $tourism) }}" method="POST" enctype="multipart/form-data">
                 @csrf
                 @method('PUT')
 
@@ -109,6 +109,53 @@
                     @error('logo_url')
                     <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Photo icône (affichage dans l'app)</label>
+                        <input type="file" name="icon" class="form-control @error('icon') is-invalid @enderror" accept="image/*">
+                        @error('icon')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+
+                        @if($tourism->icon_path)
+                            <div class="mt-3 d-flex align-items-center gap-3">
+                                <img src="{{ $tourism->icon_path }}" alt="Icon" style="width:72px;height:72px;object-fit:cover;border-radius:12px;">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="remove_icon" value="1" id="remove_icon">
+                                    <label class="form-check-label" for="remove_icon">Supprimer l'icône</label>
+                                </div>
+                            </div>
+                        @endif
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Ajouter des photos à la galerie</label>
+                        <input type="file" name="photos[]" class="form-control @error('photos') is-invalid @enderror" accept="image/*" multiple>
+                        @error('photos')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                        @error('photos.*')
+                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                        @enderror
+
+                        @if(is_array($tourism->photos) && count($tourism->photos) > 0)
+                            <div class="mt-3">
+                                <div class="mb-2">Photos actuelles (cocher pour supprimer)</div>
+                                <div class="d-flex flex-wrap gap-2">
+                                    @foreach($tourism->photos as $photoUrl)
+                                        <label class="position-relative" style="cursor:pointer;">
+                                            <img src="{{ $photoUrl }}" alt="Photo" style="width:72px;height:72px;object-fit:cover;border-radius:12px;">
+                                            <input type="checkbox" name="remove_photos[]" value="{{ $photoUrl }}" class="form-check-input position-absolute" style="top:6px;left:6px;">
+                                        </label>
+                                    @endforeach
+                                </div>
+                                @error('remove_photos')
+                                <div class="invalid-feedback d-block">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        @endif
+                    </div>
                 </div>
 
                 <div class="mb-3">

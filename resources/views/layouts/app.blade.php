@@ -82,6 +82,9 @@
                         <a href="{{ route('admin.incidents.index') }}" class="menu-link">
                             <i class="menu-icon tf-icons bx bx-flag"></i>
                             <div data-i18n="Reports">Signalements</div>
+                            @if(!empty($pendingIncidentsCount) && $pendingIncidentsCount > 0)
+                            <div class="badge bg-danger rounded-pill ms-auto">{{ $pendingIncidentsCount }}</div>
+                            @endif
                         </a>
                     </li>
                     

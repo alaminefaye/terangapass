@@ -35,6 +35,14 @@ class TourismController extends Controller
                 );
             }
 
+            $iconUrl = $partner->icon_path ?: $partner->logo_url;
+            $iconUrl = $this->normalizeUrl($iconUrl);
+
+            $photos = is_array($partner->photos) ? $partner->photos : [];
+            $photos = array_values(array_filter(array_map(function ($u) {
+                return $this->normalizeUrl($u);
+            }, $photos)));
+
             return [
                 'id' => $partner->id,
                 'name' => $partner->name,
@@ -43,6 +51,13 @@ class TourismController extends Controller
                 'address' => $partner->address,
                 'phone' => $partner->phone,
                 'rating' => null, // À ajouter si nécessaire
+                'description' => $partner->description,
+                'email' => $partner->email,
+                'website' => $partner->website,
+                'latitude' => $partner->latitude,
+                'longitude' => $partner->longitude,
+                'icon_url' => $iconUrl,
+                'photos' => $photos,
             ];
         });
 
@@ -81,5 +96,27 @@ class TourismController extends Controller
         ];
 
         return $categories[$category] ?? 'Autres';
+    }
+
+    private function normalizeUrl($value): ?string
+    {
+        if (!$value) {
+            return null;
+        }
+
+        $value = (string) $value;
+        if ($value === '') {
+            return null;
+        }
+
+        if (str_starts_with($value, 'http://') || str_starts_with($value, 'https://')) {
+            return $value;
+        }
+
+        if (str_starts_with($value, '/')) {
+            return url($value);
+        }
+
+        return url('/' . ltrim($value, '/'));
     }
 }

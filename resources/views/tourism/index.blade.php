@@ -49,6 +49,7 @@
                         <th>ID</th>
                         <th>Nom</th>
                         <th>Catégorie</th>
+                        <th>Médias</th>
                         <th>Adresse</th>
                         <th>Téléphone</th>
                         <th>Statut</th>
@@ -72,6 +73,20 @@
                             @elseif($point->category == 'embassy')
                             <span class="badge bg-warning">🏛️ Ambassade</span>
                             @endif
+                        </td>
+                        <td>
+                            @php
+                                $thumb = $point->icon_path ?: $point->logo_url;
+                                $photosCount = is_array($point->photos) ? count($point->photos) : 0;
+                            @endphp
+                            <div class="d-flex align-items-center gap-2">
+                                @if($thumb)
+                                    <img src="{{ $thumb }}" alt="Icon" style="width:40px;height:40px;object-fit:cover;border-radius:10px;">
+                                @else
+                                    <div style="width:40px;height:40px;background:#f1f3f5;border-radius:10px;"></div>
+                                @endif
+                                <span class="badge bg-label-primary">{{ $photosCount }} photo{{ $photosCount > 1 ? 's' : '' }}</span>
+                            </div>
                         </td>
                         <td><small>{{ Str::limit($point->address, 40) }}</small></td>
                         <td>{{ $point->phone ?? '-' }}</td>
@@ -107,7 +122,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="7" class="text-center py-4">Aucun point d'intérêt trouvé</td>
+                        <td colspan="8" class="text-center py-4">Aucun point d'intérêt trouvé</td>
                     </tr>
                     @endforelse
                 </tbody>

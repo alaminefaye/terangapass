@@ -20,6 +20,8 @@ class Partner extends Model
         'email',
         'website',
         'logo_url',
+        'icon_path',
+        'photos',
         'is_sponsor',
         'visit_count',
         'is_active',
@@ -28,6 +30,7 @@ class Partner extends Model
     protected $casts = [
         'latitude' => 'decimal:8',
         'longitude' => 'decimal:8',
+        'photos' => 'array',
         'is_sponsor' => 'boolean',
         'is_active' => 'boolean',
     ];

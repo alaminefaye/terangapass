@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Web;
 use App\Http\Controllers\Controller;
 use App\Models\Partner;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class TourismManagementController extends Controller
 {
@@ -52,8 +54,25 @@ class TourismManagementController extends Controller
             'email' => 'nullable|email',
             'website' => 'nullable|url',
             'logo_url' => 'nullable|url',
+            'icon' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:5120',
+            'photos' => 'nullable|array',
+            'photos.*' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:5120',
             'is_active' => 'boolean',
         ]);
+
+        if ($request->hasFile('icon')) {
+            $validated['icon_path'] = $this->storeImageUrl($request->file('icon'), 'partners/icons');
+        }
+
+        $photoUrls = [];
+        if ($request->hasFile('photos')) {
+            foreach ($request->file('photos') as $photo) {
+                $photoUrls[] = $this->storeImageUrl($photo, 'partners/photos');
+            }
+        }
+        if (!empty($photoUrls)) {
+            $validated['photos'] = $photoUrls;
+        }
 
         Partner::create($validated);
 
@@ -84,8 +103,47 @@ class TourismManagementController extends Controller
             'email' => 'nullable|email',
             'website' => 'nullable|url',
             'logo_url' => 'nullable|url',
+            'icon' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:5120',
+            'remove_icon' => 'nullable|boolean',
+            'photos' => 'nullable|array',
+            'photos.*' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:5120',
+            'remove_photos' => 'nullable|array',
+            'remove_photos.*' => 'nullable|string',
             'is_active' => 'boolean',
         ]);
+
+        if ($request->boolean('remove_icon') && !$request->hasFile('icon')) {
+            $this->deleteStorageUrl($tourism->icon_path);
+            $validated['icon_path'] = null;
+        }
+
+        if ($request->hasFile('icon')) {
+            $this->deleteStorageUrl($tourism->icon_path);
+            $validated['icon_path'] = $this->storeImageUrl($request->file('icon'), 'partners/icons');
+        }
+
+        $existingPhotos = is_array($tourism->photos) ? $tourism->photos : [];
+        $photosToRemove = $request->input('remove_photos', []);
+        if (is_array($photosToRemove) && !empty($photosToRemove)) {
+            $existingPhotos = array_values(array_filter(
+                $existingPhotos,
+                function ($url) use ($photosToRemove) {
+                    return !in_array($url, $photosToRemove, true);
+                }
+            ));
+
+            foreach ($photosToRemove as $url) {
+                $this->deleteStorageUrl($url);
+            }
+        }
+
+        if ($request->hasFile('photos')) {
+            foreach ($request->file('photos') as $photo) {
+                $existingPhotos[] = $this->storeImageUrl($photo, 'partners/photos');
+            }
+        }
+
+        $validated['photos'] = empty($existingPhotos) ? null : array_values($existingPhotos);
 
         $tourism->update($validated);
 
@@ -95,8 +153,40 @@ class TourismManagementController extends Controller
 
     public function destroy(Partner $tourism)
     {
+        $this->deleteStorageUrl($tourism->icon_path);
+        $photos = is_array($tourism->photos) ? $tourism->photos : [];
+        foreach ($photos as $url) {
+            $this->deleteStorageUrl($url);
+        }
+
         $tourism->delete();
         return redirect()->route('admin.tourism.index')
             ->with('success', 'Point d\'intérêt supprimé avec succès.');
+    }
+
+    private function storeImageUrl($file, string $directory): string
+    {
+        $filename = Str::uuid() . '.' . $file->getClientOriginalExtension();
+        $path = $file->storeAs($directory, $filename, 'public');
+        return url(Storage::url($path));
+    }
+
+    private function deleteStorageUrl(?string $url): void
+    {
+        if (!$url) {
+            return;
+        }
+
+        $path = parse_url($url, PHP_URL_PATH);
+        if (!$path || !str_contains($path, '/storage/')) {
+            return;
+        }
+
+        $relative = ltrim(str_replace('/storage/', '', $path), '/');
+        if ($relative === '') {
+            return;
+        }
+
+        Storage::disk('public')->delete($relative);
     }
 }
