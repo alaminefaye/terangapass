@@ -18,6 +18,7 @@ class SOSScreen extends StatefulWidget {
 class _SOSScreenState extends State<SOSScreen> {
   bool _isAlerting = false;
   bool _isCountdown = false;
+  bool _cancelledCountdown = false;
   int _countdownValue = 3;
   String? _currentLocation;
   double? _locationAccuracy;
@@ -127,11 +128,12 @@ class _SOSScreenState extends State<SOSScreen> {
     setState(() {
       _isCountdown = true;
       _countdownValue = 3;
+      _cancelledCountdown = false;
     });
 
     // Jouer un bip pour chaque nombre du décompte
     for (int i = 3; i >= 1; i--) {
-      if (!mounted) break;
+      if (!mounted || _cancelledCountdown) break;
 
       setState(() {
         _countdownValue = i;
@@ -144,13 +146,36 @@ class _SOSScreenState extends State<SOSScreen> {
       await Future.delayed(const Duration(seconds: 1));
     }
 
-    if (mounted) {
+    if (!mounted) return;
+
+    // L'utilisateur a annulé pendant le décompte
+    if (_cancelledCountdown) {
       setState(() {
         _isCountdown = false;
+        _cancelledCountdown = false;
       });
-      // Démarrer l'envoi de l'alerte avec le son d'alerte
-      _sendSOSAlert();
+      HapticFeedback.lightImpact();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Alerte SOS annulée', style: GoogleFonts.poppins()),
+          backgroundColor: Colors.grey.shade700,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+      return;
     }
+
+    setState(() {
+      _isCountdown = false;
+    });
+    // Démarrer l'envoi de l'alerte avec le son d'alerte
+    _sendSOSAlert();
+  }
+
+  void _cancelCountdown() {
+    setState(() {
+      _cancelledCountdown = true;
+    });
   }
 
   Future<void> _sendSOSAlert() async {
@@ -269,8 +294,9 @@ class _SOSScreenState extends State<SOSScreen> {
 
   Future<void> _launchDialer(String number) async {
     final uri = Uri(scheme: 'tel', path: number);
-    final ok = await canLaunchUrl(uri);
-    if (!ok) {
+    try {
+      await launchUrl(uri);
+    } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -281,9 +307,7 @@ class _SOSScreenState extends State<SOSScreen> {
           backgroundColor: AppTheme.primaryRed,
         ),
       );
-      return;
     }
-    await launchUrl(uri);
   }
 
   @override
@@ -652,7 +676,56 @@ class _SOSScreenState extends State<SOSScreen> {
 
                         const SizedBox(height: 25),
 
-                        // Informations de localisation 3D
+                        // Bouton Annuler (visible uniquement pendant le décompte)
+                        if (_isCountdown)
+                          GestureDetector(
+                            onTap: _cancelCountdown,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 32,
+                                vertical: 16,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: AppTheme.primaryRed.withValues(
+                                    alpha: 0.4,
+                                  ),
+                                  width: 2,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.08),
+                                    blurRadius: 15,
+                                    offset: const Offset(0, 5),
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.cancel_rounded,
+                                    color: AppTheme.primaryRed,
+                                    size: 22,
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Text(
+                                    'ANNULER L\'ALERTE',
+                                    style: GoogleFonts.poppins(
+                                      color: AppTheme.primaryRed,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 1,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+
+                        const SizedBox(height: 25),
                         if (_currentLocation != null)
                           Container(
                             padding: const EdgeInsets.all(20),

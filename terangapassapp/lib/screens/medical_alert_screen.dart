@@ -161,8 +161,9 @@ class _MedicalAlertScreenState extends State<MedicalAlertScreen> {
 
   Future<void> _launchDialer(String number) async {
     final uri = Uri(scheme: 'tel', path: number);
-    final ok = await canLaunchUrl(uri);
-    if (!ok) {
+    try {
+      await launchUrl(uri);
+    } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -173,9 +174,7 @@ class _MedicalAlertScreenState extends State<MedicalAlertScreen> {
           backgroundColor: AppTheme.primaryRed,
         ),
       );
-      return;
     }
-    await launchUrl(uri);
   }
 
   @override

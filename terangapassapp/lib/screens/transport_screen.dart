@@ -215,219 +215,222 @@ class _TransportScreenState extends State<TransportScreen> {
     return GestureDetector(
       onTap: () => _showShuttleDetail(shuttle),
       child: Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            offset: const Offset(0, 4),
-            blurRadius: 12,
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        AppTheme.primaryGreen.withValues(alpha: 0.15),
-                        AppTheme.primaryGreen.withValues(alpha: 0.05),
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              offset: const Offset(0, 4),
+              blurRadius: 12,
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          AppTheme.primaryGreen.withValues(alpha: 0.15),
+                          AppTheme.primaryGreen.withValues(alpha: 0.05),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(icon, color: AppTheme.primaryGreen, size: 22),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          shuttle['name'] as String,
+                          style: GoogleFonts.poppins(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                            color: AppTheme.textPrimary,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        if ((shuttle['period'] as String? ?? '')
+                            .isNotEmpty) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            shuttle['period'] as String? ?? '',
+                            style: GoogleFonts.poppins(
+                              fontSize: 11,
+                              color: AppTheme.textSecondary,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
                       ],
                     ),
-                    borderRadius: BorderRadius.circular(10),
                   ),
-                  child: Icon(icon, color: AppTheme.primaryGreen, size: 22),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
-                        shuttle['name'] as String,
-                        style: GoogleFonts.poppins(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                          color: AppTheme.textPrimary,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      if ((shuttle['period'] as String? ?? '').isNotEmpty) ...[
-                        const SizedBox(height: 2),
-                        Text(
-                          shuttle['period'] as String? ?? '',
-                          style: GoogleFonts.poppins(
-                            fontSize: 11,
-                            color: AppTheme.textSecondary,
-                            fontWeight: FontWeight.w500,
+                      if (shuttle['is_secure'] == true)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: AppTheme.primaryGreen.withValues(
+                                alpha: 0.3,
+                              ),
+                              width: 1,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.verified_user,
+                                size: 11,
+                                color: AppTheme.primaryGreen,
+                              ),
+                              const SizedBox(width: 3),
+                              Text(
+                                'Sécurisé',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppTheme.primaryGreen,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      ],
+                      const SizedBox(width: 6),
+                      Icon(
+                        Icons.chevron_right_rounded,
+                        size: 20,
+                        color: AppTheme.textSecondary,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              if (shuttle['route'] != null) ...[
+                _buildInfoRow(
+                  icon: Icons.route,
+                  color: Colors.blue,
+                  text: shuttle['route'] as String,
+                ),
+                const SizedBox(height: 8),
+              ],
+              if (shuttle['terminus'] != null) ...[
+                _buildInfoRow(
+                  icon: Icons.place,
+                  color: Colors.red,
+                  text: 'Terminus: ${shuttle['terminus']}',
+                ),
+                const SizedBox(height: 8),
+              ],
+              _buildInfoRow(
+                icon: Icons.schedule,
+                color: Colors.orange,
+                text: shuttle['schedule'] as String? ?? '',
+              ),
+              if (shuttle['days'] != null) ...[
+                const SizedBox(height: 4),
+                Padding(
+                  padding: const EdgeInsets.only(left: 28),
+                  child: Text(
+                    shuttle['days'] as String,
+                    style: GoogleFonts.poppins(
+                      fontSize: 11,
+                      color: AppTheme.textSecondary,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ),
+              ],
+              if (shuttle['next_departure'] != null) ...[
+                const SizedBox(height: 10),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryGreen.withValues(alpha: 0.07),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: AppTheme.primaryGreen.withValues(alpha: 0.2),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.access_time_filled,
+                        color: AppTheme.primaryGreen,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Prochain départ: ',
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          color: AppTheme.textPrimary,
+                        ),
+                      ),
+                      Text(
+                        shuttle['next_departure'] as String,
+                        style: GoogleFonts.poppins(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.primaryGreen,
+                        ),
+                      ),
                     ],
                   ),
                 ),
+              ],
+              if (shuttle['location'] != null) ...[
+                const SizedBox(height: 8),
                 Row(
-                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    if (shuttle['is_secure'] == true)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: AppTheme.primaryGreen.withValues(alpha: 0.3),
-                            width: 1,
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.verified_user,
-                              size: 11,
-                              color: AppTheme.primaryGreen,
-                            ),
-                            const SizedBox(width: 3),
-                            Text(
-                              'Sécurisé',
-                              style: GoogleFonts.poppins(
-                                fontSize: 9,
-                                fontWeight: FontWeight.bold,
-                                color: AppTheme.primaryGreen,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    const SizedBox(width: 6),
                     Icon(
-                      Icons.chevron_right_rounded,
-                      size: 20,
+                      Icons.location_on,
+                      size: 12,
                       color: AppTheme.textSecondary,
+                    ),
+                    const SizedBox(width: 3),
+                    Text(
+                      shuttle['location'] as String,
+                      style: GoogleFonts.poppins(
+                        fontSize: 11,
+                        color: AppTheme.textSecondary,
+                      ),
                     ),
                   ],
                 ),
               ],
-            ),
-            const SizedBox(height: 10),
-            if (shuttle['route'] != null) ...[
-              _buildInfoRow(
-                icon: Icons.route,
-                color: Colors.blue,
-                text: shuttle['route'] as String,
-              ),
-              const SizedBox(height: 8),
             ],
-            if (shuttle['terminus'] != null) ...[
-              _buildInfoRow(
-                icon: Icons.place,
-                color: Colors.red,
-                text: 'Terminus: ${shuttle['terminus']}',
-              ),
-              const SizedBox(height: 8),
-            ],
-            _buildInfoRow(
-              icon: Icons.schedule,
-              color: Colors.orange,
-              text: shuttle['schedule'] as String? ?? '',
-            ),
-            if (shuttle['days'] != null) ...[
-              const SizedBox(height: 4),
-              Padding(
-                padding: const EdgeInsets.only(left: 28),
-                child: Text(
-                  shuttle['days'] as String,
-                  style: GoogleFonts.poppins(
-                    fontSize: 11,
-                    color: AppTheme.textSecondary,
-                    fontStyle: FontStyle.italic,
-                  ),
-                ),
-              ),
-            ],
-            if (shuttle['next_departure'] != null) ...[
-              const SizedBox(height: 10),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: AppTheme.primaryGreen.withValues(alpha: 0.07),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: AppTheme.primaryGreen.withValues(alpha: 0.2),
-                  ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.access_time_filled,
-                      color: AppTheme.primaryGreen,
-                      size: 16,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      'Prochain départ: ',
-                      style: GoogleFonts.poppins(
-                        fontSize: 12,
-                        color: AppTheme.textPrimary,
-                      ),
-                    ),
-                    Text(
-                      shuttle['next_departure'] as String,
-                      style: GoogleFonts.poppins(
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.primaryGreen,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-            if (shuttle['location'] != null) ...[
-              const SizedBox(height: 8),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Icon(
-                    Icons.location_on,
-                    size: 12,
-                    color: AppTheme.textSecondary,
-                  ),
-                  const SizedBox(width: 3),
-                  Text(
-                    shuttle['location'] as String,
-                    style: GoogleFonts.poppins(
-                      fontSize: 11,
-                      color: AppTheme.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ],
+          ),
         ),
       ),
-    ),
     );
   }
 
@@ -477,7 +480,11 @@ class _TransportScreenState extends State<TransportScreen> {
                             ),
                             borderRadius: BorderRadius.circular(14),
                           ),
-                          child: Icon(icon, color: AppTheme.primaryGreen, size: 28),
+                          child: Icon(
+                            icon,
+                            color: AppTheme.primaryGreen,
+                            size: 28,
+                          ),
                         ),
                         const SizedBox(width: 14),
                         Expanded(
@@ -512,7 +519,9 @@ class _TransportScreenState extends State<TransportScreen> {
                               vertical: 6,
                             ),
                             decoration: BoxDecoration(
-                              color: AppTheme.primaryGreen.withValues(alpha: 0.1),
+                              color: AppTheme.primaryGreen.withValues(
+                                alpha: 0.1,
+                              ),
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: Row(
@@ -547,7 +556,8 @@ class _TransportScreenState extends State<TransportScreen> {
                       padding: const EdgeInsets.fromLTRB(20, 16, 20, 40),
                       children: [
                         // Section: Itinéraire
-                        if (shuttle['route'] != null || shuttle['terminus'] != null) ...[
+                        if (shuttle['route'] != null ||
+                            shuttle['terminus'] != null) ...[
                           _detailSectionTitle('Itinéraire', Icons.map_rounded),
                           const SizedBox(height: 10),
                           if (shuttle['route'] != null)
@@ -641,7 +651,9 @@ class _TransportScreenState extends State<TransportScreen> {
                                       'Prochain départ',
                                       style: GoogleFonts.poppins(
                                         fontSize: 12,
-                                        color: Colors.white.withValues(alpha: 0.8),
+                                        color: Colors.white.withValues(
+                                          alpha: 0.8,
+                                        ),
                                       ),
                                     ),
                                     Text(
@@ -660,12 +672,16 @@ class _TransportScreenState extends State<TransportScreen> {
                           const SizedBox(height: 16),
                         ],
                         // Section: Arrêts
-                        if (shuttle['stops'] != null && (shuttle['stops'] as List).isNotEmpty) ...[
+                        if (shuttle['stops'] != null &&
+                            (shuttle['stops'] as List).isNotEmpty) ...[
                           _detailSectionTitle('Arrêts', Icons.pin_drop_rounded),
                           const SizedBox(height: 10),
-                          ...((shuttle['stops'] as List).asMap().entries.map((e) {
+                          ...((shuttle['stops'] as List).asMap().entries.map((
+                            e,
+                          ) {
                             final stop = e.value;
-                            final isLast = e.key == (shuttle['stops'] as List).length - 1;
+                            final isLast =
+                                e.key == (shuttle['stops'] as List).length - 1;
                             return _buildStopTile(
                               name: stop['name']?.toString() ?? stop.toString(),
                               time: stop['time']?.toString(),
@@ -676,7 +692,10 @@ class _TransportScreenState extends State<TransportScreen> {
                         ],
                         // Section: Infos supplémentaires
                         if (shuttle['description'] != null) ...[
-                          _detailSectionTitle('Description', Icons.info_outline_rounded),
+                          _detailSectionTitle(
+                            'Description',
+                            Icons.info_outline_rounded,
+                          ),
                           const SizedBox(height: 10),
                           Container(
                             padding: const EdgeInsets.all(14),
@@ -795,8 +814,9 @@ class _TransportScreenState extends State<TransportScreen> {
                 border: Border.all(color: Colors.white, width: 2),
                 boxShadow: [
                   BoxShadow(
-                    color: (isLast ? AppTheme.primaryRed : AppTheme.primaryGreen)
-                        .withValues(alpha: 0.3),
+                    color:
+                        (isLast ? AppTheme.primaryRed : AppTheme.primaryGreen)
+                            .withValues(alpha: 0.3),
                     blurRadius: 4,
                   ),
                 ],
