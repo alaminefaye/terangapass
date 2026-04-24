@@ -109,14 +109,22 @@ class TourismController extends Controller
             return null;
         }
 
-        if (str_starts_with($value, 'http://') || str_starts_with($value, 'https://')) {
+        $appUrl = config('app.url');
+        $useHttps = is_string($appUrl) && str_starts_with($appUrl, 'https://');
+
+        if (str_starts_with($value, 'http://')) {
+            return ($useHttps || request()->isSecure()) ? preg_replace('/^http:\\/\\//', 'https://', $value) : $value;
+        }
+
+        if (str_starts_with($value, 'https://')) {
             return $value;
         }
 
         if (str_starts_with($value, '/')) {
-            return url($value);
+            return ($useHttps || request()->isSecure()) ? secure_url($value) : url($value);
         }
 
-        return url('/' . ltrim($value, '/'));
+        $value = '/' . ltrim($value, '/');
+        return ($useHttps || request()->isSecure()) ? secure_url($value) : url($value);
     }
 }

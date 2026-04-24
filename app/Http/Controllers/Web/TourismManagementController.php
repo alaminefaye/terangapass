@@ -168,7 +168,10 @@ class TourismManagementController extends Controller
     {
         $filename = Str::uuid() . '.' . $file->getClientOriginalExtension();
         $path = $file->storeAs($directory, $filename, 'public');
-        return url(Storage::url($path));
+        $publicUrl = Storage::url($path);
+        $appUrl = config('app.url');
+        $useHttps = is_string($appUrl) && str_starts_with($appUrl, 'https://');
+        return ($useHttps || request()->isSecure()) ? secure_url($publicUrl) : url($publicUrl);
     }
 
     private function deleteStorageUrl(?string $url): void

@@ -78,25 +78,43 @@ class _TourismScreenState extends State<TourismScreen>
         .toList();
   }
 
-  String? _getPointIconUrl(Map<String, dynamic> point) {
-    final raw = (point['icon_url'] ??
-            point['iconUrl'] ??
-            point['logo_url'] ??
-            point['logoUrl'])
-        ?.toString()
-        .trim();
+  String? _normalizeMediaUrl(Object? value) {
+    final raw = value?.toString().trim();
     if (raw == null || raw.isEmpty) return null;
-    if (!raw.startsWith('http')) return null;
-    return raw;
+
+    if (raw.startsWith('https://')) return raw;
+    if (raw.startsWith('http://')) {
+      return 'https://${raw.substring('http://'.length)}';
+    }
+
+    if (raw.startsWith('/')) {
+      final base = ApiService.baseUrl.replaceAll('/api/v1', '');
+      return '${base.replaceAll(RegExp(r"/+$"), "")}$raw';
+    }
+
+    if (raw.startsWith('storage/') || raw.startsWith('public/')) {
+      final base = ApiService.baseUrl.replaceAll('/api/v1', '');
+      return '${base.replaceAll(RegExp(r"/+$"), "")}/${raw.replaceAll(RegExp(r"^/+"), "")}';
+    }
+
+    return null;
+  }
+
+  String? _getPointIconUrl(Map<String, dynamic> point) {
+    return _normalizeMediaUrl(
+      point['icon_url'] ??
+          point['iconUrl'] ??
+          point['icon_path'] ??
+          point['iconPath'] ??
+          point['logo_url'] ??
+          point['logoUrl'],
+    );
   }
 
   List<String> _getPointPhotos(Map<String, dynamic> point) {
     final raw = point['photos'];
     if (raw is! List) return const [];
-    final urls = raw
-        .map((x) => x?.toString().trim() ?? '')
-        .where((x) => x.isNotEmpty && x.startsWith('http'))
-        .toList();
+    final urls = raw.map(_normalizeMediaUrl).whereType<String>().toList();
     return urls;
   }
 
@@ -406,9 +424,7 @@ class _TourismScreenState extends State<TourismScreen>
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(14),
                         child: iconUrl == null
-                            ? Center(
-                                child: Icon(icon, color: color, size: 26),
-                              )
+                            ? Center(child: Icon(icon, color: color, size: 26))
                             : Image.network(
                                 iconUrl,
                                 fit: BoxFit.cover,
@@ -563,7 +579,11 @@ class _TourismScreenState extends State<TourismScreen>
                                     fit: BoxFit.cover,
                                     errorBuilder: (context, error, stackTrace) {
                                       return Center(
-                                        child: Icon(icon, color: color, size: 30),
+                                        child: Icon(
+                                          icon,
+                                          color: color,
+                                          size: 30,
+                                        ),
                                       );
                                     },
                                   ),
