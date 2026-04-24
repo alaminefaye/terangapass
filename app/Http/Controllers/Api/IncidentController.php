@@ -22,7 +22,7 @@ class IncidentController extends Controller
             'address' => 'nullable|string',
             'photos' => 'nullable|array',
             'photos.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120', // 5MB max
-            'audio' => 'nullable|file|mimetypes:audio/mpeg,audio/mp3,audio/wav,audio/mp4,audio/x-m4a,audio/aac,audio/ogg,audio/webm,audio/3gpp,audio/3gpp2|max:10240', // 10MB max
+            'audio' => 'nullable|file|max:10240', // 10MB max, accept all audio formats (Android may send video/mp4 MIME for m4a)
             'audio_url' => 'nullable|string',
         ]);
 
