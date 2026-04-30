@@ -528,6 +528,22 @@ class ApiService {
     }
   }
 
+  // ==================== ASSISTANT IA ====================
+
+  /// Envoie un message au backend IA (Claude)
+  Future<Map<String, dynamic>> sendAiMessage(String message) async {
+    try {
+      final response = await _dio.post('/ai/chat', data: {'message': message});
+      final data = response.data;
+      if (data is Map<String, dynamic>) {
+        return data;
+      }
+      throw Exception('Réponse IA invalide');
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
   // ==================== GESTION DES ERREURS ====================
 
   Exception _handleError(DioException error) {

@@ -39,4 +39,9 @@ return [
         'server_key' => env('FCM_SERVER_KEY'),
     ],
 
+    'anthropic' => [
+        'api_key' => env('ANTHROPIC_API_KEY'),
+        'model' => env('ANTHROPIC_MODEL', 'claude-3-5-sonnet-latest'),
+    ],
+
 ];

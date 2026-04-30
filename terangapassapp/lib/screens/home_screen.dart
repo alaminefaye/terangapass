@@ -16,6 +16,7 @@ import 'joj_info_screen.dart';
 import 'transport_screen.dart';
 import 'tourism_screen.dart';
 import 'notifications_screen.dart';
+import 'ai_assistant_screen.dart';
 
 enum _HomeFeatureId {
   audioAnnouncements,
@@ -26,7 +27,7 @@ enum _HomeFeatureId {
   incidentReport,
 }
 
-enum _HomeNavId { home, medicalAlert, sos, incidentReport, profile }
+enum _HomeNavId { home, medicalAlert, aiAssistant, incidentReport, profile }
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -1171,9 +1172,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               ),
               _buildNavItem(
                 context,
-                Icons.warning_amber_rounded,
-                _HomeNavId.sos,
-                l10n.homeNavSos,
+                Icons.smart_toy_rounded,
+                _HomeNavId.aiAssistant,
+                'IA',
                 true,
                 isSOS: true,
               ),
@@ -1207,7 +1208,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     bool isSOS = false,
   }) {
     if (isSOS) {
-      // Bouton SOS spécial - plus grand et mis en avant
+      // Bouton IA spécial - plus grand et mis en avant
       return Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -1219,7 +1220,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const SOSScreen()),
+                    MaterialPageRoute(
+                      builder: (context) => const AIAssistantScreen(),
+                    ),
                   );
                 },
                 borderRadius: BorderRadius.circular(35),
@@ -1231,17 +1234,17 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: [
-                        AppTheme.primaryRed,
+                        const Color(0xFF2C7BE5),
                         Color.fromRGBO(
-                          ((AppTheme.primaryRed.r * 255).round() - 25).clamp(
+                          ((0x2C) - 20).clamp(
                             0,
                             255,
                           ),
-                          ((AppTheme.primaryRed.g * 255).round() - 15).clamp(
+                          ((0x7B) - 20).clamp(
                             0,
                             255,
                           ),
-                          ((AppTheme.primaryRed.b * 255).round() - 15).clamp(
+                          ((0xE5) - 20).clamp(
                             0,
                             255,
                           ),
@@ -1252,28 +1255,24 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: AppTheme.primaryRed.withValues(alpha: 0.6),
+                        color: const Color(0xFF2C7BE5).withValues(alpha: 0.6),
                         blurRadius: 20,
                         offset: const Offset(0, 8),
                         spreadRadius: 2,
                       ),
                       BoxShadow(
-                        color: AppTheme.primaryRed.withValues(alpha: 0.3),
+                        color: const Color(0xFF2C7BE5).withValues(alpha: 0.3),
                         blurRadius: 10,
                         offset: const Offset(0, 4),
                         spreadRadius: 1,
                       ),
                     ],
                   ),
-                  child: Center(
-                    child: Text(
-                      'SOS',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 1.2,
-                      ),
+                  child: const Center(
+                    child: Icon(
+                      Icons.smart_toy_rounded,
+                      color: Colors.white,
+                      size: 32,
                     ),
                   ),
                 ),
@@ -1301,10 +1300,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               ),
             );
             break;
-          case _HomeNavId.sos:
+          case _HomeNavId.aiAssistant:
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const SOSScreen()),
+              MaterialPageRoute(
+                builder: (context) => const AIAssistantScreen(),
+              ),
             );
             break;
           case _HomeNavId.incidentReport:
