@@ -62,11 +62,22 @@ class AIChatController extends Controller
                 ]);
 
             if (!$response->successful()) {
+                $rawBody = $response->body();
+                $lowerBody = Str::lower($rawBody);
+                $isCreditIssue = Str::contains($lowerBody, [
+                    'credit balance is too low',
+                    'purchase credits',
+                    'plans & billing',
+                    'insufficient',
+                ]);
+
                 return response()->json([
                     'success' => false,
-                    'message' => 'Le service IA est temporairement indisponible.',
-                    'error' => config('app.debug') ? $response->body() : null,
-                ], 502);
+                    'message' => $isCreditIssue
+                        ? 'Le service IA est indisponible: credits Claude insuffisants. Merci de recharger votre compte Anthropic.'
+                        : 'Le service IA est temporairement indisponible.',
+                    'error' => config('app.debug') ? $rawBody : null,
+                ], $isCreditIssue ? 503 : 502);
             }
 
             $data = $response->json();
