@@ -169,6 +169,9 @@ class JojInfoSeeder extends Seeder
             ],
         ];
 
+        // Désactiver les anciens sites pour ne garder que les sites JOJ officiels
+        CompetitionSite::query()->update(['is_active' => false]);
+
         foreach ($sites as $site) {
             CompetitionSite::updateOrCreate(
                 ['name' => $site['name']],
