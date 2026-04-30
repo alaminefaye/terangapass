@@ -31,10 +31,10 @@ class AIChatController extends Controller
         $apiKey = config('services.anthropic.api_key');
         $model = config('services.anthropic.model', 'claude-3-5-sonnet-latest');
 
-        if (empty($apiKey)) {
+        if (empty($apiKey) || str_contains($apiKey, 'ta_cle_claude_ici')) {
             return response()->json([
                 'success' => false,
-                'message' => 'Configuration IA manquante côté serveur.',
+                'message' => 'Configuration IA invalide: merci de definir une vraie ANTHROPIC_API_KEY dans .env.',
             ], 500);
         }
 
