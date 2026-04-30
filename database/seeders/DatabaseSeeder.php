@@ -32,6 +32,9 @@ class DatabaseSeeder extends Seeder
             
             // 7. Notifications
             NotificationSeeder::class,
+
+            // 7b. Données officielles JOJ 2026 (calendrier, sports, accès)
+            JojInfoSeeder::class,
             
             // 8. Alertes (nécessite des utilisateurs)
             AlertSeeder::class,
