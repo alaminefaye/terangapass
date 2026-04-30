@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 import '../services/location_service.dart';
 import '../services/api_service.dart';
@@ -24,16 +25,17 @@ class _MedicalAlertScreenState extends State<MedicalAlertScreen> {
   }
 
   Future<void> _getCurrentLocation() async {
+    final l10n = AppLocalizations.of(context)!;
     try {
       final locationService = LocationService();
       final location = await locationService.getCurrentLocationWithAddress();
       setState(() {
         _currentLocation =
-            location['address'] as String? ?? 'Position inconnue';
+            location['address'] as String? ?? l10n.unknownPosition;
       });
     } catch (e) {
       setState(() {
-        _currentLocation = "Dakar Plateau, 9 Rue Carnot";
+        _currentLocation = l10n.unknownPosition;
       });
     }
   }
@@ -43,7 +45,7 @@ class _MedicalAlertScreenState extends State<MedicalAlertScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Veuillez sélectionner un type d\'urgence médicale',
+            AppLocalizations.of(context)!.medicalSelectTypeError,
             style: GoogleFonts.poppins(),
           ),
           backgroundColor: AppTheme.primaryRed,
@@ -78,21 +80,21 @@ class _MedicalAlertScreenState extends State<MedicalAlertScreen> {
           context: context,
           builder: (context) => AlertDialog(
             title: Text(
-              'Alerte Médicale Envoyée',
+              AppLocalizations.of(context)!.medicalSentTitle,
               style: GoogleFonts.poppins(
                 fontWeight: FontWeight.bold,
                 color: AppTheme.primaryRed,
               ),
             ),
             content: Text(
-              'Votre alerte médicale a été envoyée aux services médicaux.\n\nUne ambulance est en route.',
+              AppLocalizations.of(context)!.medicalSentBody,
               style: GoogleFonts.poppins(),
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
                 child: Text(
-                  'OK',
+                  AppLocalizations.of(context)!.ok,
                   style: GoogleFonts.poppins(
                     color: AppTheme.primaryRed,
                     fontWeight: FontWeight.bold,
@@ -125,21 +127,22 @@ class _MedicalAlertScreenState extends State<MedicalAlertScreen> {
   }
 
   void _callSAMU() {
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: Text(
-          'Appeler SAMU',
+          l10n.callServiceTitle('SAMU'),
           style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
         ),
         content: Text(
-          'Voulez-vous appeler le SAMU au 15 ?',
+          l10n.callServicePrompt('SAMU', '15'),
           style: GoogleFonts.poppins(),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: Text('Annuler', style: GoogleFonts.poppins()),
+            child: Text(l10n.cancel, style: GoogleFonts.poppins()),
           ),
           TextButton(
             onPressed: () {
@@ -147,7 +150,7 @@ class _MedicalAlertScreenState extends State<MedicalAlertScreen> {
               _launchDialer('15');
             },
             child: Text(
-              'Appeler',
+              l10n.call,
               style: GoogleFonts.poppins(
                 color: AppTheme.primaryRed,
                 fontWeight: FontWeight.bold,
@@ -168,7 +171,7 @@ class _MedicalAlertScreenState extends State<MedicalAlertScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Impossible d\'ouvrir le téléphone',
+            AppLocalizations.of(context)!.openPhoneError,
             style: GoogleFonts.poppins(),
           ),
           backgroundColor: AppTheme.primaryRed,
@@ -179,6 +182,7 @@ class _MedicalAlertScreenState extends State<MedicalAlertScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       body: Stack(
@@ -263,7 +267,7 @@ class _MedicalAlertScreenState extends State<MedicalAlertScreen> {
                       ),
                       const SizedBox(width: 16),
                       Text(
-                        'Alerte Médicale',
+                        l10n.medicalAlertTitle,
                         style: GoogleFonts.poppins(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
@@ -358,7 +362,7 @@ class _MedicalAlertScreenState extends State<MedicalAlertScreen> {
                                               ),
                                               const SizedBox(height: 20),
                                               Text(
-                                                'Envoi de l\'alerte...',
+                                                l10n.medicalSending,
                                                 style: GoogleFonts.poppins(
                                                   color: Colors.white,
                                                   fontSize: 18,
@@ -402,7 +406,8 @@ class _MedicalAlertScreenState extends State<MedicalAlertScreen> {
                                               ),
                                               const SizedBox(height: 20),
                                               Text(
-                                                'ALERTE MÉDICALE',
+                                                l10n.medicalAlertTitle
+                                                    .toUpperCase(),
                                                 style: GoogleFonts.poppins(
                                                   color: Colors.white,
                                                   fontSize: 26,
@@ -425,7 +430,7 @@ class _MedicalAlertScreenState extends State<MedicalAlertScreen> {
                                               ),
                                               const SizedBox(height: 10),
                                               Text(
-                                                'Appuyez pour alerter les services médicaux',
+                                                l10n.medicalTapToAlert,
                                                 textAlign: TextAlign.center,
                                                 style: GoogleFonts.poppins(
                                                   color: Colors.white
@@ -448,7 +453,7 @@ class _MedicalAlertScreenState extends State<MedicalAlertScreen> {
                         Padding(
                           padding: const EdgeInsets.only(left: 4, bottom: 12),
                           child: Text(
-                            'Type d\'urgence médicale',
+                            l10n.medicalEmergencyTypeTitle,
                             style: GoogleFonts.poppins(
                               fontWeight: FontWeight.bold,
                               fontSize: 18,
@@ -458,22 +463,26 @@ class _MedicalAlertScreenState extends State<MedicalAlertScreen> {
                         ),
 
                         _buildEmergencyTypeOption(
-                          'Accident',
+                          'accident',
+                          l10n.medicalTypeAccident,
                           Icons.car_crash_rounded,
                         ),
                         const SizedBox(height: 12),
                         _buildEmergencyTypeOption(
-                          'Malaise',
+                          'malaise',
+                          l10n.medicalTypeFainting,
                           Icons.sick_rounded,
                         ),
                         const SizedBox(height: 12),
                         _buildEmergencyTypeOption(
-                          'Blessure',
+                          'blessure',
+                          l10n.medicalTypeInjury,
                           Icons.healing_rounded,
                         ),
                         const SizedBox(height: 12),
                         _buildEmergencyTypeOption(
-                          'Autre',
+                          'autre',
+                          l10n.medicalTypeOther,
                           Icons.help_outline_rounded,
                         ),
 
@@ -517,7 +526,7 @@ class _MedicalAlertScreenState extends State<MedicalAlertScreen> {
                                     ),
                                     const SizedBox(width: 15),
                                     Text(
-                                      'Votre position',
+                                      l10n.medicalYourPosition,
                                       style: GoogleFonts.poppins(
                                         fontWeight: FontWeight.bold,
                                         fontSize: 16,
@@ -566,7 +575,7 @@ class _MedicalAlertScreenState extends State<MedicalAlertScreen> {
                         Padding(
                           padding: const EdgeInsets.only(left: 4, bottom: 12),
                           child: Text(
-                            'Hôpitaux à proximité',
+                            l10n.medicalNearbyHospitals,
                             style: GoogleFonts.poppins(
                               fontWeight: FontWeight.bold,
                               fontSize: 18,
@@ -591,7 +600,7 @@ class _MedicalAlertScreenState extends State<MedicalAlertScreen> {
                           ),
                           child: Center(
                             child: Text(
-                              'Aucun hôpital trouvé à proximité',
+                              l10n.medicalNoNearbyHospitals,
                               style: GoogleFonts.poppins(
                                 color: AppTheme.textSecondary,
                                 fontSize: 14,
@@ -612,13 +621,13 @@ class _MedicalAlertScreenState extends State<MedicalAlertScreen> {
     );
   }
 
-  Widget _buildEmergencyTypeOption(String type, IconData icon) {
-    final isSelected = _selectedEmergencyType == type;
+  Widget _buildEmergencyTypeOption(String value, String label, IconData icon) {
+    final isSelected = _selectedEmergencyType == value;
 
     return GestureDetector(
       onTap: () {
         setState(() {
-          _selectedEmergencyType = type;
+          _selectedEmergencyType = value;
         });
       },
       child: AnimatedContainer(
@@ -660,7 +669,7 @@ class _MedicalAlertScreenState extends State<MedicalAlertScreen> {
             const SizedBox(width: 16),
             Expanded(
               child: Text(
-                type,
+                label,
                 style: GoogleFonts.poppins(
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
                   fontSize: 16,
@@ -752,7 +761,9 @@ class _MedicalAlertScreenState extends State<MedicalAlertScreen> {
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
-                        'Urgence $number',
+                        AppLocalizations.of(
+                          context,
+                        )!.medicalEmergencyNumberLabel(number),
                         style: GoogleFonts.poppins(
                           fontSize: 12,
                           color: color,

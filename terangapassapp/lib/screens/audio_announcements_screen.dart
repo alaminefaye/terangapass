@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 import '../services/api_service.dart';
 import '../constants/api_constants.dart';
@@ -225,6 +226,7 @@ class _AudioAnnouncementsScreenState extends State<AudioAnnouncementsScreen>
   }
 
   Future<void> _togglePlay(int index) async {
+    final l10n = AppLocalizations.of(context)!;
     final announcement = _filteredAnnouncements[index];
     final rawAudioUrl = announcement['audio_url'] as String?;
     if (rawAudioUrl == null || rawAudioUrl.trim().isEmpty) {
@@ -232,7 +234,7 @@ class _AudioAnnouncementsScreenState extends State<AudioAnnouncementsScreen>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Aucun audio disponible pour cette annonce',
+            l10n.audioNoAudioAvailable,
             style: GoogleFonts.poppins(),
           ),
         ),
@@ -277,10 +279,7 @@ class _AudioAnnouncementsScreenState extends State<AudioAnnouncementsScreen>
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            'Impossible de lire l\'audio',
-            style: GoogleFonts.poppins(),
-          ),
+          content: Text(l10n.audioCannotPlay, style: GoogleFonts.poppins()),
           backgroundColor: AppTheme.primaryRed,
         ),
       );
@@ -288,20 +287,23 @@ class _AudioAnnouncementsScreenState extends State<AudioAnnouncementsScreen>
   }
 
   String _formatTime(DateTime dateTime) {
+    final l10n = AppLocalizations.of(context)!;
     final now = DateTime.now();
     final difference = now.difference(dateTime);
 
+    if (difference.inMinutes < 1) return l10n.timeJustNow;
     if (difference.inMinutes < 60) {
-      return 'Il y a ${difference.inMinutes} min';
-    } else if (difference.inHours < 24) {
-      return 'Il y a ${difference.inHours} h';
-    } else {
-      return 'Il y a ${difference.inDays} jours';
+      return l10n.timeMinutesAgo(difference.inMinutes);
     }
+    if (difference.inHours < 24) {
+      return l10n.timeHoursAgo(difference.inHours);
+    }
+    return l10n.timeDaysAgo(difference.inDays);
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final announcements = _filteredAnnouncements;
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
@@ -340,7 +342,7 @@ class _AudioAnnouncementsScreenState extends State<AudioAnnouncementsScreen>
                               backgroundColor: AppTheme.primaryGreen,
                             ),
                             child: Text(
-                              'Réessayer',
+                              l10n.retry,
                               style: GoogleFonts.poppins(),
                             ),
                           ),
@@ -374,7 +376,7 @@ class _AudioAnnouncementsScreenState extends State<AudioAnnouncementsScreen>
                         ),
                         const SizedBox(height: 24),
                         Text(
-                          'Aucune annonce disponible',
+                          l10n.audioNoAnnouncements,
                           style: GoogleFonts.poppins(
                             fontSize: 18,
                             fontWeight: FontWeight.w600,
@@ -689,7 +691,7 @@ class _AudioAnnouncementsScreenState extends State<AudioAnnouncementsScreen>
                       ),
                       const SizedBox(width: 16),
                       Text(
-                        'Annonces Audio',
+                        l10n.audioTitle,
                         style: GoogleFonts.poppins(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
@@ -742,6 +744,7 @@ class _AudioAnnouncementsScreenState extends State<AudioAnnouncementsScreen>
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) {
+        final l10n = AppLocalizations.of(context)!;
         return SafeArea(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -758,22 +761,25 @@ class _AudioAnnouncementsScreenState extends State<AudioAnnouncementsScreen>
               const SizedBox(height: 10),
               ListTile(
                 leading: const Icon(Icons.public),
-                title: Text('Toutes', style: GoogleFonts.poppins()),
+                title: Text(
+                  l10n.audioAllLanguages,
+                  style: GoogleFonts.poppins(),
+                ),
                 onTap: () => Navigator.of(context).pop('all'),
               ),
               ListTile(
                 leading: const Text('FR'),
-                title: Text('Français', style: GoogleFonts.poppins()),
+                title: Text(l10n.languageFrench, style: GoogleFonts.poppins()),
                 onTap: () => Navigator.of(context).pop('fr'),
               ),
               ListTile(
                 leading: const Text('EN'),
-                title: Text('English', style: GoogleFonts.poppins()),
+                title: Text(l10n.languageEnglish, style: GoogleFonts.poppins()),
                 onTap: () => Navigator.of(context).pop('en'),
               ),
               ListTile(
                 leading: const Text('ES'),
-                title: Text('Español', style: GoogleFonts.poppins()),
+                title: Text(l10n.languageSpanish, style: GoogleFonts.poppins()),
                 onTap: () => Navigator.of(context).pop('es'),
               ),
               const SizedBox(height: 8),

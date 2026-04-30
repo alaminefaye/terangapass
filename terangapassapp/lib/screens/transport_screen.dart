@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 import '../services/api_service.dart';
 
@@ -60,6 +61,7 @@ class _TransportScreenState extends State<TransportScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       body: Stack(
@@ -97,7 +99,7 @@ class _TransportScreenState extends State<TransportScreen> {
                               backgroundColor: AppTheme.primaryGreen,
                             ),
                             child: Text(
-                              'Réessayer',
+                              l10n.retry,
                               style: GoogleFonts.poppins(),
                             ),
                           ),
@@ -117,7 +119,7 @@ class _TransportScreenState extends State<TransportScreen> {
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          'Aucune navette disponible',
+                          l10n.transportNoShuttles,
                           style: GoogleFonts.poppins(
                             fontSize: 16,
                             color: AppTheme.textSecondary,
@@ -184,7 +186,7 @@ class _TransportScreenState extends State<TransportScreen> {
                       ),
                       const SizedBox(width: 16),
                       Text(
-                        'Transport & Navettes',
+                        l10n.transportTitle,
                         style: GoogleFonts.poppins(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
@@ -210,6 +212,7 @@ class _TransportScreenState extends State<TransportScreen> {
   }
 
   Widget _buildShuttleCard(Map<String, dynamic> shuttle) {
+    final l10n = AppLocalizations.of(context)!;
     final icon = _getTransportIcon(shuttle['type'] as String? ?? 'bus');
 
     return GestureDetector(
@@ -308,7 +311,7 @@ class _TransportScreenState extends State<TransportScreen> {
                               ),
                               const SizedBox(width: 3),
                               Text(
-                                'Sécurisé',
+                                l10n.transportSecure,
                                 style: GoogleFonts.poppins(
                                   fontSize: 9,
                                   fontWeight: FontWeight.bold,
@@ -341,7 +344,9 @@ class _TransportScreenState extends State<TransportScreen> {
                 _buildInfoRow(
                   icon: Icons.place,
                   color: Colors.red,
-                  text: 'Terminus: ${shuttle['terminus']}',
+                  text: l10n.transportTerminusPrefix(
+                    shuttle['terminus'].toString(),
+                  ),
                 ),
                 const SizedBox(height: 8),
               ],
@@ -388,7 +393,7 @@ class _TransportScreenState extends State<TransportScreen> {
                       ),
                       const SizedBox(width: 6),
                       Text(
-                        'Prochain départ: ',
+                        '${l10n.transportNextDeparturePrefix} ',
                         style: GoogleFonts.poppins(
                           fontSize: 12,
                           color: AppTheme.textPrimary,
@@ -441,6 +446,7 @@ class _TransportScreenState extends State<TransportScreen> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) {
+        final l10n = AppLocalizations.of(context)!;
         return DraggableScrollableSheet(
           initialChildSize: 0.75,
           minChildSize: 0.4,
@@ -534,7 +540,7 @@ class _TransportScreenState extends State<TransportScreen> {
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
-                                  'Sécurisé',
+                                  l10n.transportSecure,
                                   style: GoogleFonts.poppins(
                                     fontSize: 11,
                                     fontWeight: FontWeight.bold,
@@ -558,67 +564,73 @@ class _TransportScreenState extends State<TransportScreen> {
                         // Section: Itinéraire
                         if (shuttle['route'] != null ||
                             shuttle['terminus'] != null) ...[
-                          _detailSectionTitle('Itinéraire', Icons.map_rounded),
+                          _detailSectionTitle(
+                            l10n.transportItinerarySection,
+                            Icons.map_rounded,
+                          ),
                           const SizedBox(height: 10),
                           if (shuttle['route'] != null)
                             _detailTile(
                               icon: Icons.route,
                               iconColor: Colors.blue,
-                              label: 'Trajet',
+                              label: l10n.transportRouteLabel,
                               value: shuttle['route'] as String,
                             ),
                           if (shuttle['start_location'] != null)
                             _detailTile(
                               icon: Icons.trip_origin,
                               iconColor: AppTheme.primaryGreen,
-                              label: 'Départ',
+                              label: l10n.transportDepartureLabel,
                               value: shuttle['start_location'] as String,
                             ),
                           if (shuttle['terminus'] != null)
                             _detailTile(
                               icon: Icons.place,
                               iconColor: Colors.red,
-                              label: 'Terminus',
+                              label: l10n.transportTerminusLabel,
                               value: shuttle['terminus'] as String,
                             ),
                           if (shuttle['location'] != null)
                             _detailTile(
                               icon: Icons.location_on,
                               iconColor: Colors.purple,
-                              label: 'Point de départ',
+                              label: l10n.transportStartPointLabel,
                               value: shuttle['location'] as String,
                             ),
                           const SizedBox(height: 16),
                         ],
                         // Section: Horaires
-                        _detailSectionTitle('Horaires', Icons.schedule_rounded),
+                        _detailSectionTitle(
+                          l10n.transportScheduleSection,
+                          Icons.schedule_rounded,
+                        ),
                         const SizedBox(height: 10),
                         if (shuttle['schedule'] != null)
                           _detailTile(
                             icon: Icons.access_time,
                             iconColor: Colors.orange,
-                            label: 'Horaire',
+                            label: l10n.transportScheduleLabel,
                             value: shuttle['schedule'] as String,
                           ),
                         if (shuttle['days'] != null)
                           _detailTile(
                             icon: Icons.calendar_today,
                             iconColor: Colors.teal,
-                            label: 'Jours',
+                            label: l10n.transportDaysLabel,
                             value: shuttle['days'] as String,
                           ),
                         if (shuttle['period'] != null)
                           _detailTile(
                             icon: Icons.date_range,
                             iconColor: Colors.indigo,
-                            label: 'Période',
+                            label: l10n.transportPeriodLabel,
                             value: shuttle['period'] as String,
                           ),
                         if (shuttle['frequency'] != null)
                           _detailTile(
                             icon: Icons.repeat,
                             iconColor: Colors.cyan,
-                            label: 'Fréquence',
+                            label: l10n.transportFrequencyLabel,
                             value: shuttle['frequency'].toString(),
                           ),
                         const SizedBox(height: 16),
@@ -648,7 +660,7 @@ class _TransportScreenState extends State<TransportScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      'Prochain départ',
+                                      l10n.transportNextDeparture,
                                       style: GoogleFonts.poppins(
                                         fontSize: 12,
                                         color: Colors.white.withValues(
@@ -674,7 +686,10 @@ class _TransportScreenState extends State<TransportScreen> {
                         // Section: Arrêts
                         if (shuttle['stops'] != null &&
                             (shuttle['stops'] as List).isNotEmpty) ...[
-                          _detailSectionTitle('Arrêts', Icons.pin_drop_rounded),
+                          _detailSectionTitle(
+                            l10n.transportStopsSection,
+                            Icons.pin_drop_rounded,
+                          ),
                           const SizedBox(height: 10),
                           ...((shuttle['stops'] as List).asMap().entries.map((
                             e,
@@ -693,7 +708,7 @@ class _TransportScreenState extends State<TransportScreen> {
                         // Section: Infos supplémentaires
                         if (shuttle['description'] != null) ...[
                           _detailSectionTitle(
-                            'Description',
+                            l10n.transportDescriptionSection,
                             Icons.info_outline_rounded,
                           ),
                           const SizedBox(height: 10),

@@ -1,3 +1,5 @@
+import 'package:flutter/widgets.dart';
+
 class AppConstants {
   // App Info
   static const String appName = 'Teranga Pass';
@@ -16,8 +18,12 @@ class AppConstants {
   static const String userTokenKey = 'user_token';
   static const String userDataKey = 'user_data';
   static const String languageKey = 'language';
+
+  static final ValueNotifier<Locale?> localeNotifier = ValueNotifier<Locale?>(
+    null,
+  );
   
   // Languages
   static const String defaultLanguage = 'fr';
-  static const List<String> supportedLanguages = ['fr', 'en', 'es'];
+  static const List<String> supportedLanguages = ['fr', 'en'];
 }

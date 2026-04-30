@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../constants/app_constants.dart';
+import '../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 import '../services/api_service.dart';
 import 'auth/login_screen.dart';
@@ -68,18 +71,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   String _relativeTime(DateTime dt) {
+    final l10n = AppLocalizations.of(context)!;
     final now = DateTime.now();
     final diff = now.difference(dt.isAfter(now) ? now : dt);
-    if (diff.inMinutes < 1) return 'À l’instant';
-    if (diff.inMinutes < 60) return 'Il y a ${diff.inMinutes} min';
-    if (diff.inHours < 24) return 'Il y a ${diff.inHours} h';
-    return 'Il y a ${diff.inDays} j';
+    if (diff.inMinutes < 1) return l10n.timeJustNow;
+    if (diff.inMinutes < 60) return l10n.timeMinutesAgo(diff.inMinutes);
+    if (diff.inHours < 24) return l10n.timeHoursAgo(diff.inHours);
+    return l10n.timeDaysAgo(diff.inDays);
   }
 
   List<Map<String, dynamic>> _buildRecentActivities(
     List<dynamic> alerts,
     List<dynamic> reports,
   ) {
+    final l10n = AppLocalizations.of(context)!;
     Map<String, dynamic> buildItem({
       required Map<String, dynamic> raw,
       required String defaultTitle,
@@ -108,7 +113,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ...alerts.whereType<Map<String, dynamic>>().map(
         (a) => buildItem(
           raw: a,
-          defaultTitle: 'Alerte SOS',
+          defaultTitle: l10n.profileDefaultSosTitle,
           icon: Icons.warning_rounded,
           color: AppTheme.primaryRed,
         ),
@@ -116,7 +121,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ...reports.whereType<Map<String, dynamic>>().map(
         (r) => buildItem(
           raw: r,
-          defaultTitle: 'Signalement',
+          defaultTitle: l10n.profileDefaultReportTitle,
           icon: Icons.report_rounded,
           color: AppTheme.primaryGreen,
         ),
@@ -167,8 +172,78 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  String _languageLabel(String code, AppLocalizations l10n) {
+    final c = code.trim().toLowerCase();
+    if (c == 'fr') return l10n.languageFrench;
+    if (c == 'en') return l10n.languageEnglish;
+    if (c == 'es') return l10n.languageSpanish;
+    return code;
+  }
+
+  Future<void> _pickAppLanguage() async {
+    final current =
+        (AppConstants.localeNotifier.value?.languageCode ??
+                AppConstants.defaultLanguage)
+            .trim()
+            .toLowerCase();
+
+    final selected = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        final l10n = AppLocalizations.of(context)!;
+        final options = [
+          {'code': 'fr', 'label': l10n.languageFrench},
+          {'code': 'en', 'label': l10n.languageEnglish},
+        ];
+        return SafeArea(
+          child: ListView(
+            shrinkWrap: true,
+            children: [
+              const SizedBox(height: 8),
+              Center(
+                child: Container(
+                  width: 44,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              ...options.map((o) {
+                final code = o['code']!;
+                final label = o['label']!;
+                return ListTile(
+                  title: Text(label, style: GoogleFonts.poppins()),
+                  trailing: code == current
+                      ? const Icon(Icons.check_rounded)
+                      : null,
+                  onTap: () => Navigator.of(context).pop(code),
+                );
+              }),
+              const SizedBox(height: 8),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (selected == null) return;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(AppConstants.languageKey, selected);
+    AppConstants.localeNotifier.value = Locale(selected);
+    if (!mounted) return;
+    setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     if (_isLoading) {
       return Scaffold(
         backgroundColor: const Color(
@@ -189,7 +264,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             onPressed: () => Navigator.of(context).pop(),
           ),
           title: Text(
-            'Mon Profil',
+            l10n.profileTitle,
             style: GoogleFonts.poppins(
               color: Colors.white,
               fontWeight: FontWeight.w600,
@@ -210,7 +285,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  (_errorMessage ?? 'Profil indisponible').trim(),
+                  (_errorMessage ?? l10n.profileUnavailable).trim(),
                   style: GoogleFonts.poppins(
                     fontSize: 14,
                     color: AppTheme.textSecondary,
@@ -223,7 +298,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.primaryGreen,
                   ),
-                  child: Text('Réessayer', style: GoogleFonts.poppins()),
+                  child: Text(l10n.retry, style: GoogleFonts.poppins()),
                 ),
               ],
             ),
@@ -255,7 +330,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ),
         title: Text(
-          'Mon Profil',
+          l10n.profileTitle,
           style: GoogleFonts.poppins(
             color: Colors.white,
             fontWeight: FontWeight.w600,
@@ -420,7 +495,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Padding(
                     padding: const EdgeInsets.only(left: 6, bottom: 10),
                     child: Text(
-                      'Informations personnelles',
+                      l10n.profilePersonalInfoSection,
                       style: GoogleFonts.poppins(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
@@ -474,7 +549,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Padding(
                     padding: const EdgeInsets.only(left: 6, bottom: 10),
                     child: Text(
-                      'Paramètres',
+                      l10n.settings,
                       style: GoogleFonts.poppins(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
@@ -483,17 +558,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ),
                   _buildSettingTile(
-                    'Notifications',
+                    l10n.profileNotificationsSetting,
                     Icons.notifications_outlined,
                     true,
                   ),
                   _buildSettingTile(
-                    'Géolocalisation',
+                    l10n.profileGeolocationSetting,
                     Icons.location_on_outlined,
                     true,
                   ),
                   _buildSettingTile(
-                    'Confidentialité',
+                    l10n.appLanguage,
+                    Icons.translate_rounded,
+                    false,
+                    value: _languageLabel(
+                      AppConstants.localeNotifier.value?.languageCode ??
+                          AppConstants.defaultLanguage,
+                      l10n,
+                    ),
+                    onTap: _pickAppLanguage,
+                  ),
+                  _buildSettingTile(
+                    l10n.profilePrivacySetting,
                     Icons.lock_outline_rounded,
                     false,
                     onTap: () {
@@ -511,7 +597,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Padding(
                     padding: const EdgeInsets.only(left: 6, bottom: 10),
                     child: Text(
-                      'Aperçu',
+                      l10n.profileOverviewSection,
                       style: GoogleFonts.poppins(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
@@ -523,7 +609,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     children: [
                       Expanded(
                         child: _buildStatCard(
-                          'Alertes',
+                          l10n.profileAlertsStat,
                           '$_alertsCount',
                           Icons.warning_amber_rounded,
                         ),
@@ -531,7 +617,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       const SizedBox(width: 16),
                       Expanded(
                         child: _buildStatCard(
-                          'Signalements',
+                          l10n.profileReportsStat,
                           '$_reportsCount',
                           Icons.report_gmailerrorred_rounded,
                         ),
@@ -545,7 +631,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Padding(
                     padding: const EdgeInsets.only(left: 6, bottom: 10),
                     child: Text(
-                      'Activités Récentes',
+                      l10n.profileRecentActivitiesSection,
                       style: GoogleFonts.poppins(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
@@ -561,7 +647,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                       child: Center(
                         child: Text(
-                          'Aucune activité récente',
+                          l10n.profileNoRecentActivity,
                           style: GoogleFonts.poppins(
                             fontSize: 13,
                             color: AppTheme.textSecondary,
@@ -618,7 +704,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                           const SizedBox(width: 10),
                           Text(
-                            'Déconnexion',
+                            l10n.profileLogout,
                             style: GoogleFonts.poppins(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
@@ -645,6 +731,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     IconData icon,
     bool hasSwitch, {
     VoidCallback? onTap,
+    String? value,
   }) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
@@ -694,17 +781,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 ),
               )
-            : Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.grey.withValues(alpha: 0.05),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.arrow_forward_ios_rounded,
-                  color: Colors.grey[400],
-                  size: 16,
-                ),
+            : Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (value != null && value.trim().isNotEmpty)
+                    Text(
+                      value.trim(),
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        color: AppTheme.textSecondary,
+                      ),
+                    ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.withValues(alpha: 0.05),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      color: Colors.grey[400],
+                      size: 16,
+                    ),
+                  ),
+                ],
               ),
       ),
     );
@@ -901,6 +1002,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (context) {
+        final l10n = AppLocalizations.of(context)!;
         return StatefulBuilder(
           builder: (context, setModalState) {
             return Padding(
@@ -925,7 +1027,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
-                      'Modifier le profil',
+                      l10n.profileEditTitle,
                       style: GoogleFonts.poppins(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -937,7 +1039,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   TextField(
                     controller: nameController,
                     decoration: InputDecoration(
-                      labelText: 'Nom',
+                      labelText: l10n.profileNameLabel,
                       labelStyle: GoogleFonts.poppins(),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(14),
@@ -950,7 +1052,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     controller: phoneController,
                     keyboardType: TextInputType.phone,
                     decoration: InputDecoration(
-                      labelText: 'Téléphone',
+                      labelText: l10n.profilePhoneLabel,
                       labelStyle: GoogleFonts.poppins(),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(14),
@@ -962,16 +1064,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   DropdownButtonFormField<String>(
                     initialValue: language,
                     decoration: InputDecoration(
-                      labelText: 'Langue',
+                      labelText: l10n.profileLanguageLabel,
                       labelStyle: GoogleFonts.poppins(),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(14),
                       ),
                     ),
-                    items: const [
-                      DropdownMenuItem(value: 'fr', child: Text('Français')),
-                      DropdownMenuItem(value: 'en', child: Text('English')),
-                      DropdownMenuItem(value: 'es', child: Text('Español')),
+                    items: [
+                      DropdownMenuItem(
+                        value: 'fr',
+                        child: Text(l10n.languageFrench),
+                      ),
+                      DropdownMenuItem(
+                        value: 'en',
+                        child: Text(l10n.languageEnglish),
+                      ),
+                      DropdownMenuItem(
+                        value: 'es',
+                        child: Text(l10n.languageSpanish),
+                      ),
                     ],
                     onChanged: (v) {
                       if (v == null) return;
@@ -984,24 +1095,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   DropdownButtonFormField<String>(
                     initialValue: userType,
                     decoration: InputDecoration(
-                      labelText: 'Type d\'utilisateur',
+                      labelText: l10n.profileUserTypeLabel,
                       labelStyle: GoogleFonts.poppins(),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(14),
                       ),
                     ),
-                    items: const [
+                    items: [
                       DropdownMenuItem(
                         value: 'visitor',
-                        child: Text('Visiteur'),
+                        child: Text(l10n.profileUserTypeVisitor),
                       ),
                       DropdownMenuItem(
                         value: 'citizen',
-                        child: Text('Citoyen'),
+                        child: Text(l10n.profileUserTypeCitizen),
                       ),
                       DropdownMenuItem(
                         value: 'athlete',
-                        child: Text('Athlète'),
+                        child: Text(l10n.profileUserTypeAthlete),
                       ),
                     ],
                     onChanged: (v) {
@@ -1026,7 +1137,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 messenger.showSnackBar(
                                   SnackBar(
                                     content: Text(
-                                      'Le nom est requis',
+                                      l10n.profileNameRequired,
                                       style: GoogleFonts.poppins(),
                                     ),
                                     backgroundColor: AppTheme.primaryRed,
@@ -1062,7 +1173,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 messenger.showSnackBar(
                                   SnackBar(
                                     content: Text(
-                                      'Profil mis à jour',
+                                      l10n.profileUpdated,
                                       style: GoogleFonts.poppins(),
                                     ),
                                   ),
@@ -1102,7 +1213,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ),
                             )
                           : Text(
-                              'Enregistrer',
+                              l10n.profileSave,
                               style: GoogleFonts.poppins(
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white,
@@ -1204,13 +1315,14 @@ class PrivacyScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
         backgroundColor: AppTheme.primaryGreen,
         elevation: 0,
         title: Text(
-          'Confidentialité',
+          l10n.profilePrivacySetting,
           style: GoogleFonts.poppins(
             color: Colors.white,
             fontWeight: FontWeight.w600,
@@ -1238,7 +1350,7 @@ class PrivacyScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Données personnelles',
+                  l10n.privacyPersonalDataTitle,
                   style: GoogleFonts.poppins(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
@@ -1247,7 +1359,7 @@ class PrivacyScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Teranga Pass utilise vos informations pour améliorer votre expérience (ex: profil, notifications, sécurité). Vous pouvez gérer certaines autorisations depuis votre téléphone.',
+                  l10n.privacyPersonalDataBody,
                   style: GoogleFonts.poppins(
                     fontSize: 13,
                     height: 1.4,
@@ -1286,7 +1398,7 @@ class PrivacyScreen extends StatelessWidget {
                     ),
                   ),
                   title: Text(
-                    'Géolocalisation',
+                    l10n.profileGeolocationSetting,
                     style: GoogleFonts.poppins(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
@@ -1294,7 +1406,7 @@ class PrivacyScreen extends StatelessWidget {
                     ),
                   ),
                   subtitle: Text(
-                    'Autoriser pour afficher les points proches.',
+                    l10n.privacyLocationSubtitle,
                     style: GoogleFonts.poppins(
                       fontSize: 12,
                       color: AppTheme.textSecondary,
@@ -1320,7 +1432,7 @@ class PrivacyScreen extends StatelessWidget {
                     ),
                   ),
                   title: Text(
-                    'Notifications',
+                    l10n.profileNotificationsSetting,
                     style: GoogleFonts.poppins(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
@@ -1328,7 +1440,7 @@ class PrivacyScreen extends StatelessWidget {
                     ),
                   ),
                   subtitle: Text(
-                    'Recevoir des alertes et informations utiles.',
+                    l10n.privacyNotificationsSubtitle,
                     style: GoogleFonts.poppins(
                       fontSize: 12,
                       color: AppTheme.textSecondary,

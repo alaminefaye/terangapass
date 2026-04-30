@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 import '../services/api_service.dart';
 
@@ -81,6 +82,7 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final topPadding = MediaQuery.of(context).padding.top;
     final headerHeight = 170.0 + topPadding;
     return Scaffold(
@@ -120,7 +122,7 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
                               backgroundColor: AppTheme.primaryGreen,
                             ),
                             child: Text(
-                              'Réessayer',
+                              l10n.retry,
                               style: GoogleFonts.poppins(),
                             ),
                           ),
@@ -193,7 +195,7 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
                         ),
                         const SizedBox(width: 16),
                         Text(
-                          'Infos JOJ',
+                          l10n.jojTitle,
                           style: GoogleFonts.poppins(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
@@ -247,9 +249,9 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
                       ),
                       indicatorSize: TabBarIndicatorSize.tab,
                       tabs: [
-                        const Tab(text: 'Calendrier'),
-                        Tab(text: 'Sports (${_sports.length})'),
-                        const Tab(text: 'Accès'),
+                        Tab(text: l10n.jojTabCalendar),
+                        Tab(text: l10n.jojTabSportsWithCount(_sports.length)),
+                        Tab(text: l10n.jojTabAccess),
                       ],
                     ),
                   ),
@@ -263,6 +265,7 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
   }
 
   Widget _buildCalendarTab() {
+    final l10n = AppLocalizations.of(context)!;
     if (_calendar.isEmpty) {
       return Center(
         child: Padding(
@@ -292,7 +295,7 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
               ),
               const SizedBox(height: 24),
               Text(
-                'Calendrier à venir',
+                l10n.jojCalendarComingSoon,
                 style: GoogleFonts.poppins(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
@@ -311,6 +314,7 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
   }
 
   Widget _buildCalendarEvent(Map<String, dynamic> event) {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
@@ -350,7 +354,7 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    event['title'] ?? 'Événement',
+                    (event['title'] ?? l10n.jojDefaultEventTitle).toString(),
                     style: GoogleFonts.poppins(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
@@ -385,6 +389,7 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
   }
 
   Widget _buildSportsTab() {
+    final l10n = AppLocalizations.of(context)!;
     if (_sports.isEmpty) {
       return Center(
         child: Padding(
@@ -413,7 +418,7 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
               ),
               const SizedBox(height: 24),
               Text(
-                'Aucun sport disponible',
+                l10n.jojNoSportsAvailable,
                 style: GoogleFonts.poppins(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
@@ -501,6 +506,7 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
   }
 
   Widget _buildSiteCard(Map<String, dynamic> site) {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
       decoration: BoxDecoration(
@@ -561,7 +567,8 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            site['location'] as String? ?? 'Dakar',
+                            site['location'] as String? ??
+                                l10n.jojDefaultLocation,
                             style: GoogleFonts.poppins(
                               fontSize: 14,
                               color: AppTheme.textSecondary,
@@ -591,7 +598,7 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
                   ),
                   const SizedBox(width: 6),
                   Text(
-                    site['dates'] as String? ?? 'Dates à venir',
+                    site['dates'] as String? ?? l10n.jojDatesComingSoon,
                     style: GoogleFonts.poppins(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
@@ -647,7 +654,7 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
                         ),
                         const SizedBox(width: 10),
                         Text(
-                          'Voir sur la carte',
+                          l10n.jojSeeOnMap,
                           style: GoogleFonts.poppins(
                             color: Colors.white,
                             fontSize: 16,
@@ -667,6 +674,18 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
   }
 
   Future<void> _openSiteInMaps(Map<String, dynamic> site) async {
+    final l10n = AppLocalizations.of(context)!;
+    double? toDouble(Object? v) {
+      if (v == null) return null;
+      if (v is num) return v.toDouble();
+      final s = v.toString().trim();
+      if (s.isEmpty) return null;
+      return double.tryParse(s);
+    }
+
+    final lat = toDouble(site['latitude'] ?? site['lat']);
+    final lng = toDouble(site['longitude'] ?? site['lng']);
+
     final name = site['name']?.toString().trim();
     final location = site['location']?.toString().trim();
     final query = [
@@ -674,24 +693,49 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
       if (location != null && location.isNotEmpty) location,
     ].join(' ');
 
-    final uri = Uri.parse(
-      'https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(query.isEmpty ? 'Dakar' : query)}',
-    );
+    try {
+      if (lat != null && lng != null) {
+        final label = Uri.encodeComponent(
+          query.isEmpty ? l10n.jojDestinationFallback : query,
+        );
+        final googleApp = Uri.parse(
+          'comgooglemaps://?q=$lat,$lng($label)&center=$lat,$lng&zoom=16',
+        );
+        final geo = Uri.parse('geo:$lat,$lng?q=$lat,$lng($label)');
+        final web = Uri.parse(
+          'https://www.google.com/maps/search/?api=1&query=$lat,$lng',
+        );
 
-    final ok = await canLaunchUrl(uri);
-    if (!ok) {
+        if (await canLaunchUrl(googleApp)) {
+          await launchUrl(googleApp, mode: LaunchMode.externalApplication);
+          return;
+        }
+        if (await canLaunchUrl(geo)) {
+          await launchUrl(geo, mode: LaunchMode.externalApplication);
+          return;
+        }
+        await launchUrl(web, mode: LaunchMode.externalApplication);
+        return;
+      }
+
+      final q = Uri.encodeComponent(
+        query.isEmpty ? l10n.jojDefaultLocation : query,
+      );
+      final googleWeb = Uri.parse(
+        'https://www.google.com/maps/search/?api=1&query=$q',
+      );
+      await launchUrl(googleWeb, mode: LaunchMode.externalApplication);
+    } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Impossible d\'ouvrir Google Maps',
+            AppLocalizations.of(context)!.openMapError,
             style: GoogleFonts.poppins(),
           ),
           backgroundColor: AppTheme.primaryRed,
         ),
       );
-      return;
     }
-    await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 }

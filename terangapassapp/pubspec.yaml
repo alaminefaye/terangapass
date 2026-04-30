@@ -30,6 +30,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  intl: ^0.20.2
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -53,7 +56,8 @@ dependencies:
   geocoding: ^3.0.0
   
   # Maps
-  google_maps_flutter: ^2.5.0
+  flutter_map: ^7.0.2
+  latlong2: ^0.9.1
   
   # Permissions
   permission_handler: ^11.3.0
@@ -76,6 +80,7 @@ dependencies:
   
   # Google Fonts
   google_fonts: ^6.1.0
+  flutter_native_splash: ^2.4.7
 
 dev_dependencies:
   flutter_test:
@@ -87,12 +92,14 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 
 # The following section is specific to Flutter packages.
 flutter:
+  generate: true
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
@@ -129,3 +136,18 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "terangapass.png"
+
+flutter_native_splash:
+  color: "#FFFFFF"
+  image: "terangapass.png"
+  android_gravity: center
+  ios_content_mode: scaleAspectFit
+  android_12:
+    color: "#FFFFFF"
+    image: "terangapass_android12.png"
+    icon_background_color: "#FFFFFF"

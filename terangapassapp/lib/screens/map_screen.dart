@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 import '../services/location_service.dart';
 import '../services/api_service.dart';
+
+enum _MapFilter { all, help, sites, hotels, restaurants, pharmacies, hospitals }
 
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
@@ -13,7 +16,7 @@ class MapScreen extends StatefulWidget {
 }
 
 class _MapScreenState extends State<MapScreen> {
-  String _selectedFilter = 'Tous';
+  _MapFilter _selectedFilter = _MapFilter.all;
   bool _isLocating = false;
   double? _currentLat;
   double? _currentLng;
@@ -27,9 +30,23 @@ class _MapScreenState extends State<MapScreen> {
     _loadPointsOfInterest();
   }
 
-  String? _categoryForFilter(String filter) {
-    if (filter == 'Tous') return null;
-    return filter;
+  String? _categoryForFilter(_MapFilter filter) {
+    switch (filter) {
+      case _MapFilter.all:
+        return null;
+      case _MapFilter.help:
+        return 'Secours';
+      case _MapFilter.sites:
+        return 'Sites JOJ';
+      case _MapFilter.hotels:
+        return 'Hôtels';
+      case _MapFilter.restaurants:
+        return 'Restaurants';
+      case _MapFilter.pharmacies:
+        return 'Pharmacies';
+      case _MapFilter.hospitals:
+        return 'Hôpitaux';
+    }
   }
 
   Future<void> _loadPointsOfInterest() async {
@@ -102,6 +119,7 @@ class _MapScreenState extends State<MapScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
@@ -112,7 +130,7 @@ class _MapScreenState extends State<MapScreen> {
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
-          'Carte Interactive',
+          l10n.mapTitle,
           style: GoogleFonts.poppins(
             color: Colors.white,
             fontWeight: FontWeight.bold,
@@ -138,19 +156,19 @@ class _MapScreenState extends State<MapScreen> {
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: [
-                  _buildFilterChip('Tous'),
+                  _buildFilterChip(_MapFilter.all, l10n),
                   const SizedBox(width: 8),
-                  _buildFilterChip('Secours'),
+                  _buildFilterChip(_MapFilter.help, l10n),
                   const SizedBox(width: 8),
-                  _buildFilterChip('Sites JOJ'),
+                  _buildFilterChip(_MapFilter.sites, l10n),
                   const SizedBox(width: 8),
-                  _buildFilterChip('Hôtels'),
+                  _buildFilterChip(_MapFilter.hotels, l10n),
                   const SizedBox(width: 8),
-                  _buildFilterChip('Restaurants'),
+                  _buildFilterChip(_MapFilter.restaurants, l10n),
                   const SizedBox(width: 8),
-                  _buildFilterChip('Pharmacies'),
+                  _buildFilterChip(_MapFilter.pharmacies, l10n),
                   const SizedBox(width: 8),
-                  _buildFilterChip('Hôpitaux'),
+                  _buildFilterChip(_MapFilter.hospitals, l10n),
                 ],
               ),
             ),
@@ -167,7 +185,7 @@ class _MapScreenState extends State<MapScreen> {
                     Icon(Icons.map_rounded, size: 80, color: Colors.grey[400]),
                     const SizedBox(height: 20),
                     Text(
-                      'Carte interactive',
+                      l10n.mapPlaceholderTitle,
                       style: GoogleFonts.poppins(
                         fontSize: 18,
                         color: Colors.grey[600],
@@ -176,7 +194,7 @@ class _MapScreenState extends State<MapScreen> {
                     ),
                     const SizedBox(height: 10),
                     Text(
-                      'Intégration Google Maps à venir',
+                      l10n.mapPlaceholderSubtitle,
                       style: GoogleFonts.poppins(
                         fontSize: 14,
                         color: Colors.grey[500],
@@ -195,7 +213,7 @@ class _MapScreenState extends State<MapScreen> {
                       },
                       icon: const Icon(Icons.map),
                       label: Text(
-                        'Ouvrir dans Google Maps',
+                        l10n.mapOpenInGoogleMaps,
                         style: GoogleFonts.poppins(),
                       ),
                       style: ElevatedButton.styleFrom(
@@ -225,7 +243,7 @@ class _MapScreenState extends State<MapScreen> {
                 Padding(
                   padding: const EdgeInsets.all(16),
                   child: Text(
-                    'Points d\'intérêt à proximité',
+                    l10n.mapNearbyPointsTitle,
                     style: GoogleFonts.poppins(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
@@ -264,7 +282,7 @@ class _MapScreenState extends State<MapScreen> {
                                     backgroundColor: AppTheme.primaryGreen,
                                   ),
                                   child: Text(
-                                    'Réessayer',
+                                    l10n.retry,
                                     style: GoogleFonts.poppins(),
                                   ),
                                 ),
@@ -275,7 +293,7 @@ class _MapScreenState extends State<MapScreen> {
                       : _pointsOfInterest.isEmpty
                       ? Center(
                           child: Text(
-                            'Aucun point disponible',
+                            l10n.mapNoPoints,
                             style: GoogleFonts.poppins(
                               fontSize: 14,
                               color: AppTheme.textSecondary,
@@ -302,8 +320,17 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
-  Widget _buildFilterChip(String label) {
-    final isSelected = _selectedFilter == label;
+  Widget _buildFilterChip(_MapFilter filter, AppLocalizations l10n) {
+    final isSelected = _selectedFilter == filter;
+    final label = switch (filter) {
+      _MapFilter.all => l10n.mapFilterAll,
+      _MapFilter.help => l10n.mapFilterHelp,
+      _MapFilter.sites => l10n.mapFilterSites,
+      _MapFilter.hotels => l10n.mapFilterHotels,
+      _MapFilter.restaurants => l10n.mapFilterRestaurants,
+      _MapFilter.pharmacies => l10n.mapFilterPharmacies,
+      _MapFilter.hospitals => l10n.mapFilterHospitals,
+    };
 
     return FilterChip(
       label: Text(
@@ -316,7 +343,7 @@ class _MapScreenState extends State<MapScreen> {
       selected: isSelected,
       onSelected: (selected) {
         setState(() {
-          _selectedFilter = label;
+          _selectedFilter = filter;
         });
         _loadPointsOfInterest();
       },
@@ -332,6 +359,7 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   Widget _buildPointOfInterestFromData(Map<String, dynamic> point) {
+    final l10n = AppLocalizations.of(context)!;
     final name = (point['name'] ?? '').toString().trim();
     final category = (point['category'] ?? '').toString().trim();
     final distance = (point['distance'] ?? '').toString().trim();
@@ -379,7 +407,7 @@ class _MapScreenState extends State<MapScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      name.isEmpty ? 'Point d’intérêt' : name,
+                      name.isEmpty ? l10n.mapDefaultPointName : name,
                       style: GoogleFonts.poppins(
                         fontWeight: FontWeight.w600,
                         fontSize: 14,
@@ -407,6 +435,7 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   Future<void> _centerOnCurrentLocation() async {
+    final l10n = AppLocalizations.of(context)!;
     if (_isLocating) return;
     setState(() {
       _isLocating = true;
@@ -422,7 +451,7 @@ class _MapScreenState extends State<MapScreen> {
       _loadPointsOfInterest();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Position mise à jour', style: GoogleFonts.poppins()),
+          content: Text(l10n.mapPositionUpdated, style: GoogleFonts.poppins()),
         ),
       );
     } catch (e) {
@@ -430,7 +459,7 @@ class _MapScreenState extends State<MapScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Impossible d\'obtenir la position',
+            l10n.mapCannotGetPosition,
             style: GoogleFonts.poppins(),
           ),
           backgroundColor: AppTheme.primaryRed,
@@ -450,12 +479,13 @@ class _MapScreenState extends State<MapScreen> {
     double? latitude,
     double? longitude,
   }) async {
+    final l10n = AppLocalizations.of(context)!;
     final uri = (latitude != null && longitude != null)
         ? Uri.parse(
             'https://www.google.com/maps/search/?api=1&query=$latitude,$longitude',
           )
         : Uri.parse(
-            'https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(query ?? 'Dakar')}',
+            'https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(query ?? l10n.jojDefaultLocation)}',
           );
 
     final ok = await canLaunchUrl(uri);
@@ -464,7 +494,7 @@ class _MapScreenState extends State<MapScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Impossible d\'ouvrir Google Maps',
+            l10n.mapOpenGoogleMapsError,
             style: GoogleFonts.poppins(),
           ),
           backgroundColor: AppTheme.primaryRed,

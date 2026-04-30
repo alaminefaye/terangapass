@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../l10n/app_localizations.dart';
 import '../../theme/app_theme.dart';
 import '../../services/api_service.dart';
 
@@ -70,6 +71,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
@@ -91,7 +93,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 const SizedBox(height: 20),
                 // Titre
                 Text(
-                  'Créer un compte',
+                  l10n.registerTitle,
                   style: GoogleFonts.poppins(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
@@ -100,7 +102,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Rejoignez Teranga Pass',
+                  l10n.registerSubtitle,
                   style: GoogleFonts.poppins(
                     fontSize: 16,
                     color: AppTheme.textSecondary,
@@ -111,8 +113,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 TextFormField(
                   controller: _nameController,
                   decoration: InputDecoration(
-                    labelText: 'Nom complet',
-                    hintText: 'Votre nom',
+                    labelText: l10n.registerFullNameLabel,
+                    hintText: l10n.registerFullNameHint,
                     prefixIcon: const Icon(Icons.person_outlined),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -127,7 +129,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Veuillez entrer votre nom';
+                      return l10n.registerFullNameRequired;
                     }
                     return null;
                   },
@@ -138,8 +140,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
                   decoration: InputDecoration(
-                    labelText: 'Email',
-                    hintText: 'votre@email.com',
+                    labelText: l10n.loginEmailLabel,
+                    hintText: l10n.loginEmailHint,
                     prefixIcon: const Icon(Icons.email_outlined),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -154,10 +156,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Veuillez entrer votre email';
+                      return l10n.loginEmailRequired;
                     }
                     if (!value.contains('@')) {
-                      return 'Email invalide';
+                      return l10n.loginEmailInvalid;
                     }
                     return null;
                   },
@@ -168,8 +170,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   controller: _passwordController,
                   obscureText: _obscurePassword,
                   decoration: InputDecoration(
-                    labelText: 'Mot de passe',
-                    hintText: '••••••••',
+                    labelText: l10n.loginPasswordLabel,
+                    hintText: l10n.loginPasswordHint,
                     prefixIcon: const Icon(Icons.lock_outlined),
                     suffixIcon: IconButton(
                       icon: Icon(
@@ -196,10 +198,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Veuillez entrer un mot de passe';
+                      return l10n.registerPasswordRequired;
                     }
                     if (value.length < 6) {
-                      return 'Le mot de passe doit contenir au moins 6 caractères';
+                      return l10n.loginPasswordMinLength;
                     }
                     return null;
                   },
@@ -210,8 +212,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   controller: _confirmPasswordController,
                   obscureText: _obscureConfirmPassword,
                   decoration: InputDecoration(
-                    labelText: 'Confirmer le mot de passe',
-                    hintText: '••••••••',
+                    labelText: l10n.registerConfirmPasswordLabel,
+                    hintText: l10n.loginPasswordHint,
                     prefixIcon: const Icon(Icons.lock_outlined),
                     suffixIcon: IconButton(
                       icon: Icon(
@@ -238,10 +240,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Veuillez confirmer votre mot de passe';
+                      return l10n.registerConfirmPasswordRequired;
                     }
                     if (value != _passwordController.text) {
-                      return 'Les mots de passe ne correspondent pas';
+                      return l10n.registerPasswordsNotMatch;
                     }
                     return null;
                   },
@@ -268,7 +270,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ),
                         )
                       : Text(
-                          'S\'inscrire',
+                          l10n.registerSignUp,
                           style: GoogleFonts.poppins(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
@@ -283,7 +285,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     Navigator.of(context).pop();
                   },
                   child: Text(
-                    'Déjà un compte ? Se connecter',
+                    l10n.registerHaveAccount,
                     style: GoogleFonts.poppins(
                       fontSize: 14,
                       color: AppTheme.primaryGreen,

@@ -1,10 +1,10 @@
-import 'package:flutter/foundation.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
-import '../constants/app_constants.dart';
 import '../constants/api_constants.dart';
 import '../services/api_service.dart';
 import 'sos_screen.dart';
@@ -15,6 +15,18 @@ import 'audio_announcements_screen.dart';
 import 'joj_info_screen.dart';
 import 'transport_screen.dart';
 import 'tourism_screen.dart';
+import 'notifications_screen.dart';
+
+enum _HomeFeatureId {
+  audioAnnouncements,
+  touristInfo,
+  competitionSites,
+  competitions,
+  transport,
+  incidentReport,
+}
+
+enum _HomeNavId { home, medicalAlert, sos, incidentReport, profile }
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -24,6 +36,8 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
+  static const String _readNotificationIdsKey = 'read_notification_ids';
+
   Map<String, dynamic>? _officialAnnouncement;
   bool _isLoadingOfficialAnnouncement = false;
   final AudioPlayer _officialPlayer = AudioPlayer();
@@ -35,7 +49,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   List<Map<String, dynamic>> _competitionSites = [];
   bool _isLoadingCompetitionSites = false;
   String? _competitionSitesError;
-  GoogleMapController? _jojMapController;
+  final MapController _jojMapController = MapController();
+  int _unreadNotificationsCount = 0;
 
   @override
   void initState() {
@@ -44,13 +59,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     _bindOfficialPlayerListeners();
     _loadOfficialAnnouncement();
     _loadCompetitionSites();
+    _loadUnreadNotificationsCount();
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _officialPlayer.dispose();
-    _jojMapController?.dispose();
     super.dispose();
   }
 
@@ -59,6 +74,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     if (state == AppLifecycleState.resumed) {
       _loadOfficialAnnouncement();
       _loadCompetitionSites();
+      _loadUnreadNotificationsCount();
     }
   }
 
@@ -136,6 +152,31 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           _isLoadingCompetitionSites = false;
         });
       }
+    }
+  }
+
+  Future<void> _loadUnreadNotificationsCount() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final readIds = (prefs.getStringList(_readNotificationIdsKey) ?? const [])
+          .toSet();
+      final apiService = ApiService();
+      final notifications = await apiService.getNotifications();
+      if (!mounted) return;
+      final unread = notifications
+          .whereType<Map<String, dynamic>>()
+          .where((n) => n['id'] != null)
+          .map((n) => n['id'].toString())
+          .where((id) => !readIds.contains(id))
+          .length;
+      setState(() {
+        _unreadNotificationsCount = unread;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _unreadNotificationsCount = 0;
+      });
     }
   }
 
@@ -230,57 +271,30 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     return LatLng(lat, lng);
   }
 
-  Set<Marker> _buildSiteMarkers() {
-    final markers = <Marker>{};
+  List<Marker> _buildSiteMarkers(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final markers = <Marker>[];
     for (final site in _competitionSites) {
       final pos = _siteLatLng(site);
       if (pos == null) continue;
-      final id = (site['id'] ?? site['name'] ?? pos.toString()).toString();
       final name = (site['name'] ?? '').toString().trim();
-      final location = (site['location'] ?? '').toString().trim();
       markers.add(
         Marker(
-          markerId: MarkerId(id),
-          position: pos,
-          infoWindow: InfoWindow(
-            title: name.isEmpty ? 'Site' : name,
-            snippet: location.isEmpty ? null : location,
+          point: pos,
+          width: 40,
+          height: 40,
+          child: Tooltip(
+            message: name.isEmpty ? l10n.homeSiteFallback : name,
+            child: const Icon(
+              Icons.location_on_rounded,
+              color: AppTheme.primaryGreen,
+              size: 38,
+            ),
           ),
         ),
       );
     }
     return markers;
-  }
-
-  void _fitMapToMarkers(GoogleMapController controller, Set<Marker> markers) {
-    if (markers.isEmpty) return;
-    if (markers.length == 1) {
-      final pos = markers.first.position;
-      controller.moveCamera(
-        CameraUpdate.newCameraPosition(CameraPosition(target: pos, zoom: 13)),
-      );
-      return;
-    }
-
-    double? minLat;
-    double? maxLat;
-    double? minLng;
-    double? maxLng;
-
-    for (final m in markers) {
-      final lat = m.position.latitude;
-      final lng = m.position.longitude;
-      minLat = minLat == null ? lat : (lat < minLat ? lat : minLat);
-      maxLat = maxLat == null ? lat : (lat > maxLat ? lat : maxLat);
-      minLng = minLng == null ? lng : (lng < minLng ? lng : minLng);
-      maxLng = maxLng == null ? lng : (lng > maxLng ? lng : maxLng);
-    }
-
-    final bounds = LatLngBounds(
-      southwest: LatLng(minLat!, minLng!),
-      northeast: LatLng(maxLat!, maxLng!),
-    );
-    controller.moveCamera(CameraUpdate.newLatLngBounds(bounds, 44));
   }
 
   Future<void> _toggleOfficialPlayback() async {
@@ -362,12 +376,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 
   Widget _buildHeaderImage(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       height: 280,
       width: double.infinity,
       decoration: BoxDecoration(
         image: DecorationImage(
-          image: const AssetImage('assets/images/africaine.png'),
+          image: const AssetImage('assets/images/home_header_dakar.png'),
           fit: BoxFit.cover,
           colorFilter: ColorFilter.mode(
             Colors.black.withValues(alpha: 0.3),
@@ -385,80 +400,68 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 Positioned(
                   top: 8,
                   right: 16,
-                  child: Stack(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.2),
-                          shape: BoxShape.circle,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(30),
+                    onTap: () async {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const NotificationsScreen(),
                         ),
-                        child: const Icon(
-                          Icons.notifications_outlined,
-                          color: Colors.white,
-                          size: 24,
-                        ),
-                      ),
-                      Positioned(
-                        right: 0,
-                        top: 0,
-                        child: Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: const BoxDecoration(
-                            color: AppTheme.primaryRed,
+                      );
+                      await _loadUnreadNotificationsCount();
+                    },
+                    child: Stack(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.2),
                             shape: BoxShape.circle,
                           ),
-                          child: const Text(
-                            '3',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                            ),
+                          child: const Icon(
+                            Icons.notifications_outlined,
+                            color: Colors.white,
+                            size: 24,
                           ),
                         ),
-                      ),
-                    ],
+                        if (_unreadNotificationsCount > 0)
+                          Positioned(
+                            right: 0,
+                            top: 0,
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: const BoxDecoration(
+                                color: AppTheme.primaryRed,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Text(
+                                _unreadNotificationsCount > 99
+                                    ? '99+'
+                                    : _unreadNotificationsCount.toString(),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
                 ),
 
-                // Logo et titre tout en haut
                 Positioned(
                   top: 8,
-                  left: 0,
-                  right: 0,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        // Drapeau du Sénégal avec étoile
-                        _buildSenegalFlag(),
-                        const SizedBox(width: 10),
-                        // Titre avec "Teranga" en blanc et "Pass" en rouge
-                        RichText(
-                          text: TextSpan(
-                            children: [
-                              const TextSpan(
-                                text: 'Teranga ',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const TextSpan(
-                                text: 'Pass',
-                                style: TextStyle(
-                                  color: AppTheme.primaryRed,
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
+                  left: 16,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: Image.asset(
+                      'assets/images/app_logo.png',
+                      height: 44,
+                      width: 44,
+                      fit: BoxFit.cover,
                     ),
                   ),
                 ),
@@ -469,7 +472,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   left: 16,
                   right: 16,
                   child: Text(
-                    AppConstants.appTagline,
+                    l10n.homeTagline,
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 16,
@@ -481,31 +484,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               ],
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSenegalFlag() {
-    return Container(
-      width: 28,
-      height: 18,
-      decoration: BoxDecoration(borderRadius: BorderRadius.circular(2)),
-      child: Row(
-        children: [
-          // Bande verte
-          Expanded(child: Container(color: AppTheme.primaryGreen)),
-          // Bande jaune avec étoile
-          Expanded(
-            child: Container(
-              color: AppTheme.primaryYellow,
-              child: Center(
-                child: Icon(Icons.star, color: AppTheme.primaryGreen, size: 10),
-              ),
-            ),
-          ),
-          // Bande rouge
-          Expanded(child: Container(color: AppTheme.primaryRed)),
         ],
       ),
     );
@@ -537,6 +515,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 
   Widget _buildEmergencyButtonsRow(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Row(
       children: [
         // Bouton SOS Urgence
@@ -544,7 +523,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           child: _buildHorizontalEmergencyButton(
             context,
             icon: Icons.warning_amber_rounded,
-            title: 'SOS Urgence',
+            title: l10n.sosEmergencyTitle,
             color: AppTheme.emergencyRed,
             onTap: () {
               Navigator.push(
@@ -561,7 +540,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           child: _buildHorizontalEmergencyButton(
             context,
             icon: Icons.medical_services_rounded,
-            title: 'Alerte Médicale',
+            title: l10n.medicalAlertTitle,
             color: AppTheme.medicalRed,
             onTap: () {
               Navigator.push(
@@ -664,40 +643,47 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 
   Widget _buildMainFeaturesSection(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final features = [
       {
+        'id': _HomeFeatureId.audioAnnouncements,
         'icon': Icons.graphic_eq_rounded,
-        'title': 'Annonces Audio',
+        'title': l10n.homeFeatureAudioAnnouncements,
         'color': AppTheme.primaryGreen,
         'gradient': [AppTheme.primaryGreen, const Color(0xFF00A86B)],
       },
       {
+        'id': _HomeFeatureId.touristInfo,
         'icon': Icons.explore_rounded,
-        'title': 'Infos Touriste',
+        'title': l10n.homeFeatureTouristInfo,
         'color': AppTheme.primaryGreen,
         'gradient': [AppTheme.primaryGreen, const Color(0xFF00C97A)],
       },
       {
+        'id': _HomeFeatureId.competitionSites,
         'icon': Icons.stadium_rounded,
-        'title': 'Sites Compétitions',
+        'title': l10n.homeFeatureCompetitionSites,
         'color': AppTheme.primaryYellow,
         'gradient': [AppTheme.primaryYellow, const Color(0xFFFFD700)],
       },
       {
+        'id': _HomeFeatureId.competitions,
         'icon': Icons.workspace_premium_rounded,
-        'title': 'Compétitions',
+        'title': l10n.homeFeatureCompetitions,
         'color': AppTheme.primaryGreen,
         'gradient': [AppTheme.primaryGreen, const Color(0xFF00B86B)],
       },
       {
+        'id': _HomeFeatureId.transport,
         'icon': Icons.directions_bus_filled_rounded,
-        'title': 'Navettes & Transports',
+        'title': l10n.homeFeatureTransport,
         'color': AppTheme.primaryYellow,
         'gradient': [AppTheme.primaryYellow, const Color(0xFFFFE135)],
       },
       {
+        'id': _HomeFeatureId.incidentReport,
         'icon': Icons.warning_rounded,
-        'title': 'Signaler Incident',
+        'title': l10n.homeFeatureReportIncident,
         'color': AppTheme.warningYellow,
         'gradient': [AppTheme.warningYellow, const Color(0xFFFF8C00)],
       },
@@ -720,33 +706,33 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
         return InkWell(
           onTap: () {
-            final title = feature['title'] as String;
-            if (title == 'Signaler Incident') {
+            final id = feature['id'] as _HomeFeatureId;
+            if (id == _HomeFeatureId.incidentReport) {
               Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (context) => const IncidentReportScreen(),
                 ),
               );
-            } else if (title == 'Annonces Audio') {
+            } else if (id == _HomeFeatureId.audioAnnouncements) {
               Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (context) => const AudioAnnouncementsScreen(),
                 ),
               );
-            } else if (title == 'Infos Touriste') {
+            } else if (id == _HomeFeatureId.touristInfo) {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const TourismScreen()),
               );
-            } else if (title == 'Sites Compétitions' ||
-                title == 'Compétitions') {
+            } else if (id == _HomeFeatureId.competitionSites ||
+                id == _HomeFeatureId.competitions) {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const JOJInfoScreen()),
               );
-            } else if (title == 'Navettes & Transports') {
+            } else if (id == _HomeFeatureId.transport) {
               Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -754,7 +740,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 ),
               );
             } else {
-              _showComingSoon(context, title);
+              _showComingSoon(context, feature['title'] as String);
             }
           },
           borderRadius: BorderRadius.circular(12),
@@ -816,12 +802,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 
   Widget _buildOfficialAnnouncementSection(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final announcement = _officialAnnouncement;
     if (announcement == null) return const SizedBox.shrink();
 
-    final title = (announcement['title'] ?? 'Annonce Officielle')
-        .toString()
-        .trim();
+    final title =
+        (announcement['title'] ?? l10n.homeOfficialAnnouncementDefaultTitle)
+            .toString()
+            .trim();
     final content = (announcement['content'] ?? '').toString().trim();
     final durationLabel = _officialDuration.inSeconds > 0
         ? _formatDuration(_officialDuration)
@@ -850,7 +838,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      title.isEmpty ? 'Annonce Officielle' : title,
+                      title.isEmpty
+                          ? l10n.homeOfficialAnnouncementDefaultTitle
+                          : title,
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -939,7 +929,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 
   Widget _buildJOJInfoSection(BuildContext context) {
-    final markers = _buildSiteMarkers();
+    final l10n = AppLocalizations.of(context)!;
+    final markers = _buildSiteMarkers(context);
     final hasCoords = markers.isNotEmpty;
     final previewSites = _competitionSites.take(3).toList();
 
@@ -970,7 +961,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'INFOS JOJ: Sites Compétitions',
+                    l10n.homeJojInfoTitle,
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -989,9 +980,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     );
                   },
                   icon: const Icon(Icons.calendar_today, size: 14),
-                  label: const Text(
-                    'Calendrier',
-                    style: TextStyle(fontSize: 12),
+                  label: Text(
+                    l10n.homeCalendar,
+                    style: const TextStyle(fontSize: 12),
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.primaryGreen,
@@ -1043,31 +1034,28 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: AppTheme.primaryGreen,
                                 ),
-                                child: const Text('Réessayer'),
+                                child: Text(l10n.retry),
                               ),
                             ],
                           ),
                         ),
                       )
                     : hasCoords
-                    ? GoogleMap(
-                        initialCameraPosition: CameraPosition(
-                          target: markers.first.position,
-                          zoom: 12,
+                    ? FlutterMap(
+                        mapController: _jojMapController,
+                        options: MapOptions(
+                          initialCenter: markers.first.point,
+                          initialZoom: 12,
                         ),
-                        markers: markers,
-                        myLocationButtonEnabled: false,
-                        zoomControlsEnabled: false,
-                        mapToolbarEnabled: false,
-                        onMapCreated: (c) {
-                          _jojMapController = c;
-                          _fitMapToMarkers(c, markers);
-                        },
-                        gestureRecognizers: {
-                          Factory<OneSequenceGestureRecognizer>(
-                            () => EagerGestureRecognizer(),
+                        children: [
+                          TileLayer(
+                            urlTemplate:
+                                'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                            userAgentPackageName:
+                                'com.terangapass.teranga_pass',
                           ),
-                        },
+                          MarkerLayer(markers: markers),
+                        ],
                       )
                     : Center(
                         child: Padding(
@@ -1083,8 +1071,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                               const SizedBox(height: 8),
                               Text(
                                 _competitionSites.isEmpty
-                                    ? 'Aucun site actif'
-                                    : 'Ajoute latitude/longitude dans le dashboard',
+                                    ? l10n.homeNoActiveSites
+                                    : l10n.homeAddLatLngHint,
                                 textAlign: TextAlign.center,
                                 style: Theme.of(context).textTheme.bodyMedium
                                     ?.copyWith(color: AppTheme.textSecondary),
@@ -1116,7 +1104,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              name.isEmpty ? 'Site' : name,
+                              name.isEmpty ? l10n.homeSiteFallback : name,
                               style: Theme.of(context).textTheme.bodyMedium
                                   ?.copyWith(fontWeight: FontWeight.w700),
                               maxLines: 1,
@@ -1148,6 +1136,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 
   Widget _buildBottomNavigationBar(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -1166,27 +1155,42 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _buildNavItem(context, Icons.home_rounded, 'Accueil', false),
+              _buildNavItem(
+                context,
+                Icons.home_rounded,
+                _HomeNavId.home,
+                l10n.homeNavHome,
+                false,
+              ),
               _buildNavItem(
                 context,
                 Icons.medical_services_rounded,
-                'Alerte Médicale',
+                _HomeNavId.medicalAlert,
+                l10n.homeNavMedicalAlert,
                 false,
               ),
               _buildNavItem(
                 context,
                 Icons.warning_amber_rounded,
-                'SOS',
+                _HomeNavId.sos,
+                l10n.homeNavSos,
                 true,
                 isSOS: true,
               ),
               _buildNavItem(
                 context,
                 Icons.report_problem_rounded,
-                'Signalement',
+                _HomeNavId.incidentReport,
+                l10n.homeNavReport,
                 false,
               ),
-              _buildNavItem(context, Icons.person_outline, 'Profil', false),
+              _buildNavItem(
+                context,
+                Icons.person_outline,
+                _HomeNavId.profile,
+                l10n.homeNavProfile,
+                false,
+              ),
             ],
           ),
         ),
@@ -1197,6 +1201,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   Widget _buildNavItem(
     BuildContext context,
     IconData icon,
+    _HomeNavId id,
     String label,
     bool isActive, {
     bool isSOS = false,
@@ -1285,30 +1290,37 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
     return InkWell(
       onTap: () {
-        if (label == 'Accueil') {
-          // Déjà sur l'accueil, ne rien faire
-        } else if (label == 'Alerte Médicale') {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const MedicalAlertScreen()),
-          );
-        } else if (label == 'SOS') {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const SOSScreen()),
-          );
-        } else if (label == 'Signalement') {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const IncidentReportScreen(),
-            ),
-          );
-        } else if (label == 'Profil') {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const ProfileScreen()),
-          );
+        switch (id) {
+          case _HomeNavId.home:
+            break;
+          case _HomeNavId.medicalAlert:
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const MedicalAlertScreen(),
+              ),
+            );
+            break;
+          case _HomeNavId.sos:
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const SOSScreen()),
+            );
+            break;
+          case _HomeNavId.incidentReport:
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const IncidentReportScreen(),
+              ),
+            );
+            break;
+          case _HomeNavId.profile:
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const ProfileScreen()),
+            );
+            break;
         }
       },
       borderRadius: BorderRadius.circular(12),
@@ -1382,17 +1394,16 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 
   void _showComingSoon(BuildContext context, String feature) {
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: Text(feature),
-        content: const Text(
-          'Cette fonctionnalité sera disponible prochainement.',
-        ),
+        content: Text(l10n.homeComingSoon),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('OK'),
+            child: Text(l10n.ok),
           ),
         ],
       ),

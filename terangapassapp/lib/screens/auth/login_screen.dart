@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../l10n/app_localizations.dart';
 import '../../theme/app_theme.dart';
 import '../../services/api_service.dart';
 
@@ -44,7 +45,8 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     } catch (e) {
       if (mounted) {
-        String errorMessage = 'Une erreur est survenue';
+        final l10n = AppLocalizations.of(context)!;
+        String errorMessage = l10n.loginUnknownError;
 
         if (e is Exception) {
           errorMessage = e.toString().replaceAll('Exception: ', '');
@@ -53,8 +55,7 @@ class _LoginScreenState extends State<LoginScreen> {
         }
 
         if (errorMessage.isEmpty || errorMessage == 'Exception') {
-          errorMessage =
-              'Erreur de connexion. Vérifiez votre connexion internet et réessayez.';
+          errorMessage = l10n.loginConnectionError;
         }
 
         ScaffoldMessenger.of(context).showSnackBar(
@@ -76,6 +77,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       body: SafeArea(
@@ -111,7 +113,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 30),
                 // Titre
                 Text(
-                  'Teranga Pass',
+                  l10n.appTitle,
                   style: GoogleFonts.poppins(
                     fontSize: 32,
                     fontWeight: FontWeight.bold,
@@ -121,7 +123,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Votre sécurité à Dakar',
+                  l10n.loginTagline,
                   style: GoogleFonts.poppins(
                     fontSize: 16,
                     color: AppTheme.textSecondary,
@@ -134,8 +136,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
                   decoration: InputDecoration(
-                    labelText: 'Email',
-                    hintText: 'votre@email.com',
+                    labelText: l10n.loginEmailLabel,
+                    hintText: l10n.loginEmailHint,
                     prefixIcon: const Icon(Icons.email_outlined),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -150,10 +152,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Veuillez entrer votre email';
+                      return l10n.loginEmailRequired;
                     }
                     if (!value.contains('@')) {
-                      return 'Email invalide';
+                      return l10n.loginEmailInvalid;
                     }
                     return null;
                   },
@@ -164,8 +166,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   controller: _passwordController,
                   obscureText: _obscurePassword,
                   decoration: InputDecoration(
-                    labelText: 'Mot de passe',
-                    hintText: '••••••••',
+                    labelText: l10n.loginPasswordLabel,
+                    hintText: l10n.loginPasswordHint,
                     prefixIcon: const Icon(Icons.lock_outlined),
                     suffixIcon: IconButton(
                       icon: Icon(
@@ -192,10 +194,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Veuillez entrer votre mot de passe';
+                      return l10n.loginPasswordRequired;
                     }
                     if (value.length < 6) {
-                      return 'Le mot de passe doit contenir au moins 6 caractères';
+                      return l10n.loginPasswordMinLength;
                     }
                     return null;
                   },
@@ -222,7 +224,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         )
                       : Text(
-                          'Se connecter',
+                          l10n.loginSignIn,
                           style: GoogleFonts.poppins(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
@@ -237,7 +239,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     Navigator.pushNamed(context, '/register');
                   },
                   child: Text(
-                    'Pas de compte ? S\'inscrire',
+                    l10n.loginNoAccount,
                     style: GoogleFonts.poppins(
                       fontSize: 14,
                       color: AppTheme.primaryGreen,

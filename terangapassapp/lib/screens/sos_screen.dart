@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 import '../services/location_service.dart';
 import '../services/api_service.dart';
@@ -113,12 +114,13 @@ class _SOSScreenState extends State<SOSScreen> {
       final location = await locationService.getCurrentLocationWithAddress();
       setState(() {
         _currentLocation =
-            location['address'] as String? ?? 'Position inconnue';
+            location['address'] as String? ??
+            AppLocalizations.of(context)!.sosUnknownPosition;
         _locationAccuracy = location['accuracy'] as double?;
       });
     } catch (e) {
       setState(() {
-        _currentLocation = "Dakar Plateau, 9 Rue Carnot";
+        _currentLocation = AppLocalizations.of(context)!.sosFallbackAddress;
         _locationAccuracy = 7.0;
       });
     }
@@ -157,7 +159,10 @@ class _SOSScreenState extends State<SOSScreen> {
       HapticFeedback.lightImpact();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Alerte SOS annulée', style: GoogleFonts.poppins()),
+          content: Text(
+            AppLocalizations.of(context)!.sosCancelled,
+            style: GoogleFonts.poppins(),
+          ),
           backgroundColor: Colors.grey.shade700,
           duration: const Duration(seconds: 2),
         ),
@@ -230,21 +235,21 @@ class _SOSScreenState extends State<SOSScreen> {
         context: context,
         builder: (context) => AlertDialog(
           title: Text(
-            'Alerte SOS Envoyée',
+            AppLocalizations.of(context)!.sosSentTitle,
             style: GoogleFonts.poppins(
               fontWeight: FontWeight.bold,
               color: AppTheme.primaryRed,
             ),
           ),
           content: Text(
-            'Votre alerte SOS a été envoyée aux services de secours.\n\nIls arriveront dans les plus brefs délais.',
+            AppLocalizations.of(context)!.sosSentBody,
             style: GoogleFonts.poppins(),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
               child: Text(
-                'OK',
+                AppLocalizations.of(context)!.ok,
                 style: GoogleFonts.poppins(
                   color: AppTheme.primaryRed,
                   fontWeight: FontWeight.bold,
@@ -262,17 +267,20 @@ class _SOSScreenState extends State<SOSScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: Text(
-          'Appeler $service',
+          AppLocalizations.of(context)!.callServiceTitle(service),
           style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
         ),
         content: Text(
-          'Voulez-vous appeler le $service au $number ?',
+          AppLocalizations.of(context)!.callServicePrompt(service, number),
           style: GoogleFonts.poppins(),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: Text('Annuler', style: GoogleFonts.poppins()),
+            child: Text(
+              AppLocalizations.of(context)!.cancel,
+              style: GoogleFonts.poppins(),
+            ),
           ),
           TextButton(
             onPressed: () {
@@ -280,7 +288,7 @@ class _SOSScreenState extends State<SOSScreen> {
               _launchDialer(number);
             },
             child: Text(
-              'Appeler',
+              AppLocalizations.of(context)!.call,
               style: GoogleFonts.poppins(
                 color: AppTheme.primaryRed,
                 fontWeight: FontWeight.bold,
@@ -301,7 +309,7 @@ class _SOSScreenState extends State<SOSScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Impossible d\'ouvrir le téléphone',
+            AppLocalizations.of(context)!.openPhoneError,
             style: GoogleFonts.poppins(),
           ),
           backgroundColor: AppTheme.primaryRed,
@@ -312,6 +320,7 @@ class _SOSScreenState extends State<SOSScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       body: Stack(
@@ -408,7 +417,7 @@ class _SOSScreenState extends State<SOSScreen> {
                       ),
                       const SizedBox(width: 16),
                       Text(
-                        'SOS Urgence',
+                        l10n.sosEmergencyTitle,
                         style: GoogleFonts.poppins(
                           color: Colors.white,
                           fontSize: 24,
@@ -552,7 +561,7 @@ class _SOSScreenState extends State<SOSScreen> {
                                             ),
                                             const SizedBox(height: 20),
                                             Text(
-                                              'Alerte dans...',
+                                              l10n.sosCountdown,
                                               style: GoogleFonts.poppins(
                                                 color: Colors.white,
                                                 fontSize: 18,
@@ -601,7 +610,7 @@ class _SOSScreenState extends State<SOSScreen> {
                                             ),
                                             const SizedBox(height: 20),
                                             Text(
-                                              'ALERTE ENVOYÉE !',
+                                              l10n.sosAlertSent,
                                               style: GoogleFonts.poppins(
                                                 color: Colors.white,
                                                 fontSize: 22,
@@ -639,7 +648,7 @@ class _SOSScreenState extends State<SOSScreen> {
                                             ),
                                             const SizedBox(height: 20),
                                             Text(
-                                              'SOS URGENCE',
+                                              l10n.sosUrgenceLabel,
                                               style: GoogleFonts.poppins(
                                                 color: Colors.white,
                                                 fontSize: 28,
@@ -657,7 +666,7 @@ class _SOSScreenState extends State<SOSScreen> {
                                             ),
                                             const SizedBox(height: 8),
                                             Text(
-                                              'Appuyez pour alerter',
+                                              l10n.sosPressToAlert,
                                               style: GoogleFonts.poppins(
                                                 color: Colors.white.withValues(
                                                   alpha: 0.9,
@@ -712,7 +721,7 @@ class _SOSScreenState extends State<SOSScreen> {
                                   ),
                                   const SizedBox(width: 10),
                                   Text(
-                                    'ANNULER L\'ALERTE',
+                                    l10n.sosCancelAlert,
                                     style: GoogleFonts.poppins(
                                       color: AppTheme.primaryRed,
                                       fontSize: 16,
@@ -761,7 +770,7 @@ class _SOSScreenState extends State<SOSScreen> {
                                     ),
                                     const SizedBox(width: 15),
                                     Text(
-                                      'Votre position actuelle',
+                                      l10n.sosCurrentPosition,
                                       style: GoogleFonts.poppins(
                                         fontWeight: FontWeight.bold,
                                         fontSize: 16,
@@ -791,7 +800,9 @@ class _SOSScreenState extends State<SOSScreen> {
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     child: Text(
-                                      'Précision: ${_locationAccuracy!.toStringAsFixed(1)} mètres',
+                                      l10n.sosAccuracy(
+                                        _locationAccuracy!.toStringAsFixed(1),
+                                      ),
                                       style: GoogleFonts.poppins(
                                         fontSize: 12,
                                         color: Colors.grey.shade600,
@@ -807,7 +818,7 @@ class _SOSScreenState extends State<SOSScreen> {
 
                         // Services de secours
                         Text(
-                          'Services de secours',
+                          l10n.sosEmergencyServices,
                           style: GoogleFonts.poppins(
                             fontWeight: FontWeight.bold,
                             fontSize: 20,
@@ -819,11 +830,11 @@ class _SOSScreenState extends State<SOSScreen> {
                         // Police
                         _buildEmergencyServiceCard(
                           context,
-                          'Police',
+                          l10n.sosServicePolice,
                           '17',
                           Icons.local_police_rounded,
                           Colors.blue,
-                          () => _callEmergency('17', 'Police'),
+                          () => _callEmergency('17', l10n.sosServicePolice),
                         ),
 
                         const SizedBox(height: 15),
@@ -831,11 +842,11 @@ class _SOSScreenState extends State<SOSScreen> {
                         // Pompiers
                         _buildEmergencyServiceCard(
                           context,
-                          'Pompiers',
+                          l10n.sosServiceFirefighters,
                           '18',
                           Icons.fire_truck_rounded,
                           Colors.orange,
-                          () => _callEmergency('18', 'Pompiers'),
+                          () => _callEmergency('18', l10n.sosServiceFirefighters),
                         ),
 
                         const SizedBox(height: 15),
@@ -843,18 +854,18 @@ class _SOSScreenState extends State<SOSScreen> {
                         // SAMU
                         _buildEmergencyServiceCard(
                           context,
-                          'SAMU',
+                          l10n.sosServiceAmbulance,
                           '15',
                           Icons.medical_services_rounded,
                           AppTheme.primaryRed,
-                          () => _callEmergency('15', 'SAMU'),
+                          () => _callEmergency('15', l10n.sosServiceAmbulance),
                         ),
 
                         const SizedBox(height: 30),
 
                         // Historique des alertes
                         Text(
-                          'Historique',
+                          l10n.sosHistory,
                           style: GoogleFonts.poppins(
                             fontWeight: FontWeight.bold,
                             fontSize: 20,
@@ -886,7 +897,7 @@ class _SOSScreenState extends State<SOSScreen> {
                                 ),
                                 const SizedBox(height: 10),
                                 Text(
-                                  'Aucune alerte envoyée récemment',
+                                  l10n.sosNoRecentAlerts,
                                   style: GoogleFonts.poppins(
                                     color: AppTheme.textSecondary,
                                     fontSize: 14,
@@ -987,7 +998,7 @@ class _SOSScreenState extends State<SOSScreen> {
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
-                          'Numéro: $number',
+                          AppLocalizations.of(context)!.sosNumber(number),
                           style: GoogleFonts.poppins(
                             fontSize: 13,
                             color: AppTheme.textSecondary,

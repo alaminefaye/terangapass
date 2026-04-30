@@ -1,17 +1,39 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'constants/app_constants.dart';
+import 'l10n/app_localizations.dart';
 import 'theme/app_theme.dart';
 import 'screens/home_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/register_screen.dart';
+import 'screens/notifications_screen.dart';
 import 'services/notification_service.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  final stopwatch = Stopwatch()..start();
+  final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
+
+  final prefs = await SharedPreferences.getInstance();
+  final language =
+      (prefs.getString(AppConstants.languageKey) ??
+              AppConstants.defaultLanguage)
+          .trim();
+  if (language.isNotEmpty) {
+    AppConstants.localeNotifier.value = Locale(language);
+  }
   await NotificationService().initialize(navigatorKey: navigatorKey);
   runApp(const TerangaPassApp());
+
+  final remainingMs = 3000 - stopwatch.elapsedMilliseconds;
+  if (remainingMs > 0) {
+    await Future.delayed(Duration(milliseconds: remainingMs));
+  }
+  FlutterNativeSplash.remove();
 }
 
 class TerangaPassApp extends StatelessWidget {
@@ -19,16 +41,30 @@ class TerangaPassApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Teranga Pass',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
-      navigatorKey: navigatorKey,
-      home: const AuthWrapper(),
-      routes: {
-        '/home': (context) => const HomeScreen(),
-        '/login': (context) => const LoginScreen(),
-        '/register': (context) => const RegisterScreen(),
+    return ValueListenableBuilder<Locale?>(
+      valueListenable: AppConstants.localeNotifier,
+      builder: (context, locale, _) {
+        return MaterialApp(
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.lightTheme,
+          navigatorKey: navigatorKey,
+          locale: locale ?? const Locale(AppConstants.defaultLanguage),
+          supportedLocales: const [Locale('fr'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          onGenerateTitle: (context) => AppLocalizations.of(context)!.appTitle,
+          home: const AuthWrapper(),
+          routes: {
+            '/home': (context) => const HomeScreen(),
+            '/notifications': (context) => const NotificationsScreen(),
+            '/login': (context) => const LoginScreen(),
+            '/register': (context) => const RegisterScreen(),
+          },
+        );
       },
     );
   }

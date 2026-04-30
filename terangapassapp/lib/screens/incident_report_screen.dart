@@ -5,6 +5,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:record/record.dart';
 import 'dart:io';
+import '../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 import '../services/location_service.dart';
 import '../services/api_service.dart';
@@ -47,7 +48,8 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
       if (!mounted) return;
       setState(() {
         _currentLocation =
-            location['address'] as String? ?? 'Position inconnue';
+            location['address'] as String? ??
+            AppLocalizations.of(context)!.unknownPosition;
       });
     } catch (e) {
       if (!mounted) return;
@@ -58,6 +60,7 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
   }
 
   Future<void> _addPhoto() async {
+    final l10n = AppLocalizations.of(context)!;
     final source = await showModalBottomSheet<ImageSource>(
       context: context,
       backgroundColor: Colors.white,
@@ -81,12 +84,12 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
               const SizedBox(height: 10),
               ListTile(
                 leading: const Icon(Icons.photo_library_rounded),
-                title: Text('Galerie', style: GoogleFonts.poppins()),
+                title: Text(l10n.incidentGallery, style: GoogleFonts.poppins()),
                 onTap: () => Navigator.of(context).pop(ImageSource.gallery),
               ),
               ListTile(
                 leading: const Icon(Icons.photo_camera_rounded),
-                title: Text('Caméra', style: GoogleFonts.poppins()),
+                title: Text(l10n.incidentCamera, style: GoogleFonts.poppins()),
                 onTap: () => Navigator.of(context).pop(ImageSource.camera),
               ),
               const SizedBox(height: 8),
@@ -120,7 +123,7 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Impossible d\'ajouter une photo',
+            AppLocalizations.of(context)!.incidentAddPhotoError,
             style: GoogleFonts.poppins(),
           ),
           backgroundColor: AppTheme.primaryRed,
@@ -146,7 +149,7 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Impossible d\'arrêter l\'enregistrement',
+              AppLocalizations.of(context)!.incidentStopRecordingError,
               style: GoogleFonts.poppins(),
             ),
             backgroundColor: AppTheme.primaryRed,
@@ -162,7 +165,7 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Permission micro refusée',
+            AppLocalizations.of(context)!.incidentMicPermissionDenied,
             style: GoogleFonts.poppins(),
           ),
           backgroundColor: AppTheme.primaryRed,
@@ -177,7 +180,7 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Permission micro refusée',
+            AppLocalizations.of(context)!.incidentMicPermissionDenied,
             style: GoogleFonts.poppins(),
           ),
           backgroundColor: AppTheme.primaryRed,
@@ -213,7 +216,7 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Impossible de démarrer l\'enregistrement',
+            AppLocalizations.of(context)!.incidentStartRecordingError,
             style: GoogleFonts.poppins(),
           ),
           backgroundColor: AppTheme.primaryRed,
@@ -227,7 +230,7 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Veuillez sélectionner un type d\'incident',
+            AppLocalizations.of(context)!.incidentSelectTypeError,
             style: GoogleFonts.poppins(),
           ),
           backgroundColor: AppTheme.primaryRed,
@@ -240,7 +243,7 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Veuillez décrire l\'incident',
+            AppLocalizations.of(context)!.incidentDescribeError,
             style: GoogleFonts.poppins(),
           ),
           backgroundColor: AppTheme.primaryRed,
@@ -263,7 +266,7 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
 
       final apiService = ApiService();
       await apiService.reportIncident(
-        incidentType: _selectedIncidentType!.toLowerCase(),
+        incidentType: _selectedIncidentType!,
         description: _descriptionController.text.trim(),
         latitude: location.latitude,
         longitude: location.longitude,
@@ -278,14 +281,14 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
           context: context,
           builder: (context) => AlertDialog(
             title: Text(
-              'Signalement Envoyé',
+              AppLocalizations.of(context)!.incidentSentTitle,
               style: GoogleFonts.poppins(
                 fontWeight: FontWeight.bold,
                 color: AppTheme.primaryGreen,
               ),
             ),
             content: Text(
-              'Votre signalement a été envoyé aux autorités compétentes.\n\nVous recevrez une réponse dans les plus brefs délais.',
+              AppLocalizations.of(context)!.incidentSentBody,
               style: GoogleFonts.poppins(),
             ),
             actions: [
@@ -295,7 +298,7 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                   Navigator.of(context).pop();
                 },
                 child: Text(
-                  'OK',
+                  AppLocalizations.of(context)!.ok,
                   style: GoogleFonts.poppins(
                     color: AppTheme.primaryGreen,
                     fontWeight: FontWeight.bold,
@@ -329,6 +332,7 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       body: Stack(
@@ -425,7 +429,7 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                       ),
                       const SizedBox(width: 16),
                       Text(
-                        'Signaler un Incident',
+                        l10n.incidentReportTitle,
                         style: GoogleFonts.poppins(
                           color: Colors.white,
                           fontSize: 24,
@@ -446,7 +450,7 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
 
                         // Section Type d'incident
                         Text(
-                          'Type d\'incident',
+                          l10n.incidentTypeTitle,
                           style: GoogleFonts.poppins(
                             fontWeight: FontWeight.bold,
                             fontSize: 18,
@@ -455,15 +459,21 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                         ),
                         const SizedBox(height: 15),
 
-                        _buildIncidentTypeOption('Perte', Icons.search_rounded),
+                        _buildIncidentTypeOption(
+                          'perte',
+                          l10n.incidentTypeLoss,
+                          Icons.search_rounded,
+                        ),
                         const SizedBox(height: 15),
                         _buildIncidentTypeOption(
-                          'Accident',
+                          'accident',
+                          l10n.incidentTypeAccident,
                           Icons.car_crash_rounded,
                         ),
                         const SizedBox(height: 15),
                         _buildIncidentTypeOption(
-                          'Suspect',
+                          'suspect',
+                          l10n.incidentTypeSuspicious,
                           Icons.warning_rounded,
                         ),
 
@@ -471,7 +481,7 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
 
                         // Section Description
                         Text(
-                          'Description',
+                          l10n.incidentDescriptionTitle,
                           style: GoogleFonts.poppins(
                             fontWeight: FontWeight.bold,
                             fontSize: 18,
@@ -496,7 +506,7 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                             controller: _descriptionController,
                             maxLines: 5,
                             decoration: InputDecoration(
-                              hintText: 'Décrivez l\'incident en détail...',
+                              hintText: l10n.incidentDescriptionHint,
                               hintStyle: GoogleFonts.poppins(
                                 color: AppTheme.textSecondary,
                               ),
@@ -519,7 +529,7 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
 
                         // Section Photos
                         Text(
-                          'Photos',
+                          l10n.incidentPhotosTitle,
                           style: GoogleFonts.poppins(
                             fontWeight: FontWeight.bold,
                             fontSize: 18,
@@ -604,7 +614,7 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
-                                      'Ajouter',
+                                      l10n.incidentAdd,
                                       style: GoogleFonts.poppins(
                                         fontSize: 12,
                                         color: AppTheme.primaryGreen,
@@ -622,7 +632,7 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
 
                         // Section Audio
                         Text(
-                          'Audio',
+                          l10n.incidentAudioTitle,
                           style: GoogleFonts.poppins(
                             fontWeight: FontWeight.bold,
                             fontSize: 18,
@@ -692,8 +702,8 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                                     children: [
                                       Text(
                                         _isRecording
-                                            ? 'Enregistrement en cours...'
-                                            : 'Ajouter un message vocal',
+                                            ? l10n.incidentRecordingInProgress
+                                            : l10n.incidentAddVoiceMessage,
                                         style: GoogleFonts.poppins(
                                           fontWeight: FontWeight.bold,
                                           fontSize: 16,
@@ -705,8 +715,8 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                                       if (!_isRecording)
                                         Text(
                                           _audioPath == null
-                                              ? 'Appuyez pour enregistrer'
-                                              : 'Audio ajouté',
+                                              ? l10n.incidentTapToRecord
+                                              : l10n.incidentAudioAdded,
                                           style: GoogleFonts.poppins(
                                             fontSize: 13,
                                             color: AppTheme.textSecondary,
@@ -779,7 +789,7 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                                         CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        'Lieu de l\'incident',
+                                        l10n.incidentLocationTitle,
                                         style: GoogleFonts.poppins(
                                           fontWeight: FontWeight.bold,
                                           fontSize: 16,
@@ -861,7 +871,7 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                                         ),
                                       )
                                     : Text(
-                                        'ENVOYER LE SIGNALEMENT',
+                                        l10n.incidentSendReport,
                                         style: GoogleFonts.poppins(
                                           color: Colors.white,
                                           fontSize: 16,
@@ -886,13 +896,13 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
     );
   }
 
-  Widget _buildIncidentTypeOption(String type, IconData icon) {
-    final isSelected = _selectedIncidentType == type;
+  Widget _buildIncidentTypeOption(String value, String label, IconData icon) {
+    final isSelected = _selectedIncidentType == value;
 
     return GestureDetector(
       onTap: () {
         setState(() {
-          _selectedIncidentType = type;
+          _selectedIncidentType = value;
         });
       },
       child: AnimatedContainer(
@@ -934,7 +944,7 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
             const SizedBox(width: 16),
             Expanded(
               child: Text(
-                type,
+                label,
                 style: GoogleFonts.poppins(
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
                   fontSize: 16,
