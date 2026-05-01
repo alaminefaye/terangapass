@@ -26,6 +26,7 @@
                         <option value="pharmacy" {{ request('category') == 'pharmacy' ? 'selected' : '' }}>Pharmacie</option>
                         <option value="hospital" {{ request('category') == 'hospital' ? 'selected' : '' }}>Hôpital</option>
                         <option value="embassy" {{ request('category') == 'embassy' ? 'selected' : '' }}>Ambassade</option>
+                        <option value="consulate" {{ request('category') == 'consulate' ? 'selected' : '' }}>Consulat</option>
                     </select>
                 </div>
                 <div class="col-md-4">
@@ -72,6 +73,8 @@
                             <span class="badge bg-danger">🏥 Hôpital</span>
                             @elseif($point->category == 'embassy')
                             <span class="badge bg-warning">🏛️ Ambassade</span>
+                            @elseif($point->category == 'consulate')
+                            <span class="badge bg-dark">🏢 Consulat</span>
                             @endif
                         </td>
                         <td>

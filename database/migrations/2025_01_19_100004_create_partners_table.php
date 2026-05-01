@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('partners', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->enum('category', ['hotel', 'restaurant', 'pharmacy', 'hospital', 'embassy', 'other'])->default('other');
+            $table->enum('category', ['hotel', 'restaurant', 'pharmacy', 'hospital', 'embassy', 'consulate', 'other'])->default('other');
             $table->text('description')->nullable();
             $table->string('address');
             $table->decimal('latitude', 10, 8)->nullable();

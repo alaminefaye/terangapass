@@ -36,6 +36,7 @@
                             <option value="pharmacy" {{ old('category', $tourism->category) == 'pharmacy' ? 'selected' : '' }}>💊 Pharmacie</option>
                             <option value="hospital" {{ old('category', $tourism->category) == 'hospital' ? 'selected' : '' }}>🏥 Hôpital</option>
                             <option value="embassy" {{ old('category', $tourism->category) == 'embassy' ? 'selected' : '' }}>🏛️ Ambassade</option>
+                            <option value="consulate" {{ old('category', $tourism->category) == 'consulate' ? 'selected' : '' }}>🏢 Consulat</option>
                         </select>
                         @error('category')
                         <div class="invalid-feedback">{{ $message }}</div>
@@ -98,6 +99,23 @@
                         <label class="form-label">Site web</label>
                         <input type="url" name="website" class="form-control @error('website') is-invalid @enderror" value="{{ old('website', $tourism->website) }}">
                         @error('website')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Note (0-5)</label>
+                        <input type="number" step="0.1" min="0" max="5" name="rating" class="form-control @error('rating') is-invalid @enderror" value="{{ old('rating', $tourism->rating) }}">
+                        @error('rating')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+                    <div class="col-md-8 mb-3">
+                        <label class="form-label">Horaires</label>
+                        <input type="text" name="opening_hours" class="form-control @error('opening_hours') is-invalid @enderror" value="{{ old('opening_hours', $tourism->opening_hours) }}" placeholder="ex: 8h-17h Lun-Ven">
+                        @error('opening_hours')
                         <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>

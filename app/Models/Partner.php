@@ -19,6 +19,8 @@ class Partner extends Model
         'phone',
         'email',
         'website',
+        'rating',
+        'opening_hours',
         'logo_url',
         'icon_path',
         'photos',
@@ -30,6 +32,7 @@ class Partner extends Model
     protected $casts = [
         'latitude' => 'decimal:8',
         'longitude' => 'decimal:8',
+        'rating' => 'decimal:1',
         'photos' => 'array',
         'is_sponsor' => 'boolean',
         'is_active' => 'boolean',

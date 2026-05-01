@@ -426,19 +426,30 @@ class _HomeScreenState extends State<HomeScreen>
       backgroundColor: const Color(0xFFFAF7F0),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _buildMaquetteTopHeader(context),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                child: _buildMaquetteTopHeader(context),
+              ),
               const SizedBox(height: 12),
               _buildHeroBanner(context),
               const SizedBox(height: 14),
-              _buildQuickSearchBar(context),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: _buildQuickSearchBar(context),
+              ),
               const SizedBox(height: 14),
-              _buildPillarsSection(context),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: _buildPillarsSection(context),
+              ),
               const SizedBox(height: 14),
-              _buildJojCountdownStrip(context),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: _buildJojCountdownStrip(context),
+              ),
               const SizedBox(height: 100),
             ],
           ),

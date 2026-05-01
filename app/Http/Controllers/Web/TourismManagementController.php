@@ -15,7 +15,7 @@ class TourismManagementController extends Controller
         $query = Partner::query();
 
         // Filtrer uniquement les catégories de tourisme
-        $tourismCategories = ['hotel', 'restaurant', 'pharmacy', 'hospital', 'embassy'];
+        $tourismCategories = ['hotel', 'restaurant', 'pharmacy', 'hospital', 'embassy', 'consulate'];
         $query->whereIn('category', $tourismCategories);
 
         if ($request->filled('category')) {
@@ -45,7 +45,7 @@ class TourismManagementController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'category' => 'required|in:hotel,restaurant,pharmacy,hospital,embassy',
+            'category' => 'required|in:hotel,restaurant,pharmacy,hospital,embassy,consulate',
             'description' => 'nullable|string',
             'address' => 'required|string',
             'latitude' => 'nullable|numeric',
@@ -53,6 +53,8 @@ class TourismManagementController extends Controller
             'phone' => 'nullable|string',
             'email' => 'nullable|email',
             'website' => 'nullable|url',
+            'rating' => 'nullable|numeric|min:0|max:5',
+            'opening_hours' => 'nullable|string|max:255',
             'logo_url' => 'nullable|url',
             'icon' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:5120',
             'photos' => 'nullable|array',
@@ -94,7 +96,7 @@ class TourismManagementController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'category' => 'required|in:hotel,restaurant,pharmacy,hospital,embassy',
+            'category' => 'required|in:hotel,restaurant,pharmacy,hospital,embassy,consulate',
             'description' => 'nullable|string',
             'address' => 'required|string',
             'latitude' => 'nullable|numeric',
@@ -102,6 +104,8 @@ class TourismManagementController extends Controller
             'phone' => 'nullable|string',
             'email' => 'nullable|email',
             'website' => 'nullable|url',
+            'rating' => 'nullable|numeric|min:0|max:5',
+            'opening_hours' => 'nullable|string|max:255',
             'logo_url' => 'nullable|url',
             'icon' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:5120',
             'remove_icon' => 'nullable|boolean',

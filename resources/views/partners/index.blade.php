@@ -26,6 +26,7 @@
                         <option value="pharmacy" {{ request('category') == 'pharmacy' ? 'selected' : '' }}>Pharmacie</option>
                         <option value="hospital" {{ request('category') == 'hospital' ? 'selected' : '' }}>Hôpital</option>
                         <option value="embassy" {{ request('category') == 'embassy' ? 'selected' : '' }}>Ambassade</option>
+                        <option value="consulate" {{ request('category') == 'consulate' ? 'selected' : '' }}>Consulat</option>
                         <option value="other" {{ request('category') == 'other' ? 'selected' : '' }}>Autre</option>
                     </select>
                 </div>
@@ -89,6 +90,8 @@
                             <span class="badge bg-danger">Hôpital</span>
                             @elseif($partner->category == 'embassy')
                             <span class="badge bg-warning">Ambassade</span>
+                            @elseif($partner->category == 'consulate')
+                            <span class="badge bg-dark">Consulat</span>
                             @else
                             <span class="badge bg-secondary">Autre</span>
                             @endif

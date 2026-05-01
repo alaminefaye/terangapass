@@ -47,7 +47,7 @@ class PartnerManagementController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'category' => 'required|in:hotel,restaurant,pharmacy,hospital,embassy,other',
+            'category' => 'required|in:hotel,restaurant,pharmacy,hospital,embassy,consulate,other',
             'description' => 'nullable|string',
             'address' => 'required|string',
             'latitude' => 'nullable|numeric',
@@ -55,6 +55,8 @@ class PartnerManagementController extends Controller
             'phone' => 'nullable|string',
             'email' => 'nullable|email',
             'website' => 'nullable|url',
+            'rating' => 'nullable|numeric|min:0|max:5',
+            'opening_hours' => 'nullable|string|max:255',
             'logo_url' => 'nullable|url',
             'is_sponsor' => 'boolean',
             'is_active' => 'boolean',
@@ -80,7 +82,7 @@ class PartnerManagementController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'category' => 'required|in:hotel,restaurant,pharmacy,hospital,embassy,other',
+            'category' => 'required|in:hotel,restaurant,pharmacy,hospital,embassy,consulate,other',
             'description' => 'nullable|string',
             'address' => 'required|string',
             'latitude' => 'nullable|numeric',
@@ -88,6 +90,8 @@ class PartnerManagementController extends Controller
             'phone' => 'nullable|string',
             'email' => 'nullable|email',
             'website' => 'nullable|url',
+            'rating' => 'nullable|numeric|min:0|max:5',
+            'opening_hours' => 'nullable|string|max:255',
             'logo_url' => 'nullable|url',
             'is_sponsor' => 'boolean',
             'is_active' => 'boolean',

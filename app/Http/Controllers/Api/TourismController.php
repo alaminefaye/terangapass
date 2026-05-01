@@ -73,7 +73,7 @@ class TourismController extends Controller
     public function embassies(Request $request)
     {
         $query = Partner::where('is_active', true)
-            ->where('category', 'embassy')
+            ->whereIn('category', ['embassy', 'consulate'])
             ->orderBy('name');
 
         $embassies = $query->get()->map(function ($partner) {
@@ -84,8 +84,11 @@ class TourismController extends Controller
                 'phone' => $partner->phone,
                 'email' => $partner->email,
                 'website' => $partner->website,
+                'rating' => $partner->rating,
+                'opening_hours' => $partner->opening_hours,
                 'latitude' => $partner->latitude,
                 'longitude' => $partner->longitude,
+                'mission_type' => $partner->category,
                 'icon_url' => $this->normalizeUrl($partner->icon_path ?: $partner->logo_url),
             ];
         });
@@ -126,6 +129,7 @@ class TourismController extends Controller
             'pharmacy' => 'Pharmacies',
             'hospital' => 'Hôpitaux',
             'embassy' => 'Ambassades',
+            'consulate' => 'Consulats',
             'other' => 'Autres',
         ];
 

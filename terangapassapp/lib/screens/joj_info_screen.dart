@@ -21,6 +21,7 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
   List<Map<String, dynamic>> _calendar = [];
   bool _isLoading = true;
   String? _errorMessage;
+  String? _selectedDayKey;
 
   @override
   void initState() {
@@ -51,6 +52,7 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
         _sites = sites.map((s) => s as Map<String, dynamic>).toList();
         _calendar = calendar.map((c) => c as Map<String, dynamic>).toList();
         _sports = _deriveSportsFromCalendar(_calendar);
+        _selectedDayKey = _buildDayChips(_calendar).firstOrNull?['key'];
       });
     } catch (e) {
       if (!mounted) return;
@@ -67,6 +69,71 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
         });
       }
     }
+  }
+
+  String? _eventDateKey(Map<String, dynamic> event) {
+    final startRaw = (event['start_date'] ?? event['date'] ?? '').toString().trim();
+    if (startRaw.isEmpty) return null;
+    final parsed = DateTime.tryParse(startRaw);
+    if (parsed != null) {
+      final mm = parsed.month.toString().padLeft(2, '0');
+      final dd = parsed.day.toString().padLeft(2, '0');
+      return '$mm-$dd';
+    }
+    if (startRaw.length >= 10) {
+      final sliced = startRaw.substring(5, 10);
+      return RegExp(r'^\d{2}-\d{2}$').hasMatch(sliced) ? sliced : null;
+    }
+    return null;
+  }
+
+  List<Map<String, String>> _buildDayChips(List<Map<String, dynamic>> events) {
+    const fallback = [
+      {'key': '10-29', 'day': 'MER', 'num': '29'},
+      {'key': '10-30', 'day': 'JEU', 'num': '30'},
+      {'key': '10-31', 'day': 'VEN', 'num': '31'},
+      {'key': '11-01', 'day': 'SAM', 'num': '01'},
+      {'key': '11-02', 'day': 'DIM', 'num': '02'},
+      {'key': '11-03', 'day': 'LUN', 'num': '03'},
+    ];
+
+    if (events.isEmpty) return fallback;
+
+    const weekdayFr = {
+      1: 'LUN',
+      2: 'MAR',
+      3: 'MER',
+      4: 'JEU',
+      5: 'VEN',
+      6: 'SAM',
+      7: 'DIM',
+    };
+
+    final seen = <String>{};
+    final dates = <DateTime>[];
+    for (final e in events) {
+      final raw = (e['start_date'] ?? e['date'] ?? '').toString().trim();
+      final dt = DateTime.tryParse(raw);
+      if (dt == null) continue;
+      final key = '${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
+      if (seen.add(key)) dates.add(DateTime(dt.year, dt.month, dt.day));
+    }
+    dates.sort((a, b) => a.compareTo(b));
+    if (dates.isEmpty) return fallback;
+
+    return dates.map((d) {
+      final key = '${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+      return {
+        'key': key,
+        'day': weekdayFr[d.weekday] ?? '---',
+        'num': d.day.toString().padLeft(2, '0'),
+      };
+    }).toList();
+  }
+
+  List<Map<String, dynamic>> _filteredCalendar() {
+    if (_selectedDayKey == null || _selectedDayKey!.isEmpty) return _calendar;
+    return _calendar.where((e) => _eventDateKey(e) == _selectedDayKey).toList();
   }
 
   List<Map<String, dynamic>> _deriveSportsFromCalendar(
@@ -88,13 +155,16 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final topInset = MediaQuery.of(context).padding.top;
+    final dayChips = _buildDayChips(_calendar);
+    final selectedKey = _selectedDayKey ?? dayChips.firstOrNull?['key'];
+    final filteredCalendar = _filteredCalendar();
     // Keep legacy builders referenced while migration finalizes.
     final keepLegacyBuilders = [_buildCalendarTab, _buildSportsTab, _buildAccessTab];
     assert(keepLegacyBuilders.isNotEmpty);
     return Scaffold(
       backgroundColor: const Color(0xFFF4F1EA),
-      body: SafeArea(
-        child: _isLoading
+      body: _isLoading
             ? const Center(child: CircularProgressIndicator())
             : _errorMessage != null
             ? Center(
@@ -110,10 +180,13 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
             : Column(
                 children: [
                   Container(
-                    margin: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-                    padding: const EdgeInsets.fromLTRB(14, 14, 14, 16),
+                    margin: const EdgeInsets.fromLTRB(0, 0, 0, 0),
+                    padding: EdgeInsets.fromLTRB(14, topInset + 10, 14, 16),
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(18),
+                      borderRadius: const BorderRadius.only(
+                        bottomLeft: Radius.circular(22),
+                        bottomRight: Radius.circular(22),
+                      ),
                       gradient: const LinearGradient(
                         colors: [Color(0xFF1A1F2E), Color(0xFF2A2F4E)],
                         begin: Alignment.topLeft,
@@ -194,14 +267,20 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
                     child: ListView(
                       padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
                       scrollDirection: Axis.horizontal,
-                      children: const [
-                        _JojDayChip(day: 'MER', num: '29'),
-                        _JojDayChip(day: 'JEU', num: '30'),
-                        _JojDayChip(day: 'VEN', num: '31', active: true),
-                        _JojDayChip(day: 'SAM', num: '01'),
-                        _JojDayChip(day: 'DIM', num: '02'),
-                        _JojDayChip(day: 'LUN', num: '03'),
-                      ],
+                      children: dayChips
+                          .map(
+                            (chip) => _JojDayChip(
+                              day: chip['day'] ?? '---',
+                              num: chip['num'] ?? '--',
+                              active: (chip['key'] ?? '') == selectedKey,
+                              onTap: () {
+                                setState(() {
+                                  _selectedDayKey = chip['key'];
+                                });
+                              },
+                            ),
+                          )
+                          .toList(),
                     ),
                   ),
                   Expanded(
@@ -220,12 +299,26 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
                                 ),
                               ),
                             ]
-                          : _calendar.map((e) => _buildCalendarEvent(e)).toList(),
+                          : filteredCalendar.isEmpty
+                          ? [
+                              Padding(
+                                padding: const EdgeInsets.only(top: 24),
+                                child: Text(
+                                  'Aucun evenement pour cette date',
+                                  textAlign: TextAlign.center,
+                                  style: GoogleFonts.poppins(
+                                    color: AppTheme.textSecondary,
+                                  ),
+                                ),
+                              ),
+                            ]
+                          : filteredCalendar
+                                .map((e) => _buildCalendarEvent(e))
+                                .toList(),
                     ),
                   ),
                 ],
               ),
-      ),
     );
   }
 
@@ -297,89 +390,250 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
           ),
         ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          children: [
-            Container(
-              width: 62,
-              padding: const EdgeInsets.only(right: 10),
-              decoration: const BoxDecoration(
-                border: Border(right: BorderSide(color: Color(0xFFE5DFD3))),
-              ),
-              child: Column(
-                children: [
-                  Text(
-                    timeLabel,
-                    style: GoogleFonts.robotoSlab(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 16,
-                    ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: () => _showEventDetails(event),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                Container(
+                  width: 62,
+                  padding: const EdgeInsets.only(right: 10),
+                  decoration: const BoxDecoration(
+                    border: Border(right: BorderSide(color: Color(0xFFE5DFD3))),
                   ),
-                  Text(
-                    'EVENT',
-                    style: GoogleFonts.poppins(
-                      fontSize: 9,
-                      color: AppTheme.textSecondary,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    (event['sport'] ?? event['title'] ?? l10n.jojDefaultEventTitle)
-                        .toString()
-                        .toUpperCase(),
-                    style: GoogleFonts.poppins(
-                      fontSize: 10,
-                      letterSpacing: 1.1,
-                      fontWeight: FontWeight.w700,
-                      color: const Color(0xFFD4A017),
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    (event['title'] ?? l10n.jojDefaultEventTitle).toString(),
-                    style: GoogleFonts.robotoSlab(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
-                      color: AppTheme.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 4,
+                  child: Column(
                     children: [
                       Text(
-                        '📍 ${(event['location'] ?? l10n.jojDefaultLocation).toString()}',
-                        style: GoogleFonts.poppins(
-                          fontSize: 11,
-                          color: AppTheme.textSecondary,
+                        timeLabel,
+                        style: GoogleFonts.robotoSlab(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 16,
                         ),
                       ),
                       Text(
-                        rawDate,
+                        'EVENT',
                         style: GoogleFonts.poppins(
-                          fontSize: 11,
+                          fontSize: 9,
                           color: AppTheme.textSecondary,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ],
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        (event['sport'] ?? event['title'] ?? l10n.jojDefaultEventTitle)
+                            .toString()
+                            .toUpperCase(),
+                        style: GoogleFonts.poppins(
+                          fontSize: 10,
+                          letterSpacing: 1.1,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFFD4A017),
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        (event['title'] ?? l10n.jojDefaultEventTitle).toString(),
+                        style: GoogleFonts.robotoSlab(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                          color: AppTheme.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 4,
+                        children: [
+                          Text(
+                            '📍 ${(event['location'] ?? l10n.jojDefaultLocation).toString()}',
+                            style: GoogleFonts.poppins(
+                              fontSize: 11,
+                              color: AppTheme.textSecondary,
+                            ),
+                          ),
+                          Text(
+                            rawDate,
+                            style: GoogleFonts.poppins(
+                              fontSize: 11,
+                              color: AppTheme.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: AppTheme.textSecondary,
+                  size: 20,
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
+  }
+
+  void _showEventDetails(Map<String, dynamic> event) {
+    final l10n = AppLocalizations.of(context)!;
+    final title = (event['title'] ?? l10n.jojDefaultEventTitle).toString();
+    final sport = (event['sport'] ?? event['discipline'] ?? '').toString();
+    final location = (event['location'] ?? l10n.jojDefaultLocation).toString();
+    final startDate = (event['start_date'] ?? event['date'] ?? '').toString();
+    final endDate = (event['end_date'] ?? '').toString();
+    final description = (event['description'] ?? '').toString().trim();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Color(0xFFF4F1EA),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+          ),
+          padding: const EdgeInsets.fromLTRB(18, 12, 18, 24),
+          child: SafeArea(
+            top: false,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 44,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFD8D2C7),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  sport.isEmpty ? title.toUpperCase() : sport.toUpperCase(),
+                  style: GoogleFonts.poppins(
+                    fontSize: 10,
+                    letterSpacing: 1.2,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFFD4A017),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  title,
+                  style: GoogleFonts.robotoSlab(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF1A1F2E),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _detailRow(Icons.location_on_outlined, location),
+                _detailRow(
+                  Icons.calendar_today_outlined,
+                  endDate.isNotEmpty ? '$startDate -> $endDate' : startDate,
+                ),
+                if (description.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    description,
+                    style: GoogleFonts.poppins(
+                      fontSize: 13,
+                      color: AppTheme.textSecondary,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 18),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      _openEventInMaps(event);
+                    },
+                    icon: const Icon(Icons.map_outlined),
+                    label: Text(
+                      l10n.jojSeeOnMap,
+                      style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF1A1F2E),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _detailRow(IconData icon, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: AppTheme.textSecondary),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              value,
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                color: AppTheme.textPrimary,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _openEventInMaps(Map<String, dynamic> event) async {
+    final query = [
+      (event['title'] ?? '').toString().trim(),
+      (event['location'] ?? '').toString().trim(),
+      'Dakar',
+    ].where((e) => e.isNotEmpty).join(' ');
+    final encoded = Uri.encodeComponent(query.isEmpty ? 'Dakar' : query);
+    final web = Uri.parse(
+      'https://www.google.com/maps/search/?api=1&query=$encoded',
+    );
+    try {
+      await launchUrl(web, mode: LaunchMode.externalApplication);
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(context)!.openMapError,
+            style: GoogleFonts.poppins(),
+          ),
+          backgroundColor: AppTheme.primaryRed,
+        ),
+      );
+    }
   }
 
   Widget _buildSportsTab() {
@@ -738,43 +992,48 @@ class _JojDayChip extends StatelessWidget {
   const _JojDayChip({
     required this.day,
     required this.num,
+    required this.onTap,
     this.active = false,
   });
 
   final String day;
   final String num;
   final bool active;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 48,
-      margin: const EdgeInsets.only(right: 6),
-      decoration: BoxDecoration(
-        color: active ? const Color(0xFF1A1F2E) : Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE5DFD3)),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            day,
-            style: GoogleFonts.poppins(
-              fontSize: 9,
-              color: active ? Colors.white70 : AppTheme.textSecondary,
-              fontWeight: FontWeight.w600,
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 48,
+        margin: const EdgeInsets.only(right: 6),
+        decoration: BoxDecoration(
+          color: active ? const Color(0xFF1A1F2E) : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFE5DFD3)),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              day,
+              style: GoogleFonts.poppins(
+                fontSize: 9,
+                color: active ? Colors.white70 : AppTheme.textSecondary,
+                fontWeight: FontWeight.w600,
+              ),
             ),
-          ),
-          Text(
-            num,
-            style: GoogleFonts.poppins(
-              fontSize: 17,
-              color: active ? Colors.white : const Color(0xFF1A1F2E),
-              fontWeight: FontWeight.w700,
+            Text(
+              num,
+              style: GoogleFonts.poppins(
+                fontSize: 17,
+                color: active ? Colors.white : const Color(0xFF1A1F2E),
+                fontWeight: FontWeight.w700,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

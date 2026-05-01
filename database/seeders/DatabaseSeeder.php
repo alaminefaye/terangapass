@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
             
             // 3. Partenaires (hôtels, restaurants, etc.)
             PartnerSeeder::class,
+            DiplomaticMissionSeeder::class,
             
             // 4. Sites de compétition
             CompetitionSiteSeeder::class,

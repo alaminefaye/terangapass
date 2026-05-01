@@ -48,6 +48,8 @@
                                 <span class="badge bg-danger">🏥 Hôpital</span>
                                 @elseif($tourism->category == 'embassy')
                                 <span class="badge bg-warning">🏛️ Ambassade</span>
+                                @elseif($tourism->category == 'consulate')
+                                <span class="badge bg-dark">🏢 Consulat</span>
                                 @endif
                             </p>
                         </div>
