@@ -71,123 +71,150 @@ class _IncidentHistoryScreenState extends State<IncidentHistoryScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF4F1EA),
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: const Color(0xFF1A1F2E),
-        foregroundColor: Colors.white,
-        title: Text(
-          'Historique des incidents',
-          style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 16),
-        ),
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _error != null
-          ? Center(
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Text(
-                  _error!,
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.poppins(color: AppTheme.textSecondary),
-                ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16.0,
+                vertical: 8.0,
               ),
-            )
-          : _incidents.isEmpty
-          ? Center(
-              child: Text(
-                'Aucun signalement',
-                style: GoogleFonts.poppins(color: AppTheme.textSecondary),
-              ),
-            )
-          : RefreshIndicator(
-              onRefresh: _loadIncidents,
-              child: ListView.builder(
-                padding: const EdgeInsets.all(14),
-                itemCount: _incidents.length,
-                itemBuilder: (context, index) {
-                  final incident = _incidents[index];
-                  final id = incident['id'];
-                  final type = (incident['type'] ?? 'incident').toString();
-                  final status = (incident['status'] ?? 'pending').toString();
-                  final description = (incident['description'] ?? '')
-                      .toString()
-                      .trim();
-
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
+              child: Row(
+                children: [
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(
+                      Icons.arrow_back_rounded,
+                      color: Color(0xFF1A1F2E),
                     ),
-                    child: ListTile(
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 8,
-                      ),
-                      leading: Container(
-                        width: 38,
-                        height: 38,
-                        decoration: BoxDecoration(
-                          color: _statusColor(status).withValues(alpha: 0.12),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.report_problem_rounded,
-                          color: _statusColor(status),
-                          size: 20,
-                        ),
-                      ),
-                      title: Text(
-                        '#${id ?? '-'} - $type',
-                        style: GoogleFonts.poppins(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 14,
-                          color: AppTheme.textPrimary,
-                        ),
-                      ),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const SizedBox(height: 4),
-                          Text(
-                            _statusLabel(status),
-                            style: GoogleFonts.poppins(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: _statusColor(status),
-                            ),
-                          ),
-                          if (description.isNotEmpty) ...[
-                            const SizedBox(height: 2),
-                            Text(
-                              description,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.poppins(
-                                fontSize: 12,
-                                color: AppTheme.textSecondary,
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                      trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
-                      onTap: () {
-                        if (id is! int) return;
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                IncidentTrackingScreen(incidentId: id),
-                          ),
-                        );
-                      },
+                  ),
+                  const Spacer(),
+                  Text(
+                    'Historique des incidents',
+                    style: GoogleFonts.poppins(
+                      color: const Color(0xFF1A1F2E),
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
                     ),
-                  );
-                },
+                  ),
+                  const Spacer(),
+                  const SizedBox(width: 48),
+                ],
               ),
             ),
+            Expanded(
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _error != null
+                  ? Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: Text(
+                          _error!,
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.poppins(color: AppTheme.textSecondary),
+                        ),
+                      ),
+                    )
+                  : _incidents.isEmpty
+                  ? Center(
+                      child: Text(
+                        'Aucun signalement',
+                        style: GoogleFonts.poppins(color: AppTheme.textSecondary),
+                      ),
+                    )
+                  : RefreshIndicator(
+                      onRefresh: _loadIncidents,
+                      child: ListView.builder(
+                        padding: const EdgeInsets.fromLTRB(14, 4, 14, 14),
+                        itemCount: _incidents.length,
+                        itemBuilder: (context, index) {
+                          final incident = _incidents[index];
+                          final id = incident['id'];
+                          final type = (incident['type'] ?? 'incident').toString();
+                          final status = (incident['status'] ?? 'pending').toString();
+                          final description = (incident['description'] ?? '')
+                              .toString()
+                              .trim();
+
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: ListTile(
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 8,
+                              ),
+                              leading: Container(
+                                width: 38,
+                                height: 38,
+                                decoration: BoxDecoration(
+                                  color: _statusColor(status).withValues(alpha: 0.12),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  Icons.report_problem_rounded,
+                                  color: _statusColor(status),
+                                  size: 20,
+                                ),
+                              ),
+                              title: Text(
+                                '#${id ?? '-'} - $type',
+                                style: GoogleFonts.poppins(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 14,
+                                  color: AppTheme.textPrimary,
+                                ),
+                              ),
+                              subtitle: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    _statusLabel(status),
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: _statusColor(status),
+                                    ),
+                                  ),
+                                  if (description.isNotEmpty) ...[
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      description,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 12,
+                                        color: AppTheme.textSecondary,
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                              trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
+                              onTap: () {
+                                if (id is! int) return;
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        IncidentTrackingScreen(incidentId: id),
+                                  ),
+                                );
+                              },
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

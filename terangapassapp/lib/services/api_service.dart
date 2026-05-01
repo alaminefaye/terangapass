@@ -6,6 +6,7 @@ import '../constants/api_constants.dart';
 class ApiService {
   static final ApiService _instance = ApiService._internal();
   factory ApiService() => _instance;
+  static const bool _enableVerboseDebugLogs = false;
 
   // Utilise ApiConstants pour la configuration centralisée
   static String get baseUrl => ApiConstants.baseUrl;
@@ -22,6 +23,9 @@ class ApiService {
 
   void _debugLog(Object? message) {
     assert(() {
+      if (!_enableVerboseDebugLogs) {
+        return true;
+      }
       debugPrint(message?.toString() ?? '');
       return true;
     }());
@@ -321,6 +325,7 @@ class ApiService {
     required double latitude,
     required double longitude,
     List<String>? photos,
+    List<String>? videos,
     String? audioPath,
     String? audioUrl,
     double? accuracy,
@@ -355,6 +360,14 @@ class ApiService {
         for (final photo in photos) {
           formData.files.add(
             MapEntry('photos[]', await MultipartFile.fromFile(photo)),
+          );
+        }
+      }
+
+      if (videos != null && videos.isNotEmpty) {
+        for (final video in videos) {
+          formData.files.add(
+            MapEntry('videos[]', await MultipartFile.fromFile(video)),
           );
         }
       }

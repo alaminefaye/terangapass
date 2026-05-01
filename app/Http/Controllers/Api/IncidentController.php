@@ -22,6 +22,8 @@ class IncidentController extends Controller
             'address' => 'nullable|string',
             'photos' => 'nullable|array',
             'photos.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120', // 5MB max
+            'videos' => 'nullable|array',
+            'videos.*' => 'nullable|file|mimetypes:video/*|mimes:mp4,mov,mkv,avi,webm,3gp,m4v|max:51200', // 50MB max
             'audio' => 'nullable|file|max:10240', // 10MB max, accept all audio formats (Android may send video/mp4 MIME for m4a)
             'audio_url' => 'nullable|string',
         ]);
@@ -39,6 +41,17 @@ class IncidentController extends Controller
         } elseif ($request->has('photos') && is_array($request->photos)) {
             // Si les photos sont déjà des URLs (depuis l'app mobile)
             $photoUrls = $request->photos;
+        }
+
+        // Gérer l'upload des vidéos
+        $videoUrls = [];
+        if ($request->hasFile('videos')) {
+            foreach ($request->file('videos') as $video) {
+                $extension = $video->getClientOriginalExtension() ?: 'mp4';
+                $filename = Str::uuid() . '.' . $extension;
+                $path = $video->storeAs('incidents/videos', $filename, 'public');
+                $videoUrls[] = Storage::url($path);
+            }
         }
         
         // Gérer l'upload de l'audio
@@ -59,6 +72,7 @@ class IncidentController extends Controller
             'accuracy' => $request->accuracy,
             'address' => $request->address,
             'photos' => !empty($photoUrls) ? $photoUrls : null,
+            'video_urls' => !empty($videoUrls) ? $videoUrls : null,
             'audio_url' => $audioUrl,
             'status' => 'pending',
         ]);

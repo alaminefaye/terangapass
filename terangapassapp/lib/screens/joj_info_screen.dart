@@ -110,7 +110,7 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
             : Column(
                 children: [
                   Container(
-                    margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                    margin: const EdgeInsets.fromLTRB(16, 0, 16, 0),
                     padding: const EdgeInsets.fromLTRB(14, 14, 14, 16),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(18),
@@ -132,12 +132,13 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
                                 color: Colors.white,
                               ),
                             ),
+                            const SizedBox(width: 2),
                             Text(
                               l10n.jojTitle,
                               style: GoogleFonts.poppins(
                                 color: Colors.white,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 13,
                               ),
                             ),
                             const Spacer(),
@@ -172,7 +173,7 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
                         const SizedBox(height: 4),
                         Text(
                           'Dakar 2026',
-                          style: GoogleFonts.poppins(
+                          style: GoogleFonts.robotoSlab(
                             color: Colors.white,
                             fontSize: 24,
                             fontWeight: FontWeight.w700,
@@ -279,65 +280,94 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
 
   Widget _buildCalendarEvent(Map<String, dynamic> event) {
     final l10n = AppLocalizations.of(context)!;
+    final rawDate = (event['date'] ?? '').toString();
+    final startDate = (event['start_date'] ?? '').toString();
+    final timeLabel = startDate.length >= 10 ? startDate.substring(5, 10) : '--:--';
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE5DFD3)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
-            offset: const Offset(0, 10),
-            blurRadius: 20,
+            offset: const Offset(0, 6),
+            blurRadius: 12,
           ),
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(12),
         child: Row(
           children: [
             Container(
-              width: 60,
-              height: 60,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    const Color(0xFFD4A017).withValues(alpha: 0.15),
-                    const Color(0xFFD4A017).withValues(alpha: 0.05),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(15),
+              width: 62,
+              padding: const EdgeInsets.only(right: 10),
+              decoration: const BoxDecoration(
+                border: Border(right: BorderSide(color: Color(0xFFE5DFD3))),
               ),
-              child: const Icon(Icons.event, color: Color(0xFFD4A017), size: 28),
+              child: Column(
+                children: [
+                  Text(
+                    timeLabel,
+                    style: GoogleFonts.robotoSlab(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 16,
+                    ),
+                  ),
+                  Text(
+                    'EVENT',
+                    style: GoogleFonts.poppins(
+                      fontSize: 9,
+                      color: AppTheme.textSecondary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    (event['title'] ?? l10n.jojDefaultEventTitle).toString(),
+                    (event['sport'] ?? event['title'] ?? l10n.jojDefaultEventTitle)
+                        .toString()
+                        .toUpperCase(),
                     style: GoogleFonts.poppins(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
+                      fontSize: 10,
+                      letterSpacing: 1.1,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFFD4A017),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    (event['title'] ?? l10n.jojDefaultEventTitle).toString(),
+                    style: GoogleFonts.robotoSlab(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
                       color: AppTheme.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Row(
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 4,
                     children: [
-                      Icon(
-                        Icons.access_time,
-                        size: 14,
-                        color: AppTheme.textSecondary,
-                      ),
-                      const SizedBox(width: 4),
                       Text(
-                        event['date'] ?? '',
+                        '📍 ${(event['location'] ?? l10n.jojDefaultLocation).toString()}',
                         style: GoogleFonts.poppins(
-                          fontSize: 13,
+                          fontSize: 11,
+                          color: AppTheme.textSecondary,
+                        ),
+                      ),
+                      Text(
+                        rawDate,
+                        style: GoogleFonts.poppins(
+                          fontSize: 11,
                           color: AppTheme.textSecondary,
                         ),
                       ),

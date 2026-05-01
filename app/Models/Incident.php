@@ -19,6 +19,7 @@ class Incident extends Model
         'accuracy',
         'address',
         'photos',
+        'video_urls',
         'audio_url',
         'status',
         'admin_notes',
@@ -30,6 +31,7 @@ class Incident extends Model
         'longitude' => 'decimal:8',
         'accuracy' => 'decimal:2',
         'photos' => 'array',
+        'video_urls' => 'array',
         'resolved_at' => 'datetime',
     ];
 

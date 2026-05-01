@@ -14,6 +14,7 @@ class MedicalAlertScreen extends StatefulWidget {
 }
 
 class _MedicalAlertScreenState extends State<MedicalAlertScreen> {
+  static const String _unknownLocationFallback = 'Position inconnue';
   bool _isAlerting = false;
   String? _currentLocation;
   String? _selectedEmergencyType;
@@ -21,23 +22,35 @@ class _MedicalAlertScreenState extends State<MedicalAlertScreen> {
   @override
   void initState() {
     super.initState();
-    _getCurrentLocation();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _getCurrentLocation();
+    });
   }
 
   Future<void> _getCurrentLocation() async {
-    final l10n = AppLocalizations.of(context)!;
     try {
       final locationService = LocationService();
-      final location = await locationService.getCurrentLocationWithAddress();
+      final pos = await locationService.getCurrentPositionIfAllowed();
+      if (pos == null) {
+        if (!mounted) return;
+        setState(() {
+          _currentLocation = _unknownLocationFallback;
+        });
+        return;
+      }
+      final address = await locationService.getAddressFromCoordinates(
+        pos.latitude,
+        pos.longitude,
+      );
       if (!mounted) return;
       setState(() {
-        _currentLocation =
-            location['address'] as String? ?? l10n.unknownPosition;
+        _currentLocation = address;
       });
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _currentLocation = l10n.unknownPosition;
+        _currentLocation = _unknownLocationFallback;
       });
     }
   }

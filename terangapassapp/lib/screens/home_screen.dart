@@ -825,6 +825,7 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Future<void> _openHelpHub(BuildContext context) async {
+    final rootContext = context;
     await showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.white,
@@ -871,9 +872,9 @@ class _HomeScreenState extends State<HomeScreen>
                   color: const Color(0xFFC73E1D),
                   title: l10n.sosEmergencyTitle,
                   onTap: () {
-                    Navigator.pop(context);
+                    Navigator.of(context).pop();
                     Navigator.push(
-                      context,
+                      rootContext,
                       MaterialPageRoute(builder: (context) => const SOSScreen()),
                     );
                   },
@@ -884,9 +885,9 @@ class _HomeScreenState extends State<HomeScreen>
                   color: const Color(0xFFD4A017),
                   title: l10n.medicalAlertTitle,
                   onTap: () {
-                    Navigator.pop(context);
+                    Navigator.of(context).pop();
                     Navigator.push(
-                      context,
+                      rootContext,
                       MaterialPageRoute(
                         builder: (context) => const MedicalAlertScreen(),
                       ),
@@ -899,9 +900,9 @@ class _HomeScreenState extends State<HomeScreen>
                   color: const Color(0xFF2E8B57),
                   title: l10n.homeFeatureReportIncident,
                   onTap: () {
-                    Navigator.pop(context);
+                    Navigator.of(context).pop();
                     Navigator.push(
-                      context,
+                      rootContext,
                       MaterialPageRoute(
                         builder: (context) => const IncidentReportScreen(),
                       ),
@@ -914,9 +915,9 @@ class _HomeScreenState extends State<HomeScreen>
                   color: const Color(0xFF3A7CA5),
                   title: l10n.tourismCategoryEmbassies,
                   onTap: () {
-                    Navigator.pop(context);
+                    Navigator.of(context).pop();
                     Navigator.push(
-                      context,
+                      rootContext,
                       MaterialPageRoute(
                         builder: (context) => const EmbassiesScreen(),
                       ),

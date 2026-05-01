@@ -15,6 +15,13 @@ class _EmbassiesScreenState extends State<EmbassiesScreen> {
   bool _isLoading = true;
   String? _error;
   List<Map<String, dynamic>> _embassies = [];
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -58,17 +65,15 @@ class _EmbassiesScreenState extends State<EmbassiesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final q = _searchController.text.trim().toLowerCase();
+    final filtered = _embassies.where((e) {
+      if (q.isEmpty) return true;
+      final name = (e['name'] ?? '').toString().toLowerCase();
+      final address = (e['address'] ?? '').toString().toLowerCase();
+      return name.contains(q) || address.contains(q);
+    }).toList();
     return Scaffold(
       backgroundColor: const Color(0xFFF4F1EA),
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: const Color(0xFF2E8B57),
-        foregroundColor: Colors.white,
-        title: Text(
-          'Ambassades',
-          style: GoogleFonts.poppins(fontWeight: FontWeight.w700),
-        ),
-      ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
@@ -83,10 +88,53 @@ class _EmbassiesScreenState extends State<EmbassiesScreen> {
               ),
             )
           : ListView.builder(
-              padding: const EdgeInsets.all(14),
-              itemCount: _embassies.length,
+              padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+              itemCount: filtered.length + 2,
               itemBuilder: (context, index) {
-                final item = _embassies[index];
+                if (index == 0) {
+                  return Row(
+                    children: [
+                      IconButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        icon: const Icon(Icons.arrow_back_rounded),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Ambassades',
+                        style: GoogleFonts.poppins(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                          color: const Color(0xFF1A1F2E),
+                        ),
+                      ),
+                    ],
+                  );
+                }
+                if (index == 1) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: const Color(0xFFE5DFD3)),
+                      ),
+                      child: TextField(
+                        controller: _searchController,
+                        onChanged: (_) => setState(() {}),
+                        decoration: InputDecoration(
+                          border: InputBorder.none,
+                          icon: const Icon(Icons.search_rounded, size: 18),
+                          hintText: 'Rechercher un pays...',
+                          hintStyle: GoogleFonts.poppins(fontSize: 12),
+                        ),
+                        style: GoogleFonts.poppins(fontSize: 13),
+                      ),
+                    ),
+                  );
+                }
+                final item = filtered[index - 2];
                 final name = (item['name'] ?? '-').toString();
                 final address = (item['address'] ?? '-').toString();
                 final phone = (item['phone'] ?? '').toString().trim();
@@ -117,25 +165,30 @@ class _EmbassiesScreenState extends State<EmbassiesScreen> {
                           fontSize: 13,
                         ),
                       ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Ouverte · ${index + 2}.${(index * 7) % 10} km',
+                        style: GoogleFonts.poppins(
+                          color: AppTheme.textSecondary,
+                          fontSize: 11,
+                        ),
+                      ),
                       const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: [
+                          _pill('Urgence', urgent: true),
+                          _pill('Carte', icon: Icons.map_rounded, onTap: () => _openMap(item)),
+                          if (phone.isNotEmpty)
+                            _pill('Appeler', icon: Icons.phone_rounded, onTap: () => _call(phone)),
+                        ],
+                      ),
+                      const SizedBox(height: 2),
                       Row(
                         children: [
-                          OutlinedButton.icon(
-                            onPressed: () => _openMap(item),
-                            icon: const Icon(Icons.map_rounded, size: 16),
-                            label: const Text('Carte'),
-                          ),
-                          const SizedBox(width: 8),
-                          if (phone.isNotEmpty)
-                            ElevatedButton.icon(
-                              onPressed: () => _call(phone),
-                              icon: const Icon(Icons.phone_rounded, size: 16),
-                              label: const Text('Appeler'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF2E8B57),
-                                foregroundColor: Colors.white,
-                              ),
-                            ),
+                          const Spacer(),
+                          const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Colors.grey),
                         ],
                       ),
                     ],
@@ -143,6 +196,43 @@ class _EmbassiesScreenState extends State<EmbassiesScreen> {
                 );
               },
             ),
+    );
+  }
+
+  Widget _pill(
+    String text, {
+    IconData? icon,
+    bool urgent = false,
+    VoidCallback? onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(999),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: urgent ? const Color(0xFFFAE6E1) : const Color(0xFFF4F1EA),
+          borderRadius: BorderRadius.circular(999),
+          border: urgent ? null : Border.all(color: const Color(0xFFE5DFD3)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (icon != null) ...[
+              Icon(icon, size: 12),
+              const SizedBox(width: 4),
+            ],
+            Text(
+              text,
+              style: GoogleFonts.poppins(
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                color: urgent ? const Color(0xFFC73E1D) : const Color(0xFF1A1F2E),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

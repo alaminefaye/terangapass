@@ -11,13 +11,14 @@ return new class extends Migration
         Schema::create('incidents', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->enum('type', ['perte', 'accident', 'suspect'])->default('perte');
+            $table->enum('type', ['perte', 'accident', 'suspect', 'autre'])->default('perte');
             $table->text('description');
             $table->decimal('latitude', 10, 8);
             $table->decimal('longitude', 11, 8);
             $table->decimal('accuracy', 8, 2)->nullable();
             $table->string('address')->nullable();
             $table->json('photos')->nullable(); // URLs des photos
+            $table->json('video_urls')->nullable(); // URLs des videos
             $table->string('audio_url')->nullable();
             $table->enum('status', ['pending', 'validated', 'in_progress', 'resolved', 'rejected'])->default('pending');
             $table->text('admin_notes')->nullable();

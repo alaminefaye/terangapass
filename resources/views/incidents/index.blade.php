@@ -19,6 +19,7 @@
                         <option value="perte" {{ request('type') == 'perte' ? 'selected' : '' }}>Perte</option>
                         <option value="accident" {{ request('type') == 'accident' ? 'selected' : '' }}>Accident</option>
                         <option value="suspect" {{ request('type') == 'suspect' ? 'selected' : '' }}>Situation suspecte</option>
+                        <option value="autre" {{ request('type') == 'autre' ? 'selected' : '' }}>Autre</option>
                     </select>
                 </div>
                 <div class="col-md-3">
@@ -73,6 +74,8 @@
                             <span class="badge bg-warning">Perte</span>
                             @elseif($incident->type == 'accident')
                             <span class="badge bg-danger">Accident</span>
+                            @elseif($incident->type == 'autre')
+                            <span class="badge bg-secondary">Autre</span>
                             @else
                             <span class="badge bg-info">Suspect</span>
                             @endif

@@ -347,15 +347,150 @@ class _TourismScreenState extends State<TourismScreen>
 
   @override
   Widget build(BuildContext context) {
-    final topPadding = MediaQuery.of(context).padding.top;
-    final headerHeight = 170.0 + topPadding;
-
     return Scaffold(
       backgroundColor: const Color(0xFFF4F1EA),
-      body: Stack(
+      body: Column(
         children: [
-          Padding(
-            padding: EdgeInsets.only(top: headerHeight),
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  const Color(0xFF2D8A56),
+                  const Color(0xFF25744A),
+                  const Color(0xFF1D603D),
+                ],
+              ),
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(30),
+                bottomRight: Radius.circular(30),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF2E8B57).withValues(alpha: 0.18),
+                  blurRadius: 14,
+                  offset: const Offset(0, 7),
+                ),
+              ],
+            ),
+            child: SafeArea(
+              bottom: false,
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16.0,
+                      vertical: 8.0,
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.17),
+                            shape: BoxShape.circle,
+                          ),
+                          child: IconButton(
+                            icon: const Icon(
+                              Icons.arrow_back_rounded,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                            onPressed: () => Navigator.of(context).pop(),
+                          ),
+                        ),
+                        const Spacer(),
+                        Text(
+                          'Tourisme & Services',
+                          style: GoogleFonts.plusJakartaSans(
+                            color: Colors.white,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const Spacer(),
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.17),
+                            shape: BoxShape.circle,
+                          ),
+                          child: IconButton(
+                            tooltip: 'Ambassades',
+                            icon: const Icon(
+                              Icons.account_balance_rounded,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const EmbassiesScreen(),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    margin: const EdgeInsets.only(
+                      left: 16,
+                      right: 16,
+                      bottom: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.14),
+                      borderRadius: BorderRadius.circular(26),
+                    ),
+                    child: TabBar(
+                      controller: _tabController,
+                      isScrollable: true,
+                      tabAlignment: TabAlignment.center,
+                      labelColor: const Color(0xFF2E8B57),
+                      unselectedLabelColor: Colors.white.withValues(alpha: 0.8),
+                      dividerColor: Colors.transparent,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 4,
+                        vertical: 4,
+                      ),
+                      indicator: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(22),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.08),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      labelStyle: GoogleFonts.plusJakartaSans(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 12,
+                      ),
+                      unselectedLabelStyle: GoogleFonts.plusJakartaSans(
+                        fontWeight: FontWeight.w500,
+                        fontSize: 12,
+                      ),
+                      indicatorSize: TabBarIndicatorSize.tab,
+                      tabs: _categories
+                          .map(
+                            (cat) => Tab(
+                              text: cat == 'Tous'
+                                  ? 'Tous (${_pointsOfInterest.length})'
+                                  : '$cat (${_getFiltered(cat).length})',
+                            ),
+                          )
+                          .toList(),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : _errorMessage != null
@@ -400,146 +535,6 @@ class _TourismScreenState extends State<TourismScreen>
                         .map((cat) => _buildCategoryTab(cat))
                         .toList(),
                   ),
-          ),
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: Container(
-              height: headerHeight,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    const Color(0xFF2E8B57),
-                    const Color(0xFF1F6D44),
-                    Color(0xFF155437),
-                  ],
-                ),
-                borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(30),
-                  bottomRight: Radius.circular(30),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF2E8B57).withValues(alpha: 0.35),
-                    blurRadius: 20,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  SizedBox(height: topPadding),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.2),
-                            shape: BoxShape.circle,
-                          ),
-                          child: IconButton(
-                            icon: const Icon(
-                              Icons.arrow_back_ios_new,
-                              color: Colors.white,
-                              size: 20,
-                            ),
-                            onPressed: () => Navigator.of(context).pop(),
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Text(
-                          'Tourisme & Services',
-                          style: GoogleFonts.poppins(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 20,
-                            shadows: [
-                              Shadow(
-                                color: Colors.black.withValues(alpha: 0.1),
-                                offset: const Offset(0, 2),
-                                blurRadius: 4,
-                              ),
-                            ],
-                          ),
-                        ),
-                        const Spacer(),
-                        IconButton(
-                          tooltip: 'Ambassades',
-                          icon: const Icon(
-                            Icons.account_balance_rounded,
-                            color: Colors.white,
-                          ),
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const EmbassiesScreen(),
-                              ),
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Spacer(),
-                  Container(
-                    margin: const EdgeInsets.only(
-                      left: 16,
-                      right: 16,
-                      bottom: 12,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(25),
-                    ),
-                    child: TabBar(
-                      controller: _tabController,
-                      isScrollable: true,
-                      tabAlignment: TabAlignment.center,
-                      labelColor: const Color(0xFF2E8B57),
-                      unselectedLabelColor: Colors.white.withValues(alpha: 0.8),
-                      dividerColor: Colors.transparent,
-                      indicator: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(25),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.1),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      labelStyle: GoogleFonts.poppins(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
-                      ),
-                      unselectedLabelStyle: GoogleFonts.poppins(
-                        fontWeight: FontWeight.w500,
-                        fontSize: 12,
-                      ),
-                      indicatorSize: TabBarIndicatorSize.tab,
-                      tabs: _categories
-                          .map(
-                            (cat) => Tab(
-                              text: cat == 'Tous'
-                                  ? 'Tous (${_pointsOfInterest.length})'
-                                  : '$cat (${_getFiltered(cat).length})',
-                            ),
-                          )
-                          .toList(),
-                    ),
-                  ),
-                ],
-              ),
-            ),
           ),
         ],
       ),
@@ -593,7 +588,7 @@ class _TourismScreenState extends State<TourismScreen>
 
     final showBanner = _locationError != null;
     return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 100),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
       itemCount: points.length + (showBanner ? 1 : 0),
       itemBuilder: (context, index) {
         if (showBanner && index == 0) {
@@ -608,59 +603,53 @@ class _TourismScreenState extends State<TourismScreen>
         final distanceLabel = _distanceLabelForPoint(point);
 
         return Container(
-          margin: const EdgeInsets.only(bottom: 14),
+          margin: const EdgeInsets.only(bottom: 12),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.grey.withValues(alpha: 0.08),
-                blurRadius: 15,
-                offset: const Offset(0, 8),
-              ),
-            ],
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: const Color(0xFFECE6DC)),
           ),
           child: Material(
             color: Colors.transparent,
             child: InkWell(
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(18),
               onTap: () => _showPointDetails(point),
               child: Padding(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                 child: Row(
                   children: [
                     Container(
                       decoration: BoxDecoration(
-                        color: color.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(14),
+                        color: color.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(13),
                       ),
-                      width: 52,
-                      height: 52,
+                      width: 48,
+                      height: 48,
                       child: ClipRRect(
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(13),
                         child: iconUrl == null
-                            ? Center(child: Icon(icon, color: color, size: 26))
+                            ? Center(child: Icon(icon, color: color, size: 23))
                             : Image.network(
                                 iconUrl,
                                 fit: BoxFit.cover,
                                 errorBuilder: (context, error, stackTrace) {
                                   return Center(
-                                    child: Icon(icon, color: color, size: 26),
+                                    child: Icon(icon, color: color, size: 23),
                                   );
                                 },
                               ),
                       ),
                     ),
-                    const SizedBox(width: 14),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
                             (point['name'] ?? '').toString().trim(),
-                            style: GoogleFonts.poppins(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 15,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 14,
                               color: AppTheme.textPrimary,
                             ),
                           ),
@@ -675,7 +664,7 @@ class _TourismScreenState extends State<TourismScreen>
                               const SizedBox(width: 3),
                               Text(
                                 distanceLabel,
-                                style: GoogleFonts.poppins(
+                                style: GoogleFonts.plusJakartaSans(
                                   fontSize: 12,
                                   color: AppTheme.textSecondary,
                                 ),
@@ -707,15 +696,15 @@ class _TourismScreenState extends State<TourismScreen>
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.all(6),
+                      padding: const EdgeInsets.all(5),
                       decoration: BoxDecoration(
-                        color: Colors.grey.withValues(alpha: 0.05),
+                        color: const Color(0xFFF6F2EA),
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
                         Icons.arrow_forward_ios_rounded,
                         color: Colors.grey[400],
-                        size: 13,
+                        size: 12,
                       ),
                     ),
                   ],

@@ -33,6 +33,8 @@
                                 <span class="badge bg-warning">Perte</span>
                                 @elseif($incident->type == 'accident')
                                 <span class="badge bg-danger">Accident</span>
+                                @elseif($incident->type == 'autre')
+                                <span class="badge bg-secondary">Autre</span>
                                 @else
                                 <span class="badge bg-info">Situation suspecte</span>
                                 @endif
@@ -93,7 +95,28 @@
                     <div class="row">
                         @foreach($incident->photos as $photo)
                         <div class="col-md-4 mb-3">
-                            <img src="{{ asset($photo) }}" alt="Photo" class="img-fluid rounded" style="max-height: 200px; width: 100%; object-fit: cover;">
+                            <img src="{{ \Illuminate\Support\Str::startsWith($photo, ['http://', 'https://']) ? $photo : asset($photo) }}" alt="Photo" class="img-fluid rounded" style="max-height: 200px; width: 100%; object-fit: cover;">
+                        </div>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+            @endif
+
+            <!-- Vidéos -->
+            @if($incident->video_urls && count($incident->video_urls) > 0)
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5>Vidéos</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        @foreach($incident->video_urls as $video)
+                        <div class="col-md-6 mb-3">
+                            <video controls class="w-100 rounded" style="max-height: 260px;">
+                                <source src="{{ \Illuminate\Support\Str::startsWith($video, ['http://', 'https://']) ? $video : asset($video) }}">
+                                Votre navigateur ne supporte pas la vidéo.
+                            </video>
                         </div>
                         @endforeach
                     </div>
@@ -109,7 +132,7 @@
                 </div>
                 <div class="card-body">
                     <audio controls class="w-100">
-                        <source src="{{ asset($incident->audio_url) }}" type="audio/mpeg">
+                        <source src="{{ \Illuminate\Support\Str::startsWith($incident->audio_url, ['http://', 'https://']) ? $incident->audio_url : asset($incident->audio_url) }}" type="audio/mpeg">
                         Votre navigateur ne supporte pas l'élément audio.
                     </audio>
                 </div>
