@@ -247,6 +247,38 @@ class _MapScreenState extends State<MapScreen> {
     return AppTheme.textSecondary;
   }
 
+  String _distanceLabelForPoint(Map<String, dynamic> point, String category) {
+    final rawDistance = (point['distance'] ?? '').toString().trim();
+    if (rawDistance.isNotEmpty && rawDistance.toLowerCase() != 'n/a') {
+      return rawDistance;
+    }
+
+    final rawMeters = point['distance_meters'];
+    final meters = rawMeters is num
+        ? rawMeters.toDouble()
+        : double.tryParse((rawMeters ?? '').toString());
+    if (meters != null && meters >= 0) {
+      if (meters < 1000) return '${meters.round()} m';
+      return '${(meters / 1000).toStringAsFixed(1)} km';
+    }
+
+    final lat = _toDouble(point['latitude'] ?? point['lat']);
+    final lng = _toDouble(point['longitude'] ?? point['lng'] ?? point['lon']);
+    if (_currentLat != null && _currentLng != null && lat != null && lng != null) {
+      final computed = LocationService().calculateDistance(
+        _currentLat!,
+        _currentLng!,
+        lat,
+        lng,
+      );
+      if (computed < 1000) return '${computed.round()} m';
+      return '${(computed / 1000).toStringAsFixed(1)} km';
+    }
+
+    if (category.isNotEmpty) return '$category • Distance indisponible';
+    return 'Distance indisponible';
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -504,7 +536,7 @@ class _MapScreenState extends State<MapScreen> {
     final l10n = AppLocalizations.of(context)!;
     final name = (point['name'] ?? '').toString().trim();
     final category = (point['category'] ?? '').toString().trim();
-    final distance = (point['distance'] ?? '').toString().trim();
+    final distanceLabel = _distanceLabelForPoint(point, category);
     final lat = point['latitude'] ?? point['lat'];
     final lng = point['longitude'] ?? point['lng'] ?? point['lon'];
     final phone = (point['phone'] ?? '').toString().trim();
@@ -523,25 +555,25 @@ class _MapScreenState extends State<MapScreen> {
         },
         borderRadius: BorderRadius.circular(12),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
           decoration: BoxDecoration(
-            color: const Color(0xFFFAF7F0),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
+            color: const Color(0xFFFAF8F3),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFE8E1D5)),
           ),
           child: Row(
             children: [
               Container(
-                width: 40,
-                height: 40,
+                width: 44,
+                height: 44,
                 decoration: BoxDecoration(
-                  color: _colorForCategory(category).withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(10),
+                  color: _colorForCategory(category).withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(11),
                 ),
                 child: Icon(
                   _iconForCategory(category),
                   color: _colorForCategory(category),
-                  size: 22,
+                  size: 20,
                 ),
               ),
               const SizedBox(width: 12),
@@ -552,19 +584,22 @@ class _MapScreenState extends State<MapScreen> {
                     Text(
                       name.isEmpty ? l10n.mapDefaultPointName : name,
                       style: GoogleFonts.poppins(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 16,
+                        color: const Color(0xFF1A1F2E),
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 2),
                     Text(
-                      distance.isNotEmpty
-                          ? distance
-                          : (category.isNotEmpty ? category : '—'),
+                      distanceLabel,
                       style: GoogleFonts.poppins(
-                        fontSize: 12,
+                        fontSize: 13,
                         color: AppTheme.textSecondary,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
@@ -656,28 +691,50 @@ class _MapScreenState extends State<MapScreen> {
     double? longitude,
   }) async {
     final l10n = AppLocalizations.of(context)!;
-    final uri = (latitude != null && longitude != null)
-        ? Uri.parse(
-            'https://www.google.com/maps/search/?api=1&query=$latitude,$longitude',
-          )
-        : Uri.parse(
-            'https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(query ?? l10n.jojDefaultLocation)}',
-          );
+    final resolvedQuery = query?.trim().isNotEmpty == true
+        ? query!.trim()
+        : l10n.jojDefaultLocation;
+    final encodedQuery = Uri.encodeComponent(resolvedQuery);
 
-    final ok = await canLaunchUrl(uri);
-    if (!ok) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            l10n.mapOpenGoogleMapsError,
-            style: GoogleFonts.poppins(),
-          ),
-          backgroundColor: AppTheme.primaryRed,
-        ),
-      );
-      return;
+    final candidates = <Uri>[
+      if (latitude != null && longitude != null)
+        Uri.parse('comgooglemaps://?q=$latitude,$longitude')
+      else
+        Uri.parse('comgooglemaps://?q=$encodedQuery'),
+      if (latitude != null && longitude != null)
+        Uri.parse('geo:$latitude,$longitude?q=$latitude,$longitude')
+      else
+        Uri.parse('geo:0,0?q=$encodedQuery'),
+      if (latitude != null && longitude != null)
+        Uri.parse('https://www.openstreetmap.org/?mlat=$latitude&mlon=$longitude#map=15/$latitude/$longitude')
+      else
+        Uri.parse('https://www.openstreetmap.org/search?query=$encodedQuery'),
+      if (latitude != null && longitude != null)
+        Uri.parse('https://www.google.com/maps/search/?api=1&query=$latitude,$longitude')
+      else
+        Uri.parse('https://www.google.com/maps/search/?api=1&query=$encodedQuery'),
+    ];
+
+    for (final uri in candidates) {
+      try {
+        if (await canLaunchUrl(uri)) {
+          final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+          if (ok) return;
+        }
+      } catch (_) {
+        // keep trying next provider
+      }
     }
-    await launchUrl(uri, mode: LaunchMode.externalApplication);
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Impossible d ouvrir une application de carte',
+          style: GoogleFonts.poppins(),
+        ),
+        backgroundColor: AppTheme.primaryRed,
+      ),
+    );
   }
 }
