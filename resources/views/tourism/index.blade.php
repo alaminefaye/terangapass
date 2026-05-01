@@ -33,9 +33,11 @@
                     <label class="form-label">Recherche</label>
                     <input type="text" name="search" class="form-control" value="{{ request('search') }}" placeholder="Nom, adresse...">
                 </div>
-                <div class="col-md-4 d-flex align-items-end">
-                    <button type="submit" class="btn btn-primary me-2">Filtrer</button>
-                    <a href="{{ route('admin.tourism.index') }}" class="btn btn-outline-secondary">Réinitialiser</a>
+                <div class="col-lg-4 col-md-12 d-flex align-items-end">
+                    <div class="d-flex flex-wrap flex-md-nowrap gap-2 w-100">
+                        <button type="submit" class="btn btn-primary">Filtrer</button>
+                        <a href="{{ route('admin.tourism.index') }}" class="btn btn-outline-secondary">Réinitialiser</a>
+                    </div>
                 </div>
             </form>
         </div>

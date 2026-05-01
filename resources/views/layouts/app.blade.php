@@ -36,6 +36,17 @@
             background-color: #034519 !important;
             border-color: #034519 !important;
         }
+
+        /* Keep filter action buttons from overflowing on medium widths. */
+        .card-body form.row.g-3 .d-flex.align-items-end {
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .card-body form.row.g-3 .d-flex.align-items-end .btn {
+            white-space: nowrap;
+            margin-right: 0 !important;
+        }
     </style>
     
     <!-- Page CSS -->

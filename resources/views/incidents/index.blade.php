@@ -41,9 +41,11 @@
                     <label class="form-label">Date fin</label>
                     <input type="date" name="date_to" class="form-control" value="{{ request('date_to') }}">
                 </div>
-                <div class="col-md-2 d-flex align-items-end">
-                    <button type="submit" class="btn btn-primary me-2">Filtrer</button>
-                    <a href="{{ route('admin.incidents.index') }}" class="btn btn-outline-secondary">Réinitialiser</a>
+                <div class="col-lg-2 col-md-12 d-flex align-items-end">
+                    <div class="d-flex flex-wrap flex-md-nowrap gap-2 w-100">
+                        <button type="submit" class="btn btn-primary">Filtrer</button>
+                        <a href="{{ route('admin.incidents.index') }}" class="btn btn-outline-secondary">Réinitialiser</a>
+                    </div>
                 </div>
             </form>
         </div>
