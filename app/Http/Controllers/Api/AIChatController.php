@@ -29,7 +29,7 @@ class AIChatController extends Controller
         }
 
         $apiKey = config('services.anthropic.api_key');
-        $model = config('services.anthropic.model', 'claude-3-5-sonnet-latest');
+        $model = config('services.anthropic.model', 'claude-sonnet-4-6');
 
         if (empty($apiKey) || str_contains($apiKey, 'ta_cle_claude_ici')) {
             return response()->json([
