@@ -55,13 +55,7 @@
                 <div class="app-brand demo">
                     <a href="{{ route('admin.dashboard') }}" class="app-brand-link">
                         <span class="app-brand-logo demo">
-                            <div class="senegal-flag" style="display: inline-flex; width: 30px; height: 20px; border-radius: 2px; overflow: hidden; margin-right: 8px;">
-                                <div class="stripe" style="flex: 1; background: #00853F;"></div>
-                                <div class="stripe" style="flex: 1; background: #FCD116; display: flex; align-items: center; justify-content: center;">
-                                    <span style="color: #00853F; font-size: 8px;">★</span>
-                                </div>
-                                <div class="stripe" style="flex: 1; background: #CE1126;"></div>
-                            </div>
+                            <img src="{{ route('brand.terangpass-logo') }}" alt="Teranga Pass" style="height: 32px; width: auto; object-fit: contain;">
                         </span>
                         <span class="app-brand-text demo menu-text fw-bolder ms-2" style="color: #00853F;">Teranga Pass</span>
                     </a>
@@ -282,14 +276,8 @@
                     <footer class="content-footer footer bg-footer-theme">
                         <div class="container-xxl d-flex flex-wrap justify-content-between py-2 flex-md-row flex-column">
                             <div class="mb-2 mb-md-0">
-                                © <script>document.write(new Date().getFullYear());</script>, made with ❤️ by
-                                <a href="https://themeselection.com" target="_blank" class="footer-link fw-bolder">ThemeSelection</a>
-                            </div>
-                            <div>
-                                <a href="https://themeselection.com/license/" class="footer-link me-4" target="_blank">License</a>
-                                <a href="https://themeselection.com/" target="_blank" class="footer-link me-4">More Themes</a>
-                                <a href="https://themeselection.com/demo/sneat-bootstrap-html-admin-template/documentation/" target="_blank" class="footer-link me-4">Documentation</a>
-                                <a href="https://github.com/themeselection/sneat-html-admin-template-free/issues" target="_blank" class="footer-link me-4">Support</a>
+                                © <script>document.write(new Date().getFullYear());</script>, développé par
+                                <span class="fw-bolder">Universal Technologies Africa</span>
                             </div>
                         </div>
                     </footer>
