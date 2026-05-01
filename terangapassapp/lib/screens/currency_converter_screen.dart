@@ -114,71 +114,77 @@ class _CurrencyConverterScreenState extends State<CurrencyConverterScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF4F1EA),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-        children: [
-          Row(
-            children: [
-              IconButton(
-                onPressed: () => Navigator.of(context).pop(),
-                icon: const Icon(Icons.arrow_back_rounded),
-              ),
-              const SizedBox(width: 4),
-              Text(
-                'Convertisseur',
-                style: GoogleFonts.poppins(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13,
-                  color: const Color(0xFF1A1F2E),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Center(
-            child: Column(
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+          children: [
+            Row(
               children: [
-                Text(
-                  'TAUX DE CHANGE EN DIRECT',
-                  style: GoogleFonts.poppins(
-                    fontSize: 10,
-                    letterSpacing: 2,
-                    fontWeight: FontWeight.w700,
-                    color: const Color(0xFFF46609),
+                IconButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  icon: const Icon(
+                    Icons.arrow_back_rounded,
+                    color: Color(0xFF1A1F2E),
                   ),
                 ),
-                const SizedBox(height: 4),
+                const Spacer(),
                 Text(
-                  'Convertisseur FCFA',
-                  style: GoogleFonts.robotoSlab(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w700,
+                  'Convertisseur',
+                  style: GoogleFonts.poppins(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
                     color: const Color(0xFF1A1F2E),
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  _rate == null
-                      ? 'Taux indisponible'
-                      : '1 $_from = ${_rate!.toStringAsFixed(4)} $_to',
-                  style: GoogleFonts.robotoMono(
-                    fontSize: 11,
-                    color: AppTheme.textSecondary,
-                  ),
-                ),
-                if (_isLoading) ...[
-                  const SizedBox(height: 6),
-                  const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                ],
+                const Spacer(),
+                const SizedBox(width: 48),
               ],
             ),
-          ),
-          const SizedBox(height: 14),
-          Container(
+            const SizedBox(height: 4),
+            Center(
+              child: Column(
+                children: [
+                  Text(
+                    'TAUX DE CHANGE EN DIRECT',
+                    style: GoogleFonts.poppins(
+                      fontSize: 10,
+                      letterSpacing: 2,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFFF46609),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Convertisseur FCFA',
+                    style: GoogleFonts.robotoSlab(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF1A1F2E),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _rate == null
+                        ? 'Taux indisponible'
+                        : '1 $_from = ${_rate!.toStringAsFixed(4)} $_to',
+                    style: GoogleFonts.robotoMono(
+                      fontSize: 11,
+                      color: AppTheme.textSecondary,
+                    ),
+                  ),
+                  if (_isLoading) ...[
+                    const SizedBox(height: 6),
+                    const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+            Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               color: Colors.white,
@@ -220,8 +226,8 @@ class _CurrencyConverterScreenState extends State<CurrencyConverterScreen> {
                 ),
               ],
             ),
-          ),
-          Transform.translate(
+            ),
+            Transform.translate(
             offset: const Offset(0, -14),
             child: Center(
               child: InkWell(
@@ -242,8 +248,8 @@ class _CurrencyConverterScreenState extends State<CurrencyConverterScreen> {
                 ),
               ),
             ),
-          ),
-          Container(
+            ),
+            Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               color: Colors.white,
@@ -268,16 +274,16 @@ class _CurrencyConverterScreenState extends State<CurrencyConverterScreen> {
                 _buildCurrencyChip(value: _to),
               ],
             ),
-          ),
-          const SizedBox(height: 8),
-          if (_error != null)
-            Text(
-              _error!,
-              textAlign: TextAlign.center,
-              style: GoogleFonts.poppins(color: AppTheme.primaryRed),
             ),
-          const SizedBox(height: 8),
-          GridView.count(
+            const SizedBox(height: 8),
+            if (_error != null)
+              Text(
+                _error!,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(color: AppTheme.primaryRed),
+              ),
+            const SizedBox(height: 8),
+            GridView.count(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             crossAxisCount: 3,
@@ -310,8 +316,9 @@ class _CurrencyConverterScreenState extends State<CurrencyConverterScreen> {
                   ),
                 ),
             ],
-          ),
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }

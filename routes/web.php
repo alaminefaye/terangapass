@@ -16,8 +16,15 @@ use App\Http\Controllers\Web\StatisticsController;
 use App\Http\Controllers\Web\ContactController;
 use App\Http\Controllers\Web\ProfileController;
 use App\Http\Controllers\Web\SettingsController;
+use Illuminate\Support\Facades\File;
 
 // Authentication Routes
+Route::get('/brand/terangpass-logo', function () {
+    $logoPath = base_path('terangpass.png');
+    abort_unless(File::exists($logoPath), 404);
+    return response()->file($logoPath);
+})->name('brand.terangpass-logo');
+
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [LoginController::class, 'login']);
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
