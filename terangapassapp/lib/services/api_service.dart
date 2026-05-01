@@ -224,8 +224,23 @@ class ApiService {
     }
   }
 
+  static String _aiChatPrefsKeyForToken(String token) =>
+      'ai_assistant_conv_${token.hashCode}';
+
+  /// Clé SharedPreferences pour l’historique du chat IA (dépend du compte / token).
+  static Future<String> aiConversationPrefsKey() async {
+    final prefs = await SharedPreferences.getInstance();
+    final t = prefs.getString('auth_token');
+    return _aiChatPrefsKeyForToken(t ?? '');
+  }
+
   /// Déconnexion
   Future<void> logout() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('auth_token');
+    if (token != null && token.isNotEmpty) {
+      await prefs.remove(_aiChatPrefsKeyForToken(token));
+    }
     try {
       await _dio.post('/auth/logout');
     } catch (e) {
@@ -530,10 +545,28 @@ class ApiService {
 
   // ==================== ASSISTANT IA ====================
 
-  /// Envoie un message au backend IA (Claude)
-  Future<Map<String, dynamic>> sendAiMessage(String message) async {
+  /// Envoie un message au backend IA TerangaPass.
+  /// [conversationHistory] : tours précédents `{role: user|assistant, content}` (sans le message courant).
+  Future<Map<String, dynamic>> sendAiMessage(
+    String message, {
+    List<Map<String, String>>? conversationHistory,
+    double? latitude,
+    double? longitude,
+    double? accuracyMeters,
+  }) async {
     try {
-      final response = await _dio.post('/ai/chat', data: {'message': message});
+      final payload = <String, dynamic>{'message': message};
+      if (conversationHistory != null && conversationHistory.isNotEmpty) {
+        payload['conversation_history'] = conversationHistory;
+      }
+      if (latitude != null && longitude != null) {
+        payload['latitude'] = latitude;
+        payload['longitude'] = longitude;
+        if (accuracyMeters != null) {
+          payload['accuracy'] = accuracyMeters;
+        }
+      }
+      final response = await _dio.post('/ai/chat', data: payload);
       final data = response.data;
       if (data is Map<String, dynamic>) {
         return data;

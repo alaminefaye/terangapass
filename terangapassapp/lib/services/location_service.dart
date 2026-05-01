@@ -33,6 +33,31 @@ class LocationService {
     return true;
   }
 
+  /// Position actuelle si le service est actif et les permissions accordées ; sinon `null` (sans lever d’exception).
+  /// Demande la permission « pendant l’usage » si elle n’est pas encore accordée.
+  Future<Position?> getCurrentPositionIfAllowed() async {
+    try {
+      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) return null;
+
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission != LocationPermission.always &&
+          permission != LocationPermission.whileInUse) {
+        return null;
+      }
+
+      return await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.medium,
+        timeLimit: const Duration(seconds: 10),
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// Obtient la position actuelle de l'utilisateur
   Future<Position> getCurrentPosition() async {
     await checkAndRequestPermissions();

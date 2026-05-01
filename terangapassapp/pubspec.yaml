@@ -73,6 +73,7 @@ dependencies:
   # Media & intents
   image_picker: ^1.1.2
   url_launcher: ^6.3.1
+  flutter_markdown: ^0.7.7+1
   
   # Icons
   flutter_svg: ^2.0.9
