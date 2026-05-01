@@ -8,15 +8,19 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('incidents', function (Blueprint $table) {
-            $table->json('video_urls')->nullable()->after('photos');
-        });
+        if (! Schema::hasColumn('incidents', 'video_urls')) {
+            Schema::table('incidents', function (Blueprint $table) {
+                $table->json('video_urls')->nullable()->after('photos');
+            });
+        }
     }
 
     public function down(): void
     {
-        Schema::table('incidents', function (Blueprint $table) {
-            $table->dropColumn('video_urls');
-        });
+        if (Schema::hasColumn('incidents', 'video_urls')) {
+            Schema::table('incidents', function (Blueprint $table) {
+                $table->dropColumn('video_urls');
+            });
+        }
     }
 };

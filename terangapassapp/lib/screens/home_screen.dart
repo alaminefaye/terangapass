@@ -427,39 +427,48 @@ class _HomeScreenState extends State<HomeScreen>
     return Scaffold(
       backgroundColor: const Color(0xFFFAF7F0),
       body: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
                 child: _buildMaquetteTopHeader(context),
               ),
               const SizedBox(height: 12),
-              _buildHeroBanner(context),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: _buildHeroBanner(context),
+              ),
               const SizedBox(height: 14),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: _buildQuickSearchBar(context),
               ),
               const SizedBox(height: 14),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: _buildJojCountdownStrip(context),
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: _buildJojCountdownStrip(context),
+                      ),
+                      const SizedBox(height: 14),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: _buildPillarsSection(context),
+                      ),
+                      const SizedBox(height: 14),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: _buildQuickSupportBoxes(context),
+                      ),
+                      const SizedBox(height: 100),
+                    ],
+                  ),
+                ),
               ),
-              const SizedBox(height: 14),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: _buildPillarsSection(context),
-              ),
-              const SizedBox(height: 14),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: _buildQuickSupportBoxes(context),
-              ),
-              const SizedBox(height: 100),
-            ],
-          ),
+          ],
         ),
       ),
       bottomNavigationBar: _buildBottomNavigationBar(context),
@@ -1661,7 +1670,7 @@ class _HomeScreenState extends State<HomeScreen>
             Positioned(
               left: 0,
               right: 0,
-              bottom: 56,
+              bottom: 48,
               child: Center(child: _buildFloatingCenterAiButton(context)),
             ),
           ],
@@ -1674,30 +1683,56 @@ class _HomeScreenState extends State<HomeScreen>
     return InkWell(
       onTap: () => _navigateTo(context, _HomeNavId.aiAssistant),
       borderRadius: BorderRadius.circular(20),
-      child: Container(
-        width: 62,
-        height: 62,
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF2E8B57), Color(0xFF04581F)],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: Colors.white, width: 3),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF04581F).withValues(alpha: 0.35),
-              blurRadius: 14,
-              offset: const Offset(0, 6),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 62,
+            height: 62,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF2E8B57), Color(0xFF04581F)],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: Colors.white, width: 3),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF04581F).withValues(alpha: 0.35),
+                  blurRadius: 14,
+                  offset: const Offset(0, 6),
+                ),
+              ],
             ),
-          ],
-        ),
-        child: const Icon(
-          Icons.smart_toy_rounded,
-          color: Colors.white,
-          size: 30,
-        ),
+            child: AnimatedBuilder(
+              animation: _aiPulseController,
+              builder: (context, child) {
+                final t = _aiPulseController.value;
+                final scale = 1.0 + (0.08 * t);
+                final turn = (t - 0.5) * 0.03;
+                return Transform.rotate(
+                  angle: turn,
+                  child: Transform.scale(scale: scale, child: child),
+                );
+              },
+              child: const Icon(
+                Icons.smart_toy_rounded,
+                color: Colors.white,
+                size: 30,
+              ),
+            ),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'IA',
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              color: AppTheme.textSecondary,
+            ),
+          ),
+        ],
       ),
     );
   }

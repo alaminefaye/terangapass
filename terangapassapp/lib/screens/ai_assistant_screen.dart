@@ -199,6 +199,7 @@ class _AIAssistantScreenState extends State<AIAssistantScreen> {
       final reply =
           data is Map<String, dynamic> ? data['reply']?.toString() : null;
 
+      if (!mounted) return;
       setState(() {
         _messages.add(
           _ChatMessage(
@@ -210,6 +211,7 @@ class _AIAssistantScreenState extends State<AIAssistantScreen> {
         );
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _messages.add(
           _ChatMessage(
@@ -230,6 +232,7 @@ class _AIAssistantScreenState extends State<AIAssistantScreen> {
 
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       if (!_scrollController.hasClients) return;
       _scrollController.animateTo(
         _scrollController.position.maxScrollExtent,
