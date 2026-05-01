@@ -10,6 +10,7 @@ import '../services/api_service.dart';
 import 'sos_screen.dart';
 import 'medical_alert_screen.dart';
 import 'incident_report_screen.dart';
+import 'incident_history_screen.dart';
 import 'profile_screen.dart';
 import 'audio_announcements_screen.dart';
 import 'joj_info_screen.dart';
@@ -444,12 +445,17 @@ class _HomeScreenState extends State<HomeScreen>
               const SizedBox(height: 14),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: _buildJojCountdownStrip(context),
+              ),
+              const SizedBox(height: 14),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: _buildPillarsSection(context),
               ),
               const SizedBox(height: 14),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: _buildJojCountdownStrip(context),
+                child: _buildQuickSupportBoxes(context),
               ),
               const SizedBox(height: 100),
             ],
@@ -806,6 +812,104 @@ class _HomeScreenState extends State<HomeScreen>
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildQuickSupportBoxes(BuildContext context) {
+    return GridView.count(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      crossAxisCount: 2,
+      mainAxisSpacing: 10,
+      crossAxisSpacing: 10,
+      childAspectRatio: 1.3,
+      children: [
+        _buildQuickSupportBox(
+          context: context,
+          icon: Icons.graphic_eq_rounded,
+          iconColor: const Color(0xFF2E8B57),
+          title: 'Annonces audio',
+          subtitle: 'Ecouter',
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const AudioAnnouncementsScreen(),
+              ),
+            );
+          },
+        ),
+        _buildQuickSupportBox(
+          context: context,
+          icon: Icons.assignment_rounded,
+          iconColor: const Color(0xFF3A7CA5),
+          title: 'Mes signalements',
+          subtitle: 'Suivre',
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const IncidentHistoryScreen(),
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildQuickSupportBox({
+    required BuildContext context,
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppTheme.textSecondary.withValues(alpha: 0.15)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: iconColor,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: Colors.white, size: 22),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF1A1F2E),
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 3),
+            Text(
+              subtitle,
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppTheme.textSecondary,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1494,7 +1598,7 @@ class _HomeScreenState extends State<HomeScreen>
     return SafeArea(
       top: false,
       child: SizedBox(
-        height: 98,
+        height: 114,
         child: Stack(
           clipBehavior: Clip.none,
           children: [
@@ -1503,7 +1607,7 @@ class _HomeScreenState extends State<HomeScreen>
               right: 12,
               bottom: 8,
               child: Container(
-                height: 68,
+                height: 72,
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.96),
                   border: Border(
@@ -1512,34 +1616,87 @@ class _HomeScreenState extends State<HomeScreen>
                   borderRadius: BorderRadius.circular(18),
                 ),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    _buildNavItem(
-                      context,
-                      Icons.home_rounded,
-                      _HomeNavId.home,
-                      l10n.homeNavHome,
-                      true,
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.only(left: 10, right: 6),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            _buildNavItem(
+                              context,
+                              Icons.home_rounded,
+                              _HomeNavId.home,
+                              l10n.homeNavHome,
+                              true,
+                            ),
+                            _buildNavDiscoverItem(context),
+                          ],
+                        ),
+                      ),
                     ),
-                    _buildNavDiscoverItem(context),
-                    _buildNavJojItem(context),
-                    _buildNavItem(
-                      context,
-                      Icons.person_outline_rounded,
-                      _HomeNavId.profile,
-                      l10n.homeNavProfile,
-                      false,
+                    const SizedBox(width: 78),
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.only(left: 6, right: 10),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            _buildNavJojItem(context),
+                            _buildNavItem(
+                              context,
+                              Icons.person_outline_rounded,
+                              _HomeNavId.profile,
+                              l10n.homeNavProfile,
+                              false,
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ],
                 ),
               ),
             ),
             Positioned(
-              right: 22,
+              left: 0,
+              right: 0,
               bottom: 56,
-              child: const SizedBox.shrink(),
+              child: Center(child: _buildFloatingCenterAiButton(context)),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFloatingCenterAiButton(BuildContext context) {
+    return InkWell(
+      onTap: () => _navigateTo(context, _HomeNavId.aiAssistant),
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        width: 62,
+        height: 62,
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF2E8B57), Color(0xFF04581F)],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: Colors.white, width: 3),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF04581F).withValues(alpha: 0.35),
+              blurRadius: 14,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: const Icon(
+          Icons.smart_toy_rounded,
+          color: Colors.white,
+          size: 30,
         ),
       ),
     );
