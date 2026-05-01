@@ -3,16 +3,28 @@
 @section('title', 'Login')
 
 @section('content')
+<style>
+    .login-submit-btn {
+        background-color: #04581f !important;
+        border-color: #04581f !important;
+    }
+
+    .login-submit-btn:hover,
+    .login-submit-btn:focus,
+    .login-submit-btn:active {
+        background-color: #034519 !important;
+        border-color: #034519 !important;
+    }
+</style>
 <!-- Login -->
 <div class="card">
     <div class="card-body">
         <!-- Logo -->
         <div class="app-brand justify-content-center">
-            <a href="{{ route('admin.dashboard') }}" class="app-brand-link gap-2">
+            <a href="{{ route('admin.dashboard') }}" class="app-brand-link">
                 <span class="app-brand-logo demo">
-                    <img src="{{ route('brand.terangpass-logo') }}" alt="Teranga Pass" style="height: 44px; width: auto; object-fit: contain;">
+                    <img src="{{ route('brand.terangpass-logo') }}" alt="Teranga Pass" style="height: 86px; width: auto; object-fit: contain;">
                 </span>
-                <span class="app-brand-text demo text-body fw-bolder">Teranga Pass</span>
             </a>
         </div>
         <!-- /Logo -->
@@ -47,7 +59,7 @@
                 </div>
             </div>
             <div class="mb-3">
-                <button class="btn btn-primary d-grid w-100" type="submit">Sign in</button>
+                <button class="btn btn-primary d-grid w-100 login-submit-btn" type="submit">Sign in</button>
             </div>
         </form>
         

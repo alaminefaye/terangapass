@@ -7,7 +7,7 @@
     <meta name="description" content="@yield('description', '')" />
     
     <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="{{ asset('assets/img/favicon/favicon.ico') }}" />
+    <link rel="icon" type="image/png" href="{{ route('brand.terangpass-logo') }}" />
     
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -25,6 +25,18 @@
     <!-- Vendors CSS -->
     <link rel="stylesheet" href="{{ asset('assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.css') }}" />
     @stack('vendor-css')
+    <style>
+        .btn-primary {
+            background-color: #04581f !important;
+            border-color: #04581f !important;
+        }
+        .btn-primary:hover,
+        .btn-primary:focus,
+        .btn-primary:active {
+            background-color: #034519 !important;
+            border-color: #034519 !important;
+        }
+    </style>
     
     <!-- Page CSS -->
     @stack('page-css')

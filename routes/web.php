@@ -22,7 +22,10 @@ use Illuminate\Support\Facades\File;
 Route::get('/brand/terangpass-logo', function () {
     $logoPath = base_path('terangpass.png');
     abort_unless(File::exists($logoPath), 404);
-    return response()->file($logoPath);
+    return response()->file($logoPath, [
+        'Content-Type' => 'image/png',
+        'Cache-Control' => 'public, max-age=3600',
+    ]);
 })->name('brand.terangpass-logo');
 
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
