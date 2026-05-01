@@ -19,6 +19,7 @@ import 'map_screen.dart';
 import 'notifications_screen.dart';
 import 'ai_assistant_screen.dart';
 import 'embassies_screen.dart';
+import 'currency_converter_screen.dart';
 
 enum _HomeFeatureId {
   audioAnnouncements,
@@ -935,6 +936,21 @@ class _HomeScreenState extends State<HomeScreen>
                     );
                   },
                 ),
+                _buildHelpActionTile(
+                  context: context,
+                  icon: Icons.currency_exchange_rounded,
+                  color: const Color(0xFFD4A017),
+                  title: 'Convertisseur',
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    Navigator.push(
+                      rootContext,
+                      MaterialPageRoute(
+                        builder: (context) => const CurrencyConverterScreen(),
+                      ),
+                    );
+                  },
+                ),
               ],
             ),
           ),
@@ -1521,42 +1537,7 @@ class _HomeScreenState extends State<HomeScreen>
             Positioned(
               right: 22,
               bottom: 56,
-              child: InkWell(
-                borderRadius: BorderRadius.circular(999),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const SOSScreen()),
-                  );
-                },
-                child: Container(
-                  width: 58,
-                  height: 58,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFC73E1D),
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 3),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFFC73E1D).withValues(alpha: 0.42),
-                        blurRadius: 14,
-                        offset: const Offset(0, 5),
-                      ),
-                    ],
-                  ),
-                  child: const Center(
-                    child: Text(
-                      'SOS',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 12,
-                        letterSpacing: 0.6,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
+              child: const SizedBox.shrink(),
             ),
           ],
         ),

@@ -20,6 +20,8 @@ class MapScreen extends StatefulWidget {
 }
 
 class _MapScreenState extends State<MapScreen> {
+  static const double _fallbackLat = 14.6937; // Dakar centre fallback
+  static const double _fallbackLng = -17.4441;
   _MapFilter _selectedFilter = _MapFilter.all;
   bool _isLocating = false;
   double? _currentLat;
@@ -44,7 +46,25 @@ class _MapScreenState extends State<MapScreen> {
     if (initial.isNotEmpty) {
       _searchController.text = initial;
     }
-    _loadPointsOfInterest();
+    _initLocationAndLoad();
+  }
+
+  Future<void> _initLocationAndLoad() async {
+    try {
+      final pos = await LocationService().getCurrentPositionIfAllowed();
+      if (mounted && pos != null) {
+        setState(() {
+          _currentLat = pos.latitude;
+          _currentLng = pos.longitude;
+        });
+      }
+    } catch (_) {
+      // silent fallback to Dakar center
+    } finally {
+      if (mounted) {
+        _loadPointsOfInterest();
+      }
+    }
   }
 
   String? _categoryForFilter(_MapFilter filter) {
@@ -264,10 +284,12 @@ class _MapScreenState extends State<MapScreen> {
 
     final lat = _toDouble(point['latitude'] ?? point['lat']);
     final lng = _toDouble(point['longitude'] ?? point['lng'] ?? point['lon']);
-    if (_currentLat != null && _currentLng != null && lat != null && lng != null) {
+    if (lat != null && lng != null) {
+      final originLat = _currentLat ?? _fallbackLat;
+      final originLng = _currentLng ?? _fallbackLng;
       final computed = LocationService().calculateDistance(
-        _currentLat!,
-        _currentLng!,
+        originLat,
+        originLng,
         lat,
         lng,
       );
@@ -275,8 +297,8 @@ class _MapScreenState extends State<MapScreen> {
       return '${(computed / 1000).toStringAsFixed(1)} km';
     }
 
-    if (category.isNotEmpty) return '$category • Distance indisponible';
-    return 'Distance indisponible';
+    if (category.isNotEmpty) return category;
+    return 'Coordonnees manquantes';
   }
 
   @override
@@ -407,85 +429,87 @@ class _MapScreenState extends State<MapScreen> {
                 ),
               ),
             ),
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: Container(
-                height: 240,
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.08),
-                      blurRadius: 12,
-                      offset: const Offset(0, -2),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Center(
-                      child: Container(
-                        width: 42,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade300,
-                          borderRadius: BorderRadius.circular(99),
+            DraggableScrollableSheet(
+              initialChildSize: 0.30,
+              minChildSize: 0.20,
+              maxChildSize: 0.78,
+              builder: (context, scrollController) {
+                return Container(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.08),
+                        blurRadius: 12,
+                        offset: const Offset(0, -2),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Center(
+                        child: Container(
+                          width: 42,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade300,
+                            borderRadius: BorderRadius.circular(99),
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      l10n.mapNearbyPointsTitle,
-                      style: GoogleFonts.poppins(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 14,
-                        color: AppTheme.textPrimary,
+                      const SizedBox(height: 10),
+                      Text(
+                        l10n.mapNearbyPointsTitle,
+                        style: GoogleFonts.poppins(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
+                          color: AppTheme.textPrimary,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    Expanded(
-                      child: _isLoadingPoints
-                          ? const Center(child: CircularProgressIndicator())
-                          : _pointsErrorMessage != null
-                          ? Center(
-                              child: Text(
-                                _pointsErrorMessage!,
-                                style: GoogleFonts.poppins(
-                                  fontSize: 12,
-                                  color: AppTheme.textSecondary,
+                      const SizedBox(height: 8),
+                      Expanded(
+                        child: _isLoadingPoints
+                            ? const Center(child: CircularProgressIndicator())
+                            : _pointsErrorMessage != null
+                            ? Center(
+                                child: Text(
+                                  _pointsErrorMessage!,
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 12,
+                                    color: AppTheme.textSecondary,
+                                  ),
+                                  textAlign: TextAlign.center,
                                 ),
-                                textAlign: TextAlign.center,
-                              ),
-                            )
-                          : _pointsOfInterest.isEmpty
-                          ? Center(
-                              child: Text(
-                                l10n.mapNoPoints,
-                                style: GoogleFonts.poppins(
-                                  fontSize: 13,
-                                  color: AppTheme.textSecondary,
+                              )
+                            : _pointsOfInterest.isEmpty
+                            ? Center(
+                                child: Text(
+                                  l10n.mapNoPoints,
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 13,
+                                    color: AppTheme.textSecondary,
+                                  ),
                                 ),
+                              )
+                            : ListView.separated(
+                                controller: scrollController,
+                                itemCount: _pointsOfInterest.length,
+                                separatorBuilder: (context, index) =>
+                                    const SizedBox(height: 8),
+                                itemBuilder: (context, index) {
+                                  return _buildPointOfInterestFromData(
+                                    _pointsOfInterest[index],
+                                  );
+                                },
                               ),
-                            )
-                          : ListView.separated(
-                              itemCount: _pointsOfInterest.length,
-                              separatorBuilder: (context, index) =>
-                                  const SizedBox(height: 8),
-                              itemBuilder: (context, index) {
-                                return _buildPointOfInterestFromData(
-                                  _pointsOfInterest[index],
-                                );
-                              },
-                            ),
-                    ),
-                  ],
-                ),
-              ),
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
           ],
         ),
