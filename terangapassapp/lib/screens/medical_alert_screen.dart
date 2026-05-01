@@ -29,11 +29,13 @@ class _MedicalAlertScreenState extends State<MedicalAlertScreen> {
     try {
       final locationService = LocationService();
       final location = await locationService.getCurrentLocationWithAddress();
+      if (!mounted) return;
       setState(() {
         _currentLocation =
             location['address'] as String? ?? l10n.unknownPosition;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _currentLocation = l10n.unknownPosition;
       });
@@ -195,9 +197,9 @@ class _MedicalAlertScreenState extends State<MedicalAlertScreen> {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  Colors.orange.shade700,
-                  Colors.orange.shade500,
-                  Colors.deepOrange.shade400,
+                  const Color(0xFF1A1F2E),
+                  const Color(0xFF2A2F4E),
+                  const Color(0xFFC73E1D),
                 ],
               ),
               borderRadius: const BorderRadius.only(
@@ -206,7 +208,7 @@ class _MedicalAlertScreenState extends State<MedicalAlertScreen> {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.orange.withValues(alpha: 0.4),
+                  color: Colors.black.withValues(alpha: 0.22),
                   blurRadius: 20,
                   offset: const Offset(0, 10),
                 ),
@@ -297,16 +299,16 @@ class _MedicalAlertScreenState extends State<MedicalAlertScreen> {
                                 gradient: LinearGradient(
                                   begin: Alignment.topLeft,
                                   end: Alignment.bottomRight,
-                                  colors: [
-                                    Colors.orange.shade400,
-                                    Colors.orange.shade600,
-                                    Colors.deepOrange.shade500,
+                                  colors: const [
+                                    Color(0xFFC73E1D),
+                                    Color(0xFFAA3419),
+                                    Color(0xFF8B2515),
                                   ],
                                 ),
                                 borderRadius: BorderRadius.circular(24),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.orange.withValues(alpha: 0.4),
+                                  color: const Color(0xFFC73E1D).withValues(alpha: 0.32),
                                     blurRadius: 25,
                                     offset: const Offset(0, 15),
                                     spreadRadius: -5,
@@ -513,14 +515,14 @@ class _MedicalAlertScreenState extends State<MedicalAlertScreen> {
                                     Container(
                                       padding: const EdgeInsets.all(10),
                                       decoration: BoxDecoration(
-                                        color: Colors.orange.withValues(
+                                        color: const Color(0xFFC73E1D).withValues(
                                           alpha: 0.1,
                                         ),
                                         borderRadius: BorderRadius.circular(12),
                                       ),
                                       child: const Icon(
                                         Icons.location_on,
-                                        color: Colors.orange,
+                                        color: const Color(0xFFC73E1D),
                                         size: 24,
                                       ),
                                     ),
@@ -637,13 +639,13 @@ class _MedicalAlertScreenState extends State<MedicalAlertScreen> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? Colors.orange : Colors.transparent,
+            color: isSelected ? const Color(0xFFC73E1D) : Colors.transparent,
             width: 2,
           ),
           boxShadow: [
             BoxShadow(
               color: isSelected
-                  ? Colors.orange.withValues(alpha: 0.2)
+                  ? const Color(0xFFC73E1D).withValues(alpha: 0.2)
                   : Colors.black.withValues(alpha: 0.05),
               blurRadius: isSelected ? 15 : 10,
               offset: isSelected ? const Offset(0, 8) : const Offset(0, 4),
@@ -656,13 +658,13 @@ class _MedicalAlertScreenState extends State<MedicalAlertScreen> {
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
                 color: isSelected
-                    ? Colors.orange
-                    : Colors.orange.withValues(alpha: 0.1),
+                    ? const Color(0xFFC73E1D)
+                    : const Color(0xFFFAE6E1),
                 borderRadius: BorderRadius.circular(15),
               ),
               child: Icon(
                 icon,
-                color: isSelected ? Colors.white : Colors.orange,
+                color: isSelected ? Colors.white : const Color(0xFFC73E1D),
                 size: 24,
               ),
             ),
@@ -673,7 +675,7 @@ class _MedicalAlertScreenState extends State<MedicalAlertScreen> {
                 style: GoogleFonts.poppins(
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
                   fontSize: 16,
-                  color: isSelected ? Colors.orange : AppTheme.textPrimary,
+                  color: isSelected ? const Color(0xFFC73E1D) : AppTheme.textPrimary,
                 ),
               ),
             ),
@@ -681,7 +683,7 @@ class _MedicalAlertScreenState extends State<MedicalAlertScreen> {
               Container(
                 padding: const EdgeInsets.all(5),
                 decoration: const BoxDecoration(
-                  color: Colors.orange,
+                  color: Color(0xFFC73E1D),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(Icons.check, color: Colors.white, size: 16),

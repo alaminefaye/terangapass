@@ -490,6 +490,47 @@ class ApiService {
     }
   }
 
+  /// Récupère la liste des ambassades (catégorie dédiée).
+  Future<List<dynamic>> getEmbassies() async {
+    try {
+      final response = await _dio.get('/tourism/embassies');
+      return response.data['data'] ?? [];
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  /// Récupère le compteur officiel JOJ.
+  Future<Map<String, dynamic>> getJojCountdown() async {
+    try {
+      final response = await _dio.get('/joj/countdown');
+      return (response.data['data'] as Map<String, dynamic>? ?? {});
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  /// Convertit un montant via endpoint backend utilitaire.
+  Future<Map<String, dynamic>> convertCurrency({
+    required double amount,
+    required String from,
+    required String to,
+  }) async {
+    try {
+      final response = await _dio.get(
+        '/utility/currency/convert',
+        queryParameters: {
+          'amount': amount,
+          'from': from,
+          'to': to,
+        },
+      );
+      return (response.data['data'] as Map<String, dynamic>? ?? {});
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
   // ==================== PROFIL ====================
 
   /// Récupère les informations du profil utilisateur

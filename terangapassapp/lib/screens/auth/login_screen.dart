@@ -79,58 +79,82 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: const Color(0xFFF4F1EA),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
           child: Form(
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const SizedBox(height: 40),
-                // Logo
                 Container(
-                  height: 120,
-                  width: 120,
-                  decoration: BoxDecoration(
-                    color: AppTheme.primaryGreen,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppTheme.primaryGreen.withValues(alpha: 0.3),
-                        blurRadius: 20,
-                        offset: const Offset(0, 10),
+                  padding: const EdgeInsets.fromLTRB(24, 30, 24, 34),
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Color(0xFF1A1F2E), Color(0xFF2A2F4E)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.vertical(bottom: Radius.circular(28)),
+                  ),
+                  child: Column(
+                    children: [
+                      Container(
+                        height: 82,
+                        width: 82,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF2E8B57),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Icon(
+                          Icons.emoji_people_rounded,
+                          color: Colors.white,
+                          size: 42,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        l10n.appTitle,
+                        style: GoogleFonts.poppins(
+                          fontSize: 30,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        l10n.loginTagline,
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          color: Colors.white70,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Decouvrir - Voyager sereinement - Etre protege',
+                        style: GoogleFonts.poppins(
+                          fontSize: 11,
+                          color: const Color(0xFFD4A017),
+                          fontWeight: FontWeight.w600,
+                        ),
+                        textAlign: TextAlign.center,
                       ),
                     ],
                   ),
-                  child: const Icon(
-                    Icons.security_rounded,
-                    color: Colors.white,
-                    size: 60,
-                  ),
                 ),
-                const SizedBox(height: 30),
-                // Titre
-                Text(
-                  l10n.appTitle,
-                  style: GoogleFonts.poppins(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.primaryGreen,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  l10n.loginTagline,
-                  style: GoogleFonts.poppins(
-                    fontSize: 16,
-                    color: AppTheme.textSecondary,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 50),
+                Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
                 // Email
                 TextFormField(
                   controller: _emailController,
@@ -145,7 +169,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: const BorderSide(
-                        color: AppTheme.primaryGreen,
+                        color: Color(0xFF2E8B57),
                         width: 2,
                       ),
                     ),
@@ -187,7 +211,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: const BorderSide(
-                        color: AppTheme.primaryGreen,
+                        color: Color(0xFF2E8B57),
                         width: 2,
                       ),
                     ),
@@ -207,7 +231,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ElevatedButton(
                   onPressed: _isLoading ? null : _login,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primaryGreen,
+                    backgroundColor: const Color(0xFF2E8B57),
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -242,8 +266,12 @@ class _LoginScreenState extends State<LoginScreen> {
                     l10n.loginNoAccount,
                     style: GoogleFonts.poppins(
                       fontSize: 14,
-                      color: AppTheme.primaryGreen,
+                      color: const Color(0xFF2E8B57),
                       fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                      ],
                     ),
                   ),
                 ),

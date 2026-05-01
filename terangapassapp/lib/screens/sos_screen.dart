@@ -112,6 +112,7 @@ class _SOSScreenState extends State<SOSScreen> {
     try {
       final locationService = LocationService();
       final location = await locationService.getCurrentLocationWithAddress();
+      if (!mounted) return;
       setState(() {
         _currentLocation =
             location['address'] as String? ??
@@ -119,6 +120,7 @@ class _SOSScreenState extends State<SOSScreen> {
         _locationAccuracy = location['accuracy'] as double?;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _currentLocation = AppLocalizations.of(context)!.sosFallbackAddress;
         _locationAccuracy = 7.0;
@@ -322,718 +324,214 @@ class _SOSScreenState extends State<SOSScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
-      body: Stack(
-        children: [
-          // En-tête 3D avec dégradé
-          Container(
-            height: 180,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  AppTheme.primaryRed,
-                  Color.fromRGBO(
-                    ((AppTheme.primaryRed.r * 255.0).round() - 20).clamp(
-                      0,
-                      255,
+      backgroundColor: const Color(0xFF0A0E1A),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
+                  ),
+                  Text(
+                    l10n.sosEmergencyTitle,
+                    style: GoogleFonts.poppins(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 18,
                     ),
-                    ((AppTheme.primaryRed.g * 255.0).round() - 20).clamp(
-                      0,
-                      255,
-                    ),
-                    ((AppTheme.primaryRed.b * 255.0).round() - 20).clamp(
-                      0,
-                      255,
-                    ),
-                    1.0,
                   ),
                 ],
               ),
-              borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(30),
-                bottomRight: Radius.circular(30),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: AppTheme.primaryRed.withValues(alpha: 0.3),
-                  blurRadius: 20,
-                  offset: const Offset(0, 10),
+              const Spacer(),
+              Text(
+                'URGENCE - MAINTENEZ APPUYE',
+                style: GoogleFonts.poppins(
+                  color: const Color(0xFFC73E1D),
+                  letterSpacing: 2,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 11,
                 ),
-              ],
-            ),
-          ),
-
-          // Cercles décoratifs
-          Positioned(
-            top: -50,
-            right: -50,
-            child: Container(
-              width: 200,
-              height: 200,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: 0.1),
               ),
-            ),
-          ),
-          Positioned(
-            top: 50,
-            left: -30,
-            child: Container(
-              width: 100,
-              height: 100,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: 0.05),
+              const SizedBox(height: 12),
+              Text(
+                'Vous etes\nen danger ?',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(
+                  color: Colors.white,
+                  fontSize: 34,
+                  fontWeight: FontWeight.w700,
+                  height: 1.05,
+                ),
               ),
-            ),
-          ),
-
-          SafeArea(
-            child: Column(
-              children: [
-                // Barre de navigation personnalisée
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16.0,
-                    vertical: 8.0,
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: IconButton(
-                          icon: const Icon(
-                            Icons.arrow_back,
-                            color: Colors.white,
-                          ),
-                          onPressed: () => Navigator.of(context).pop(),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Text(
-                        l10n.sosEmergencyTitle,
-                        style: GoogleFonts.poppins(
-                          color: Colors.white,
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
+              const SizedBox(height: 10),
+              Text(
+                l10n.sosPressToAlert,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(color: Colors.white70, fontSize: 13),
+              ),
+              const SizedBox(height: 30),
+              GestureDetector(
+                onTap: (_isAlerting || _isCountdown) ? null : _startCountdown,
+                child: Container(
+                  width: 220,
+                  height: 220,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: const RadialGradient(
+                      colors: [Color(0xFFC73E1D), Color(0xFF8B2515)],
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFC73E1D).withValues(alpha: 0.45),
+                        blurRadius: 35,
+                        spreadRadius: 2,
                       ),
                     ],
+                    border: Border.all(
+                      color: const Color(0xFFC73E1D).withValues(alpha: 0.35),
+                      width: 6,
+                    ),
                   ),
-                ),
-
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        const SizedBox(height: 10),
-                        // Bouton SOS principal 3D amélioré
-                        GestureDetector(
-                          onTap: (_isAlerting || _isCountdown)
-                              ? null
-                              : _startCountdown,
-                          child: Container(
-                            height: 220,
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: [
-                                  AppTheme.primaryRed,
-                                  Color.fromRGBO(
-                                    ((AppTheme.primaryRed.r * 255.0).round() -
-                                            40)
-                                        .clamp(0, 255),
-                                    ((AppTheme.primaryRed.g * 255.0).round() -
-                                            40)
-                                        .clamp(0, 255),
-                                    ((AppTheme.primaryRed.b * 255.0).round() -
-                                            40)
-                                        .clamp(0, 255),
-                                    1.0,
-                                  ),
-                                ],
-                              ),
-                              borderRadius: BorderRadius.circular(30),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppTheme.primaryRed.withValues(
-                                    alpha: 0.4,
-                                  ),
-                                  blurRadius: 25,
-                                  offset: const Offset(0, 15),
-                                  spreadRadius: -5,
-                                ),
-                                BoxShadow(
-                                  color: Colors.white.withValues(alpha: 0.2),
-                                  blurRadius: 20,
-                                  offset: const Offset(-5, -5),
-                                  spreadRadius: 0,
-                                ),
-                              ],
-                            ),
-                            child: Stack(
-                              children: [
-                                // Effet de brillance
-                                Positioned(
-                                  top: 0,
-                                  left: 0,
-                                  child: Container(
-                                    width: 100,
-                                    height: 100,
-                                    decoration: BoxDecoration(
-                                      gradient: RadialGradient(
-                                        center: Alignment.topLeft,
-                                        radius: 1.5,
-                                        colors: [
-                                          Colors.white.withValues(alpha: 0.3),
-                                          Colors.transparent,
-                                        ],
-                                      ),
-                                      borderRadius: const BorderRadius.only(
-                                        topLeft: Radius.circular(30),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                Center(
-                                  child: _isCountdown
-                                      ? Column(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          children: [
-                                            TweenAnimationBuilder<double>(
-                                              tween: Tween(
-                                                begin: 1.0,
-                                                end: 1.5,
-                                              ),
-                                              duration: const Duration(
-                                                milliseconds: 500,
-                                              ),
-                                              builder: (context, value, child) {
-                                                return Transform.scale(
-                                                  scale: value,
-                                                  child: Container(
-                                                    width: 100,
-                                                    height: 100,
-                                                    decoration: BoxDecoration(
-                                                      shape: BoxShape.circle,
-                                                      color: Colors.white
-                                                          .withValues(
-                                                            alpha: 0.2,
-                                                          ),
-                                                      boxShadow: [
-                                                        BoxShadow(
-                                                          color: Colors.white
-                                                              .withValues(
-                                                                alpha: 0.3,
-                                                              ),
-                                                          blurRadius: 20,
-                                                          spreadRadius: 5,
-                                                        ),
-                                                      ],
-                                                    ),
-                                                    child: Center(
-                                                      child: Text(
-                                                        '$_countdownValue',
-                                                        style:
-                                                            GoogleFonts.poppins(
-                                                              color:
-                                                                  Colors.white,
-                                                              fontSize: 60,
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .w900,
-                                                            ),
-                                                      ),
-                                                    ),
-                                                  ),
-                                                );
-                                              },
-                                            ),
-                                            const SizedBox(height: 20),
-                                            Text(
-                                              l10n.sosCountdown,
-                                              style: GoogleFonts.poppins(
-                                                color: Colors.white,
-                                                fontSize: 18,
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
-                                          ],
-                                        )
-                                      : _isAlerting
-                                      ? Column(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          children: [
-                                            TweenAnimationBuilder<double>(
-                                              tween: Tween(
-                                                begin: 1.0,
-                                                end: 1.2,
-                                              ),
-                                              duration: const Duration(
-                                                milliseconds: 300,
-                                              ),
-                                              curve: Curves.easeInOut,
-                                              builder: (context, value, child) {
-                                                return Transform.scale(
-                                                  scale: value,
-                                                  child: Container(
-                                                    padding:
-                                                        const EdgeInsets.all(
-                                                          20,
-                                                        ),
-                                                    decoration: BoxDecoration(
-                                                      shape: BoxShape.circle,
-                                                      color: Colors.white
-                                                          .withValues(
-                                                            alpha: 0.2,
-                                                          ),
-                                                    ),
-                                                    child: const Icon(
-                                                      Icons.warning_rounded,
-                                                      size: 60,
-                                                      color: Colors.white,
-                                                    ),
-                                                  ),
-                                                );
-                                              },
-                                            ),
-                                            const SizedBox(height: 20),
-                                            Text(
-                                              l10n.sosAlertSent,
-                                              style: GoogleFonts.poppins(
-                                                color: Colors.white,
-                                                fontSize: 22,
-                                                fontWeight: FontWeight.w900,
-                                                letterSpacing: 2,
-                                              ),
-                                            ),
-                                          ],
-                                        )
-                                      : Column(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          children: [
-                                            Container(
-                                              padding: const EdgeInsets.all(20),
-                                              decoration: BoxDecoration(
-                                                shape: BoxShape.circle,
-                                                color: Colors.white.withValues(
-                                                  alpha: 0.15,
-                                                ),
-                                                boxShadow: [
-                                                  BoxShadow(
-                                                    color: Colors.black
-                                                        .withValues(alpha: 0.1),
-                                                    blurRadius: 10,
-                                                    spreadRadius: 2,
-                                                  ),
-                                                ],
-                                              ),
-                                              child: const Icon(
-                                                Icons.touch_app_rounded,
-                                                size: 50,
-                                                color: Colors.white,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 20),
-                                            Text(
-                                              l10n.sosUrgenceLabel,
-                                              style: GoogleFonts.poppins(
-                                                color: Colors.white,
-                                                fontSize: 28,
-                                                fontWeight: FontWeight.w900,
-                                                letterSpacing: 2,
-                                                shadows: [
-                                                  Shadow(
-                                                    color: Colors.black
-                                                        .withValues(alpha: 0.2),
-                                                    offset: const Offset(0, 2),
-                                                    blurRadius: 4,
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                            const SizedBox(height: 8),
-                                            Text(
-                                              l10n.sosPressToAlert,
-                                              style: GoogleFonts.poppins(
-                                                color: Colors.white.withValues(
-                                                  alpha: 0.9,
-                                                ),
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(height: 25),
-
-                        // Bouton Annuler (visible uniquement pendant le décompte)
-                        if (_isCountdown)
-                          GestureDetector(
-                            onTap: _cancelCountdown,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 32,
-                                vertical: 16,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(
-                                  color: AppTheme.primaryRed.withValues(
-                                    alpha: 0.4,
-                                  ),
-                                  width: 2,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.08),
-                                    blurRadius: 15,
-                                    offset: const Offset(0, 5),
-                                  ),
-                                ],
-                              ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.cancel_rounded,
-                                    color: AppTheme.primaryRed,
-                                    size: 22,
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Text(
-                                    l10n.sosCancelAlert,
-                                    style: GoogleFonts.poppins(
-                                      color: AppTheme.primaryRed,
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      letterSpacing: 1,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-
-                        const SizedBox(height: 25),
-                        if (_currentLocation != null)
-                          Container(
-                            padding: const EdgeInsets.all(20),
-                            decoration: BoxDecoration(
+                  child: Center(
+                    child: _isCountdown
+                        ? Text(
+                            '$_countdownValue',
+                            style: GoogleFonts.poppins(
                               color: Colors.white,
-                              borderRadius: BorderRadius.circular(20),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.05),
-                                  blurRadius: 15,
-                                  offset: const Offset(0, 5),
-                                ),
-                              ],
+                              fontSize: 72,
+                              fontWeight: FontWeight.w800,
                             ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.all(10),
-                                      decoration: BoxDecoration(
-                                        color: AppTheme.primaryRed.withValues(
-                                          alpha: 0.1,
-                                        ),
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      child: Icon(
-                                        Icons.location_on,
-                                        color: AppTheme.primaryRed,
-                                        size: 24,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 15),
-                                    Text(
-                                      l10n.sosCurrentPosition,
-                                      style: GoogleFonts.poppins(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16,
-                                        color: AppTheme.textPrimary,
-                                      ),
-                                    ),
-                                  ],
+                          )
+                        : _isAlerting
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                'SOS',
+                                style: GoogleFonts.poppins(
+                                  color: Colors.white,
+                                  fontSize: 46,
+                                  fontWeight: FontWeight.w800,
                                 ),
-                                const SizedBox(height: 15),
-                                Text(
-                                  _currentLocation!,
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 15,
-                                    color: AppTheme.textSecondary,
-                                    height: 1.5,
-                                  ),
+                              ),
+                              Text(
+                                '3 SECONDES',
+                                style: GoogleFonts.poppins(
+                                  color: Colors.white70,
+                                  letterSpacing: 2,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
                                 ),
-                                if (_locationAccuracy != null) ...[
-                                  const SizedBox(height: 10),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 10,
-                                      vertical: 5,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: Colors.grey.shade100,
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Text(
-                                      l10n.sosAccuracy(
-                                        _locationAccuracy!.toStringAsFixed(1),
-                                      ),
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 12,
-                                        color: Colors.grey.shade600,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ),
-
-                        const SizedBox(height: 25),
-
-                        // Services de secours
-                        Text(
-                          l10n.sosEmergencyServices,
-                          style: GoogleFonts.poppins(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 20,
-                            color: AppTheme.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: 15),
-
-                        // Police
-                        _buildEmergencyServiceCard(
-                          context,
-                          l10n.sosServicePolice,
-                          '17',
-                          Icons.local_police_rounded,
-                          Colors.blue,
-                          () => _callEmergency('17', l10n.sosServicePolice),
-                        ),
-
-                        const SizedBox(height: 15),
-
-                        // Pompiers
-                        _buildEmergencyServiceCard(
-                          context,
-                          l10n.sosServiceFirefighters,
-                          '18',
-                          Icons.fire_truck_rounded,
-                          Colors.orange,
-                          () => _callEmergency('18', l10n.sosServiceFirefighters),
-                        ),
-
-                        const SizedBox(height: 15),
-
-                        // SAMU
-                        _buildEmergencyServiceCard(
-                          context,
-                          l10n.sosServiceAmbulance,
-                          '15',
-                          Icons.medical_services_rounded,
-                          AppTheme.primaryRed,
-                          () => _callEmergency('15', l10n.sosServiceAmbulance),
-                        ),
-
-                        const SizedBox(height: 30),
-
-                        // Historique des alertes
-                        Text(
-                          l10n.sosHistory,
-                          style: GoogleFonts.poppins(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 20,
-                            color: AppTheme.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: 15),
-
-                        Container(
-                          padding: const EdgeInsets.all(25),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(20),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.05),
-                                blurRadius: 15,
-                                offset: const Offset(0, 5),
                               ),
                             ],
                           ),
-                          child: Center(
-                            child: Column(
-                              children: [
-                                Icon(
-                                  Icons.history_rounded,
-                                  size: 40,
-                                  color: Colors.grey.shade300,
-                                ),
-                                const SizedBox(height: 10),
-                                Text(
-                                  l10n.sosNoRecentAlerts,
-                                  style: GoogleFonts.poppins(
-                                    color: AppTheme.textSecondary,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 30),
-                      ],
+                  ),
+                ),
+              ),
+              if (_isCountdown) ...[
+                const SizedBox(height: 16),
+                TextButton(
+                  onPressed: _cancelCountdown,
+                  child: Text(
+                    l10n.sosCancelAlert,
+                    style: GoogleFonts.poppins(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
               ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEmergencyServiceCard(
-    BuildContext context,
-    String service,
-    String number,
-    IconData icon,
-    Color color,
-    VoidCallback onTap,
-  ) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: color.withValues(alpha: 0.1),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
-          ),
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 5,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(20),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Container(
-                  width: 60,
-                  height: 60,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        color.withValues(alpha: 0.2),
-                        color.withValues(alpha: 0.1),
-                      ],
-                    ),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: color.withValues(alpha: 0.2),
-                      width: 1,
-                    ),
-                  ),
-                  child: Icon(icon, color: color, size: 30),
+              const SizedBox(height: 26),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
                 ),
-                const SizedBox(width: 20),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        service,
+                child: Row(
+                  children: [
+                    const Icon(Icons.location_on_rounded, color: Color(0xFF2E8B57)),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        [
+                          _currentLocation ?? l10n.sosUnknownPosition,
+                          if (_locationAccuracy != null)
+                            '(${_locationAccuracy!.toStringAsFixed(1)} m)',
+                        ].join(' '),
                         style: GoogleFonts.poppins(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                          color: AppTheme.textPrimary,
+                          color: Colors.white70,
+                          fontSize: 12,
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade100,
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          AppLocalizations.of(context)!.sosNumber(number),
-                          style: GoogleFonts.poppins(
-                            fontSize: 13,
-                            color: AppTheme.textSecondary,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-                Container(
-                  width: 50,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    color: color,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: color.withValues(alpha: 0.4),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => _callEmergency('17', l10n.sosServicePolice),
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(color: Colors.white.withValues(alpha: 0.35)),
+                        foregroundColor: Colors.white,
+                        textStyle: GoogleFonts.poppins(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12,
+                        ),
                       ),
-                    ],
+                      child: const Text('Police'),
+                    ),
                   ),
-                  child: const Icon(
-                    Icons.phone_rounded,
-                    color: Colors.white,
-                    size: 24,
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () =>
+                          _callEmergency('18', l10n.sosServiceFirefighters),
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(color: Colors.white.withValues(alpha: 0.35)),
+                        foregroundColor: Colors.white,
+                        textStyle: GoogleFonts.poppins(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12,
+                        ),
+                      ),
+                      child: const Text('Pompiers'),
+                    ),
                   ),
-                ),
-              ],
-            ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () =>
+                          _callEmergency('15', l10n.sosServiceAmbulance),
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(color: Colors.white.withValues(alpha: 0.35)),
+                        foregroundColor: Colors.white,
+                        textStyle: GoogleFonts.poppins(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12,
+                        ),
+                      ),
+                      child: const Text('SAMU'),
+                    ),
+                  ),
+                ],
+              ),
+              const Spacer(),
+            ],
           ),
         ),
       ),
     );
   }
+
 }

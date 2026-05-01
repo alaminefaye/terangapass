@@ -73,9 +73,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: const Color(0xFFF4F1EA),
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: const Color(0xFFF4F1EA),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppTheme.textPrimary),
@@ -84,12 +84,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(20),
           child: Form(
             key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
                 const SizedBox(height: 20),
                 // Titre
                 Text(
@@ -97,7 +103,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   style: GoogleFonts.poppins(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
-                    color: AppTheme.textPrimary,
+                    color: const Color(0xFF1A1F2E),
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -106,6 +112,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   style: GoogleFonts.poppins(
                     fontSize: 16,
                     color: AppTheme.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Creer votre compte pour acceder a Teranga Pass',
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    color: const Color(0xFF3A7CA5),
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
                 const SizedBox(height: 40),
@@ -122,7 +137,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: const BorderSide(
-                        color: AppTheme.primaryGreen,
+                        color: Color(0xFF2E8B57),
                         width: 2,
                       ),
                     ),
@@ -149,7 +164,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: const BorderSide(
-                        color: AppTheme.primaryGreen,
+                        color: Color(0xFF2E8B57),
                         width: 2,
                       ),
                     ),
@@ -191,7 +206,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: const BorderSide(
-                        color: AppTheme.primaryGreen,
+                        color: Color(0xFF2E8B57),
                         width: 2,
                       ),
                     ),
@@ -233,7 +248,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: const BorderSide(
-                        color: AppTheme.primaryGreen,
+                        color: Color(0xFF2E8B57),
                         width: 2,
                       ),
                     ),
@@ -253,7 +268,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ElevatedButton(
                   onPressed: _isLoading ? null : _register,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primaryGreen,
+                    backgroundColor: const Color(0xFF2E8B57),
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -288,12 +303,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     l10n.registerHaveAccount,
                     style: GoogleFonts.poppins(
                       fontSize: 14,
-                      color: AppTheme.primaryGreen,
+                      color: const Color(0xFF2E8B57),
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
               ],
+            ),
             ),
           ),
         ),

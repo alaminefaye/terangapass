@@ -42,12 +42,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final alerts = await apiService.getAlertsHistory();
       final reports = await apiService.getIncidentsHistory();
 
+      if (!mounted) return;
       setState(() {
         _alertsCount = alerts.length;
         _reportsCount = reports.length;
         _recentActivities = _buildRecentActivities(alerts, reports);
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _userProfile = null;
         _alertsCount = 0;
@@ -56,9 +58,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _recentActivities = [];
       });
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -246,16 +250,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final l10n = AppLocalizations.of(context)!;
     if (_isLoading) {
       return Scaffold(
-        backgroundColor: const Color(
-          0xFFF5F7FA,
-        ), // Light grey background for 3D effect
+        backgroundColor: const Color(0xFFF4F1EA),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
 
     if (_errorMessage != null || _userProfile == null) {
       return Scaffold(
-        backgroundColor: const Color(0xFFF5F7FA),
+        backgroundColor: const Color(0xFFF4F1EA),
         appBar: AppBar(
           backgroundColor: AppTheme.primaryGreen,
           elevation: 0,
@@ -308,7 +310,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: const Color(0xFFF4F1EA),
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
@@ -370,11 +372,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
-                      colors: [
-                        const Color(0xFF00A86B), // Primary Green
-                        const Color(0xFF008C5E), // Darker Green
-                        Colors.teal.shade700,
-                      ],
+                      colors: [const Color(0xFF1A1F2E), const Color(0xFF2A2F4E)],
                     ),
                     borderRadius: const BorderRadius.only(
                       bottomLeft: Radius.circular(40),
@@ -382,7 +380,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF00A86B).withValues(alpha: 0.4),
+                        color: Colors.black.withValues(alpha: 0.25),
                         blurRadius: 20,
                         offset: const Offset(0, 10),
                       ),
@@ -1317,7 +1315,7 @@ class PrivacyScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: const Color(0xFFF4F1EA),
       appBar: AppBar(
         backgroundColor: AppTheme.primaryGreen,
         elevation: 0,

@@ -350,7 +350,7 @@ class _TourismScreenState extends State<TourismScreen>
     final headerHeight = 170.0 + topPadding;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: const Color(0xFFF4F1EA),
       body: Stack(
         children: [
           Padding(
@@ -411,9 +411,9 @@ class _TourismScreenState extends State<TourismScreen>
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    const Color(0xFF00A86B),
-                    const Color(0xFF008C5E),
-                    Colors.teal.shade700,
+                    const Color(0xFF2E8B57),
+                    const Color(0xFF1F6D44),
+                    Color(0xFF155437),
                   ],
                 ),
                 borderRadius: const BorderRadius.only(
@@ -422,7 +422,7 @@ class _TourismScreenState extends State<TourismScreen>
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF00A86B).withValues(alpha: 0.4),
+                    color: const Color(0xFF2E8B57).withValues(alpha: 0.35),
                     blurRadius: 20,
                     offset: const Offset(0, 10),
                   ),
@@ -486,7 +486,7 @@ class _TourismScreenState extends State<TourismScreen>
                       controller: _tabController,
                       isScrollable: true,
                       tabAlignment: TabAlignment.center,
-                      labelColor: const Color(0xFF00A86B),
+                      labelColor: const Color(0xFF2E8B57),
                       unselectedLabelColor: Colors.white.withValues(alpha: 0.8),
                       dividerColor: Colors.transparent,
                       indicator: BoxDecoration(

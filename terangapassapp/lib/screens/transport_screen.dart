@@ -63,12 +63,12 @@ class _TransportScreenState extends State<TransportScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: const Color(0xFFF4F1EA),
       body: Stack(
         children: [
           // Contenu principal
           Padding(
-            padding: const EdgeInsets.only(top: 140),
+            padding: const EdgeInsets.only(top: 132),
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : _errorMessage != null
@@ -142,15 +142,15 @@ class _TransportScreenState extends State<TransportScreen> {
             left: 0,
             right: 0,
             child: Container(
-              height: 140,
+              height: 132,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    const Color(0xFF00A86B), // Primary Green
-                    const Color(0xFF008C5E), // Darker Green
-                    Colors.teal.shade700,
+                    const Color(0xFF3A7CA5),
+                    const Color(0xFF2F6B90),
+                    const Color(0xFF285C7A),
                   ],
                 ),
                 borderRadius: const BorderRadius.only(
@@ -159,7 +159,7 @@ class _TransportScreenState extends State<TransportScreen> {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF00A86B).withValues(alpha: 0.4),
+                    color: const Color(0xFF3A7CA5).withValues(alpha: 0.35),
                     blurRadius: 20,
                     offset: const Offset(0, 10),
                   ),
@@ -185,12 +185,12 @@ class _TransportScreenState extends State<TransportScreen> {
                         ),
                       ),
                       const SizedBox(width: 16),
-                      Text(
+                  Text(
                         l10n.transportTitle,
                         style: GoogleFonts.poppins(
                           color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 18,
                           shadows: [
                             Shadow(
                               color: Colors.black.withValues(alpha: 0.1),
@@ -218,10 +218,10 @@ class _TransportScreenState extends State<TransportScreen> {
     return GestureDetector(
       onTap: () => _showShuttleDetail(shuttle),
       child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
+        margin: const EdgeInsets.only(bottom: 10),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(14),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.05),
@@ -231,7 +231,7 @@ class _TransportScreenState extends State<TransportScreen> {
           ],
         ),
         child: Padding(
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.all(12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

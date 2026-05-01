@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\TourismController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\DeviceTokenController;
 use App\Http\Controllers\Api\AIChatController;
+use App\Http\Controllers\Api\UtilityController;
 
 /*
 |--------------------------------------------------------------------------
@@ -69,7 +70,12 @@ Route::middleware([])->prefix('v1')->group(function () {
 
     // Tourisme
     Route::get('/tourism/points-of-interest', [TourismController::class, 'pointsOfInterest']);
+    Route::get('/tourism/embassies', [TourismController::class, 'embassies']);
 
     // Assistant IA
     Route::post('/ai/chat', [AIChatController::class, 'chat']);
+
+    // Utilitaires
+    Route::get('/joj/countdown', [UtilityController::class, 'jojCountdown']);
+    Route::get('/utility/currency/convert', [UtilityController::class, 'convertCurrency']);
 });

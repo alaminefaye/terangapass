@@ -28,6 +28,7 @@ enum _HomeFeatureId {
 }
 
 enum _HomeNavId { home, medicalAlert, aiAssistant, incidentReport, profile }
+enum _HomePillarId { discover, move, joj, help }
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -36,7 +37,8 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
+class _HomeScreenState extends State<HomeScreen>
+    with WidgetsBindingObserver, SingleTickerProviderStateMixin {
   static const String _readNotificationIdsKey = 'read_notification_ids';
 
   Map<String, dynamic>? _officialAnnouncement;
@@ -52,20 +54,78 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   String? _competitionSitesError;
   final MapController _jojMapController = MapController();
   int _unreadNotificationsCount = 0;
+  late final AnimationController _aiPulseController;
+  bool _isNavigating = false;
+  int _jojDaysRemaining = 183;
+  String _jojDateLabel = 'Dakar 2026 - 31 oct -> 13 nov';
+
+  Future<void> _navigateTo(BuildContext context, _HomeNavId id) async {
+    if (_isNavigating) return;
+    setState(() {
+      _isNavigating = true;
+    });
+    try {
+      switch (id) {
+        case _HomeNavId.home:
+          return;
+        case _HomeNavId.medicalAlert:
+          await Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const MedicalAlertScreen()),
+          );
+          return;
+        case _HomeNavId.aiAssistant:
+          await Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const AIAssistantScreen()),
+          );
+          return;
+        case _HomeNavId.incidentReport:
+          await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const IncidentReportScreen(),
+            ),
+          );
+          return;
+        case _HomeNavId.profile:
+          await Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const ProfileScreen()),
+          );
+          return;
+      }
+    } catch (e, st) {
+      FlutterError.reportError(FlutterErrorDetails(exception: e, stack: st));
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isNavigating = false;
+        });
+      }
+    }
+  }
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _aiPulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+    );
+    _aiPulseController.repeat(reverse: true);
     _bindOfficialPlayerListeners();
     _loadOfficialAnnouncement();
     _loadCompetitionSites();
     _loadUnreadNotificationsCount();
+    _loadJojCountdown();
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _aiPulseController.dispose();
     _officialPlayer.dispose();
     super.dispose();
   }
@@ -76,6 +136,29 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       _loadOfficialAnnouncement();
       _loadCompetitionSites();
       _loadUnreadNotificationsCount();
+      _loadJojCountdown();
+    }
+  }
+
+  Future<void> _loadJojCountdown() async {
+    try {
+      final api = ApiService();
+      final data = await api.getJojCountdown();
+      if (!mounted) return;
+      final days = data['days_remaining'];
+      final label = (data['label'] ?? '').toString().trim();
+      setState(() {
+        if (days is int) {
+          _jojDaysRemaining = days;
+        } else if (days is num) {
+          _jojDaysRemaining = days.toInt();
+        }
+        if (label.isNotEmpty) {
+          _jojDateLabel = label;
+        }
+      });
+    } catch (_) {
+      // Garde les valeurs fallback de maquette.
     }
   }
 
@@ -329,59 +412,120 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
+    final keepLegacySections = [
+      _buildMainFeaturesSection,
+      _buildOfficialAnnouncementSection,
+      _buildJOJInfoSection,
+    ];
+    assert(keepLegacySections.isNotEmpty);
     return Scaffold(
-      body: Stack(
-        children: [
-          _buildHeaderImage(context),
-          SingleChildScrollView(
-            child: Column(
-              children: [
-                const SizedBox(height: 280),
-                Container(
-                  decoration: const BoxDecoration(
-                    color: AppTheme.backgroundColor,
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(24),
-                      topRight: Radius.circular(24),
-                    ),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 6,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildEmergencyButtonsRow(context),
-                        const SizedBox(height: 0),
-                        _buildMainFeaturesSection(context),
-                        const SizedBox(height: 8),
-                        if (_officialAnnouncement != null) ...[
-                          _buildOfficialAnnouncementSection(context),
-                          const SizedBox(height: 8),
-                        ],
-                        _buildJOJInfoSection(context),
-                        const SizedBox(height: 80),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
+      backgroundColor: const Color(0xFFFAF7F0),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildMaquetteTopHeader(context),
+              const SizedBox(height: 12),
+              _buildHeroBanner(context),
+              const SizedBox(height: 14),
+              _buildQuickSearchBar(context),
+              const SizedBox(height: 14),
+              _buildPillarsSection(context),
+              const SizedBox(height: 14),
+              _buildJojCountdownStrip(context),
+              const SizedBox(height: 100),
+            ],
           ),
-        ],
+        ),
       ),
       bottomNavigationBar: _buildBottomNavigationBar(context),
     );
   }
 
-  Widget _buildHeaderImage(BuildContext context) {
+  Widget _buildMaquetteTopHeader(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 42,
+          height: 42,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            image: const DecorationImage(
+              image: AssetImage('assets/images/app_logo.png'),
+              fit: BoxFit.cover,
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            'Teranga Pass',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: const Color(0xFF1A1F2E),
+            ),
+          ),
+        ),
+        InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () async {
+            await Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const NotificationsScreen()),
+            );
+            await _loadUnreadNotificationsCount();
+          },
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFE5DFD3)),
+                ),
+                child: const Icon(Icons.notifications_none_rounded),
+              ),
+              if (_unreadNotificationsCount > 0)
+                Positioned(
+                  right: -4,
+                  top: -4,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFC73E1D),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      _unreadNotificationsCount > 99
+                          ? '99+'
+                          : _unreadNotificationsCount.toString(),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHeroBanner(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return Container(
-      height: 280,
+      height: 180,
       width: double.infinity,
       decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
         image: DecorationImage(
           image: const AssetImage('assets/images/home_header_dakar.png'),
           fit: BoxFit.cover,
@@ -393,93 +537,28 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       ),
       child: Stack(
         children: [
-          // Overlay avec contenu
-          SafeArea(
-            child: Stack(
+          Positioned(
+            bottom: 14,
+            left: 16,
+            right: 16,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Notifications en haut à droite
-                Positioned(
-                  top: 8,
-                  right: 16,
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(30),
-                    onTap: () async {
-                      await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const NotificationsScreen(),
-                        ),
-                      );
-                      await _loadUnreadNotificationsCount();
-                    },
-                    child: Stack(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.2),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.notifications_outlined,
-                            color: Colors.white,
-                            size: 24,
-                          ),
-                        ),
-                        if (_unreadNotificationsCount > 0)
-                          Positioned(
-                            right: 0,
-                            top: 0,
-                            child: Container(
-                              padding: const EdgeInsets.all(4),
-                              decoration: const BoxDecoration(
-                                color: AppTheme.primaryRed,
-                                shape: BoxShape.circle,
-                              ),
-                              child: Text(
-                                _unreadNotificationsCount > 99
-                                    ? '99+'
-                                    : _unreadNotificationsCount.toString(),
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
+                Text(
+                  'Bienvenue au Senegal,',
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
-
-                Positioned(
-                  top: 8,
-                  left: 16,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: Image.asset(
-                      'assets/images/app_logo.png',
-                      height: 44,
-                      width: 44,
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                ),
-
-                // Tagline en bas (position actuelle - ne pas toucher)
-                Positioned(
-                  bottom: 16,
-                  left: 16,
-                  right: 16,
-                  child: Text(
-                    l10n.homeTagline,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    textAlign: TextAlign.center,
+                const SizedBox(height: 4),
+                Text(
+                  l10n.homeTagline,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ],
@@ -515,132 +594,203 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     );
   }
 
-  Widget _buildEmergencyButtonsRow(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    return Row(
-      children: [
-        // Bouton SOS Urgence
-        Expanded(
-          child: _buildHorizontalEmergencyButton(
-            context,
-            icon: Icons.warning_amber_rounded,
-            title: l10n.sosEmergencyTitle,
-            color: AppTheme.emergencyRed,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const SOSScreen()),
-              );
-            },
+  Widget _buildQuickSearchBar(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppTheme.textSecondary.withValues(alpha: 0.2)),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.search_rounded,
+            color: AppTheme.textSecondary.withValues(alpha: 0.8),
           ),
-        ),
-        const SizedBox(width: 12),
-
-        // Bouton Alerte Médicale
-        Expanded(
-          child: _buildHorizontalEmergencyButton(
-            context,
-            icon: Icons.medical_services_rounded,
-            title: l10n.medicalAlertTitle,
-            color: AppTheme.medicalRed,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const MedicalAlertScreen(),
-                ),
-              );
-            },
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'Restaurants, sites, hotels, evenements...',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: AppTheme.textSecondary,
+              ),
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
-  Widget _buildHorizontalEmergencyButton(
-    BuildContext context, {
-    required IconData icon,
-    required String title,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    // Dégradé rouge pour le fond
-    final gradientColors = [
-      color,
-      Color.fromRGBO(
-        ((color.r * 255).round() - 25).clamp(0, 255),
-        ((color.g * 255).round() - 15).clamp(0, 255),
-        ((color.b * 255).round() - 15).clamp(0, 255),
-        1.0,
+  Widget _buildPillarsSection(BuildContext context) {
+    final pillars = [
+      (
+        id: _HomePillarId.discover,
+        icon: Icons.explore_rounded,
+        title: 'Decouvrir',
+        subtitle: 'Sites - Restos - Hotels',
+        color: const Color(0xFF2E8B57),
+      ),
+      (
+        id: _HomePillarId.move,
+        icon: Icons.alt_route_rounded,
+        title: 'Se deplacer',
+        subtitle: 'Carte - Navettes - Taxis',
+        color: const Color(0xFF3A7CA5),
+      ),
+      (
+        id: _HomePillarId.joj,
+        icon: Icons.emoji_events_rounded,
+        title: 'JOJ 2026',
+        subtitle: 'Calendrier - Medailles',
+        color: const Color(0xFFD4A017),
+      ),
+      (
+        id: _HomePillarId.help,
+        icon: Icons.health_and_safety_rounded,
+        title: 'Etre aide',
+        subtitle: 'SOS - Medical - Ambassade',
+        color: const Color(0xFFC73E1D),
       ),
     ];
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: gradientColors,
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: pillars.length,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        mainAxisSpacing: 10,
+        crossAxisSpacing: 10,
+        childAspectRatio: 1.3,
+      ),
+      itemBuilder: (context, index) {
+        final pillar = pillars[index];
+        return InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () => _openPillar(context, pillar.id),
+          child: Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppTheme.textSecondary.withValues(alpha: 0.15)),
             ),
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: color.withValues(alpha: 0.4),
-                blurRadius: 12,
-                offset: const Offset(0, 6),
-                spreadRadius: 0,
-              ),
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.1),
-                blurRadius: 4,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              // Cercle avec icône plus grande
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.25),
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.1),
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Icon(icon, color: Colors.white, size: 24),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  title,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.2,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: pillar.color,
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+                  child: Icon(pillar.icon, color: Colors.white, size: 22),
                 ),
-              ),
-            ],
+                const SizedBox(height: 10),
+                Text(
+                  pillar.title,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: pillar.color,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  pillar.subtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
+              ],
+            ),
           ),
+        );
+      },
+    );
+  }
+
+  Widget _buildJojCountdownStrip(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: const LinearGradient(
+          colors: [Color(0xFF1A1F2E), Color(0xFF2A2F4E)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
       ),
+      child: Row(
+        children: [
+          Text(
+            _jojDaysRemaining.toString(),
+            style: TextStyle(
+              fontSize: 34,
+              color: Color(0xFFD4A017),
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Jours avant les JOJ',
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 11,
+                    letterSpacing: 0.8,
+                  ),
+                ),
+                SizedBox(height: 2),
+                Text(
+                  _jojDateLabel,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
+  }
+
+  void _openPillar(BuildContext context, _HomePillarId id) {
+    switch (id) {
+      case _HomePillarId.discover:
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const TourismScreen()),
+        );
+        break;
+      case _HomePillarId.move:
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const TransportScreen()),
+        );
+        break;
+      case _HomePillarId.joj:
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const JOJInfoScreen()),
+        );
+        break;
+      case _HomePillarId.help:
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const IncidentReportScreen()),
+        );
+        break;
+    }
   }
 
   Widget _buildMainFeaturesSection(BuildContext context) {
@@ -1138,62 +1288,152 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   Widget _buildBottomNavigationBar(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 10,
-            offset: const Offset(0, -2),
-            spreadRadius: 0,
-          ),
-        ],
+    return SafeArea(
+      top: false,
+      child: SizedBox(
+        height: 98,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Positioned(
+              left: 12,
+              right: 12,
+              bottom: 8,
+              child: Container(
+                height: 68,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.96),
+                  border: Border(
+                    top: BorderSide(color: Colors.grey.withValues(alpha: 0.15)),
+                  ),
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildNavItem(
+                      context,
+                      Icons.home_rounded,
+                      _HomeNavId.home,
+                      l10n.homeNavHome,
+                      true,
+                    ),
+                    _buildNavDiscoverItem(context),
+                    _buildNavJojItem(context),
+                    _buildNavItem(
+                      context,
+                      Icons.person_outline_rounded,
+                      _HomeNavId.profile,
+                      l10n.homeNavProfile,
+                      false,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            Positioned(
+              right: 22,
+              bottom: 56,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(999),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const SOSScreen()),
+                  );
+                },
+                child: Container(
+                  width: 58,
+                  height: 58,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFC73E1D),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 3),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFC73E1D).withValues(alpha: 0.42),
+                        blurRadius: 14,
+                        offset: const Offset(0, 5),
+                      ),
+                    ],
+                  ),
+                  child: const Center(
+                    child: Text(
+                      'SOS',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 12,
+                        letterSpacing: 0.6,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _buildNavItem(
-                context,
-                Icons.home_rounded,
-                _HomeNavId.home,
-                l10n.homeNavHome,
-                false,
+    );
+  }
+
+  Widget _buildNavDiscoverItem(BuildContext context) {
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const TourismScreen()),
+        );
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.public_rounded, color: Color(0xFF2E8B57), size: 20),
+            const SizedBox(height: 2),
+            Text(
+              'Decouvrir',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                fontSize: 10,
+                color: AppTheme.textSecondary,
               ),
-              _buildNavItem(
-                context,
-                Icons.medical_services_rounded,
-                _HomeNavId.medicalAlert,
-                l10n.homeNavMedicalAlert,
-                false,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavJojItem(BuildContext context) {
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const JOJInfoScreen()),
+        );
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.emoji_events_rounded,
+              color: Color(0xFFD4A017),
+              size: 20,
+            ),
+            const SizedBox(height: 2),
+            Text(
+              'JOJ',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                fontSize: 10,
+                color: AppTheme.textSecondary,
               ),
-              _buildNavItem(
-                context,
-                Icons.smart_toy_rounded,
-                _HomeNavId.aiAssistant,
-                'IA',
-                true,
-                isSOS: true,
-              ),
-              _buildNavItem(
-                context,
-                Icons.report_problem_rounded,
-                _HomeNavId.incidentReport,
-                l10n.homeNavReport,
-                false,
-              ),
-              _buildNavItem(
-                context,
-                Icons.person_outline,
-                _HomeNavId.profile,
-                l10n.homeNavProfile,
-                false,
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -1204,129 +1444,18 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     IconData icon,
     _HomeNavId id,
     String label,
-    bool isActive, {
-    bool isSOS = false,
-  }) {
-    if (isSOS) {
-      // Bouton IA spécial - plus grand et mis en avant
-      return Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            margin: const EdgeInsets.only(bottom: 8),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const AIAssistantScreen(),
-                    ),
-                  );
-                },
-                borderRadius: BorderRadius.circular(35),
-                child: Container(
-                  width: 70,
-                  height: 70,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        const Color(0xFF2C7BE5),
-                        Color.fromRGBO(
-                          ((0x2C) - 20).clamp(
-                            0,
-                            255,
-                          ),
-                          ((0x7B) - 20).clamp(
-                            0,
-                            255,
-                          ),
-                          ((0xE5) - 20).clamp(
-                            0,
-                            255,
-                          ),
-                          1.0,
-                        ),
-                      ],
-                    ),
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF2C7BE5).withValues(alpha: 0.6),
-                        blurRadius: 20,
-                        offset: const Offset(0, 8),
-                        spreadRadius: 2,
-                      ),
-                      BoxShadow(
-                        color: const Color(0xFF2C7BE5).withValues(alpha: 0.3),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                        spreadRadius: 1,
-                      ),
-                    ],
-                  ),
-                  child: const Center(
-                    child: Icon(
-                      Icons.smart_toy_rounded,
-                      color: Colors.white,
-                      size: 32,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      );
-    }
-
-    // Autres boutons normaux
-    final circleSize = 40.0;
-    final iconSize = 20.0;
+    bool isActive,
+  ) {
+    final circleSize = 34.0;
+    final iconSize = 18.0;
 
     return InkWell(
       onTap: () {
-        switch (id) {
-          case _HomeNavId.home:
-            break;
-          case _HomeNavId.medicalAlert:
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const MedicalAlertScreen(),
-              ),
-            );
-            break;
-          case _HomeNavId.aiAssistant:
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const AIAssistantScreen(),
-              ),
-            );
-            break;
-          case _HomeNavId.incidentReport:
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const IncidentReportScreen(),
-              ),
-            );
-            break;
-          case _HomeNavId.profile:
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const ProfileScreen()),
-            );
-            break;
-        }
+        _navigateTo(context, id);
       },
       borderRadius: BorderRadius.circular(12),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 3),
         decoration: BoxDecoration(
           color: isActive
               ? AppTheme.primaryGreen.withValues(alpha: 0.1)
@@ -1336,56 +1465,41 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Cercle vert avec icône blanche
             Container(
               width: circleSize,
               height: circleSize,
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    AppTheme.primaryGreen,
-                    Color.fromRGBO(
-                      ((AppTheme.primaryGreen.r * 255).round() - 20).clamp(
-                        0,
-                        255,
-                      ),
-                      ((AppTheme.primaryGreen.g * 255).round() - 20).clamp(
-                        0,
-                        255,
-                      ),
-                      ((AppTheme.primaryGreen.b * 255).round() - 20).clamp(
-                        0,
-                        255,
-                      ),
-                      1.0,
-                    ),
-                  ],
-                ),
+                color: isActive
+                    ? AppTheme.primaryGreen
+                    : AppTheme.primaryGreen.withValues(alpha: 0.12),
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: AppTheme.primaryGreen.withValues(alpha: 0.3),
-                    blurRadius: 6,
-                    offset: const Offset(0, 3),
+                    color: Colors.black.withValues(alpha: 0.08),
+                    blurRadius: 10,
+                    offset: const Offset(0, 6),
                   ),
                 ],
               ),
-              child: Icon(icon, color: Colors.white, size: iconSize),
+              child: Icon(
+                icon,
+                color: isActive ? Colors.white : AppTheme.primaryGreen,
+                size: iconSize,
+              ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 2),
             Text(
               label,
               style: TextStyle(
                 fontSize: 10,
+                height: 1.0,
                 color: isActive
                     ? AppTheme.primaryGreen
                     : AppTheme.textSecondary,
                 fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
               ),
               textAlign: TextAlign.center,
-              maxLines: 2,
+              maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
           ],

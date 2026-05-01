@@ -64,6 +64,29 @@ class TourismController extends Controller
         return response()->json(['data' => $points]);
     }
 
+    public function embassies(Request $request)
+    {
+        $query = Partner::where('is_active', true)
+            ->where('category', 'embassy')
+            ->orderBy('name');
+
+        $embassies = $query->get()->map(function ($partner) {
+            return [
+                'id' => $partner->id,
+                'name' => $partner->name,
+                'address' => $partner->address,
+                'phone' => $partner->phone,
+                'email' => $partner->email,
+                'website' => $partner->website,
+                'latitude' => $partner->latitude,
+                'longitude' => $partner->longitude,
+                'icon_url' => $this->normalizeUrl($partner->icon_path ?: $partner->logo_url),
+            ];
+        });
+
+        return response()->json(['data' => $embassies]);
+    }
+
     private function calculateDistance($lat1, $lon1, $lat2, $lon2)
     {
         $earthRadius = 6371; // km

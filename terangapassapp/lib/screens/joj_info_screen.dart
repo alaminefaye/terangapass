@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 import '../services/api_service.dart';
+import 'currency_converter_screen.dart';
 
 class JOJInfoScreen extends StatefulWidget {
   const JOJInfoScreen({super.key});
@@ -45,12 +46,14 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
       final sites = await apiService.getCompetitionSites();
       final calendar = await apiService.getCompetitionCalendar();
 
+      if (!mounted) return;
       setState(() {
         _sites = sites.map((s) => s as Map<String, dynamic>).toList();
         _calendar = calendar.map((c) => c as Map<String, dynamic>).toList();
         _sports = _deriveSportsFromCalendar(_calendar);
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _sites = [];
         _calendar = [];
@@ -58,9 +61,11 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
         _errorMessage = e.toString().replaceAll('Exception: ', '');
       });
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -83,183 +88,142 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final topPadding = MediaQuery.of(context).padding.top;
-    final headerHeight = 170.0 + topPadding;
+    // Keep legacy builders referenced while migration finalizes.
+    final keepLegacyBuilders = [_buildCalendarTab, _buildSportsTab, _buildAccessTab];
+    assert(keepLegacyBuilders.isNotEmpty);
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
-      body: Stack(
-        children: [
-          // Contenu principal avec TabBarView
-          Padding(
-            padding: EdgeInsets.only(top: headerHeight),
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _errorMessage != null
-                ? Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.wifi_off_rounded,
-                            size: 64,
-                            color: AppTheme.textSecondary,
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            _errorMessage!,
-                            style: GoogleFonts.poppins(
-                              fontSize: 14,
-                              color: AppTheme.textSecondary,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 16),
-                          ElevatedButton(
-                            onPressed: _loadData,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppTheme.primaryGreen,
-                            ),
-                            child: Text(
-                              l10n.retry,
-                              style: GoogleFonts.poppins(),
-                            ),
-                          ),
-                        ],
+      backgroundColor: const Color(0xFFF4F1EA),
+      body: SafeArea(
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : _errorMessage != null
+            ? Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Text(
+                    _errorMessage!,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.poppins(color: AppTheme.textSecondary),
+                  ),
+                ),
+              )
+            : Column(
+                children: [
+                  Container(
+                    margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                    padding: const EdgeInsets.fromLTRB(14, 14, 14, 16),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(18),
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF1A1F2E), Color(0xFF2A2F4E)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
                       ),
                     ),
-                  )
-                : TabBarView(
-                    controller: _tabController,
-                    children: [
-                      _buildCalendarTab(),
-                      _buildSportsTab(),
-                      _buildAccessTab(),
-                    ],
-                  ),
-          ),
-
-          // En-tête 3D avec TabBar
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: Container(
-              height: headerHeight,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    const Color(0xFF00A86B),
-                    const Color(0xFF008C5E),
-                    Colors.teal.shade700,
-                  ],
-                ),
-                borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(30),
-                  bottomRight: Radius.circular(30),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF00A86B).withValues(alpha: 0.4),
-                    blurRadius: 20,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  SizedBox(height: topPadding),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    child: Row(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.2),
-                            shape: BoxShape.circle,
-                          ),
-                          child: IconButton(
-                            icon: const Icon(
-                              Icons.arrow_back_ios_new,
-                              color: Colors.white,
-                              size: 20,
+                        Row(
+                          children: [
+                            IconButton(
+                              onPressed: () => Navigator.of(context).pop(),
+                              icon: const Icon(
+                                Icons.arrow_back_rounded,
+                                color: Colors.white,
+                              ),
                             ),
-                            onPressed: () => Navigator.of(context).pop(),
+                            Text(
+                              l10n.jojTitle,
+                              style: GoogleFonts.poppins(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 18,
+                              ),
+                            ),
+                            const Spacer(),
+                            IconButton(
+                              tooltip: 'Convertisseur',
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        const CurrencyConverterScreen(),
+                                  ),
+                                );
+                              },
+                              icon: const Icon(
+                                Icons.currency_exchange_rounded,
+                                color: Color(0xFFD4A017),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'JEUX OLYMPIQUES DE LA JEUNESSE',
+                          style: GoogleFonts.poppins(
+                            color: const Color(0xFFD4A017),
+                            fontSize: 10,
+                            letterSpacing: 1.5,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
-                        const SizedBox(width: 16),
+                        const SizedBox(height: 4),
                         Text(
-                          l10n.jojTitle,
+                          'Dakar 2026',
                           style: GoogleFonts.poppins(
                             color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 22,
-                            shadows: [
-                              Shadow(
-                                color: Colors.black.withValues(alpha: 0.1),
-                                offset: const Offset(0, 2),
-                                blurRadius: 4,
-                              ),
-                            ],
+                            fontSize: 24,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        Text(
+                          '31 octobre -> 13 novembre',
+                          style: GoogleFonts.poppins(
+                            color: Colors.white70,
+                            fontSize: 12,
                           ),
                         ),
                       ],
                     ),
                   ),
-                  const Spacer(),
-                  Container(
-                    margin: const EdgeInsets.only(
-                      left: 16,
-                      right: 16,
-                      bottom: 12,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(25),
-                    ),
-                    child: TabBar(
-                      controller: _tabController,
-                      labelColor: const Color(0xFF00A86B),
-                      unselectedLabelColor: Colors.white.withValues(alpha: 0.8),
-                      dividerColor: Colors.transparent,
-                      indicator: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(25),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.1),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      labelStyle: GoogleFonts.poppins(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
-                      ),
-                      unselectedLabelStyle: GoogleFonts.poppins(
-                        fontWeight: FontWeight.w500,
-                        fontSize: 12,
-                      ),
-                      indicatorSize: TabBarIndicatorSize.tab,
-                      tabs: [
-                        Tab(text: l10n.jojTabCalendar),
-                        Tab(text: l10n.jojTabSportsWithCount(_sports.length)),
-                        Tab(text: l10n.jojTabAccess),
+                  SizedBox(
+                    height: 58,
+                    child: ListView(
+                      padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
+                      scrollDirection: Axis.horizontal,
+                      children: const [
+                        _JojDayChip(day: 'MER', num: '29'),
+                        _JojDayChip(day: 'JEU', num: '30'),
+                        _JojDayChip(day: 'VEN', num: '31', active: true),
+                        _JojDayChip(day: 'SAM', num: '01'),
+                        _JojDayChip(day: 'DIM', num: '02'),
+                        _JojDayChip(day: 'LUN', num: '03'),
                       ],
+                    ),
+                  ),
+                  Expanded(
+                    child: ListView(
+                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 100),
+                      children: _calendar.isEmpty
+                          ? [
+                              Padding(
+                                padding: const EdgeInsets.only(top: 24),
+                                child: Text(
+                                  l10n.jojCalendarComingSoon,
+                                  textAlign: TextAlign.center,
+                                  style: GoogleFonts.poppins(
+                                    color: AppTheme.textSecondary,
+                                  ),
+                                ),
+                              ),
+                            ]
+                          : _calendar.map((e) => _buildCalendarEvent(e)).toList(),
                     ),
                   ),
                 ],
               ),
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -340,13 +304,13 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    AppTheme.primaryGreen.withValues(alpha: 0.15),
-                    AppTheme.primaryGreen.withValues(alpha: 0.05),
+                    const Color(0xFFD4A017).withValues(alpha: 0.15),
+                    const Color(0xFFD4A017).withValues(alpha: 0.05),
                   ],
                 ),
                 borderRadius: BorderRadius.circular(15),
               ),
-              child: Icon(Icons.event, color: AppTheme.primaryGreen, size: 28),
+              child: const Icon(Icons.event, color: Color(0xFFD4A017), size: 28),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -467,13 +431,13 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: AppTheme.primaryGreen.withValues(alpha: 0.1),
+                        color: const Color(0xFFD4A017).withValues(alpha: 0.1),
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
                         Icons.sports_soccer,
                         size: 32,
-                        color: AppTheme.primaryGreen,
+                        color: const Color(0xFFD4A017),
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -532,15 +496,15 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        AppTheme.primaryGreen.withValues(alpha: 0.15),
-                        AppTheme.primaryGreen.withValues(alpha: 0.05),
+                        const Color(0xFFD4A017).withValues(alpha: 0.15),
+                        const Color(0xFFD4A017).withValues(alpha: 0.05),
                       ],
                     ),
                     borderRadius: BorderRadius.circular(15),
                   ),
                   child: Icon(
                     Icons.stadium_rounded,
-                    color: AppTheme.primaryGreen,
+                    color: const Color(0xFFD4A017),
                     size: 28,
                   ),
                 ),
@@ -625,12 +589,12 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
               height: 50,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [AppTheme.primaryGreen, const Color(0xFF008C5E)],
+                  colors: [const Color(0xFF1A1F2E), const Color(0xFF2A2F4E)],
                 ),
                 borderRadius: BorderRadius.circular(15),
                 boxShadow: [
                   BoxShadow(
-                    color: AppTheme.primaryGreen.withValues(alpha: 0.3),
+                    color: Colors.black.withValues(alpha: 0.2),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -737,5 +701,51 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
         ),
       );
     }
+  }
+}
+
+class _JojDayChip extends StatelessWidget {
+  const _JojDayChip({
+    required this.day,
+    required this.num,
+    this.active = false,
+  });
+
+  final String day;
+  final String num;
+  final bool active;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 48,
+      margin: const EdgeInsets.only(right: 6),
+      decoration: BoxDecoration(
+        color: active ? const Color(0xFF1A1F2E) : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE5DFD3)),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            day,
+            style: GoogleFonts.poppins(
+              fontSize: 9,
+              color: active ? Colors.white70 : AppTheme.textSecondary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          Text(
+            num,
+            style: GoogleFonts.poppins(
+              fontSize: 17,
+              color: active ? Colors.white : const Color(0xFF1A1F2E),
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

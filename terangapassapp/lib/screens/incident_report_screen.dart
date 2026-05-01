@@ -334,28 +334,28 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: const Color(0xFFFAF7F0),
       body: Stack(
         children: [
-          // En-tête 3D avec dégradé
+          // En-tête maquette
           Container(
-            height: 180,
+            height: 140,
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  AppTheme.primaryGreen,
+                  const Color(0xFFC73E1D),
                   Color.fromRGBO(
-                    ((AppTheme.primaryGreen.r * 255).round() - 20).clamp(
+                    ((AppTheme.primaryRed.r * 255).round() - 20).clamp(
                       0,
                       255,
                     ),
-                    ((AppTheme.primaryGreen.g * 255).round() - 20).clamp(
+                    ((AppTheme.primaryRed.g * 255).round() - 20).clamp(
                       0,
                       255,
                     ),
-                    ((AppTheme.primaryGreen.b * 255).round() - 20).clamp(
+                    ((AppTheme.primaryRed.b * 255).round() - 20).clamp(
                       0,
                       255,
                     ),
@@ -364,12 +364,12 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                 ],
               ),
               borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(30),
-                bottomRight: Radius.circular(30),
+                bottomLeft: Radius.circular(22),
+                bottomRight: Radius.circular(22),
               ),
               boxShadow: [
                 BoxShadow(
-                  color: AppTheme.primaryGreen.withValues(alpha: 0.3),
+                  color: const Color(0xFFC73E1D).withValues(alpha: 0.3),
                   blurRadius: 20,
                   offset: const Offset(0, 10),
                 ),
@@ -432,8 +432,8 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                         l10n.incidentReportTitle,
                         style: GoogleFonts.poppins(
                           color: Colors.white,
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ],
@@ -446,7 +446,7 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        const SizedBox(height: 80),
+                        const SizedBox(height: 6),
 
                         // Section Type d'incident
                         Text(
@@ -459,22 +459,35 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                         ),
                         const SizedBox(height: 15),
 
-                        _buildIncidentTypeOption(
-                          'perte',
-                          l10n.incidentTypeLoss,
-                          Icons.search_rounded,
-                        ),
-                        const SizedBox(height: 15),
-                        _buildIncidentTypeOption(
-                          'accident',
-                          l10n.incidentTypeAccident,
-                          Icons.car_crash_rounded,
-                        ),
-                        const SizedBox(height: 15),
-                        _buildIncidentTypeOption(
-                          'suspect',
-                          l10n.incidentTypeSuspicious,
-                          Icons.warning_rounded,
+                        GridView.count(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 8,
+                          mainAxisSpacing: 8,
+                          childAspectRatio: 1.75,
+                          children: [
+                            _buildIncidentTypeTile(
+                              'perte',
+                              l10n.incidentTypeLoss,
+                              Icons.search_rounded,
+                            ),
+                            _buildIncidentTypeTile(
+                              'accident',
+                              l10n.incidentTypeAccident,
+                              Icons.car_crash_rounded,
+                            ),
+                            _buildIncidentTypeTile(
+                              'suspect',
+                              l10n.incidentTypeSuspicious,
+                              Icons.warning_rounded,
+                            ),
+                            _buildIncidentTypeTile(
+                              'autre',
+                              'Autre',
+                              Icons.campaign_rounded,
+                            ),
+                          ],
                         ),
 
                         const SizedBox(height: 25),
@@ -493,7 +506,8 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                         Container(
                           decoration: BoxDecoration(
                             color: Colors.white,
-                            borderRadius: BorderRadius.circular(20),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: const Color(0xFFE5DFD3)),
                             boxShadow: [
                               BoxShadow(
                                 color: Colors.black.withValues(alpha: 0.05),
@@ -511,7 +525,7 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                                 color: AppTheme.textSecondary,
                               ),
                               border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(20),
+                                borderRadius: BorderRadius.circular(14),
                                 borderSide: BorderSide.none,
                               ),
                               contentPadding: const EdgeInsets.symmetric(
@@ -586,13 +600,11 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                                 height: 90,
                                 decoration: BoxDecoration(
                                   color: Colors.white,
-                                  borderRadius: BorderRadius.circular(16),
+                                  borderRadius: BorderRadius.circular(12),
                                   border: Border.all(
-                                    color: AppTheme.primaryGreen.withValues(
-                                      alpha: 0.5,
-                                    ),
+                                    color: const Color(0xFFC73E1D).withValues(alpha: 0.45),
                                     style: BorderStyle.solid,
-                                    width: 2,
+                                    width: 1.5,
                                   ),
                                   boxShadow: [
                                     BoxShadow(
@@ -609,15 +621,15 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                                   children: [
                                     Icon(
                                       Icons.add_a_photo_rounded,
-                                      color: AppTheme.primaryGreen,
-                                      size: 30,
+                                      color: const Color(0xFFC73E1D),
+                                      size: 24,
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
                                       l10n.incidentAdd,
                                       style: GoogleFonts.poppins(
                                         fontSize: 12,
-                                        color: AppTheme.primaryGreen,
+                                        color: const Color(0xFFC73E1D),
                                         fontWeight: FontWeight.w600,
                                       ),
                                     ),
@@ -896,7 +908,7 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
     );
   }
 
-  Widget _buildIncidentTypeOption(String value, String label, IconData icon) {
+  Widget _buildIncidentTypeTile(String value, String label, IconData icon) {
     final isSelected = _selectedIncidentType == value;
 
     return GestureDetector(
@@ -907,18 +919,18 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
       },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: isSelected ? AppTheme.primaryGreen : Colors.transparent,
-            width: 2,
+            color: isSelected ? const Color(0xFFC73E1D) : const Color(0xFFE5DFD3),
+            width: isSelected ? 1.8 : 1,
           ),
           boxShadow: [
             BoxShadow(
               color: isSelected
-                  ? AppTheme.primaryGreen.withValues(alpha: 0.2)
+                  ? const Color(0xFFC73E1D).withValues(alpha: 0.14)
                   : Colors.black.withValues(alpha: 0.05),
               blurRadius: isSelected ? 15 : 10,
               offset: isSelected ? const Offset(0, 8) : const Offset(0, 4),
@@ -931,37 +943,37 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
                 color: isSelected
-                    ? AppTheme.primaryGreen
-                    : AppTheme.primaryGreen.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(15),
+                    ? const Color(0xFFC73E1D)
+                    : const Color(0xFFFAE6E1),
+                borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(
                 icon,
-                color: isSelected ? Colors.white : AppTheme.primaryGreen,
-                size: 24,
+                color: isSelected ? Colors.white : const Color(0xFFC73E1D),
+                size: 20,
               ),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 10),
             Expanded(
               child: Text(
                 label,
                 style: GoogleFonts.poppins(
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                  fontSize: 16,
+                  fontSize: 13,
                   color: isSelected
-                      ? AppTheme.primaryGreen
+                      ? const Color(0xFFC73E1D)
                       : AppTheme.textPrimary,
                 ),
               ),
             ),
             if (isSelected)
               Container(
-                padding: const EdgeInsets.all(5),
+                padding: const EdgeInsets.all(4),
                 decoration: const BoxDecoration(
-                  color: AppTheme.primaryGreen,
+                  color: Color(0xFFC73E1D),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.check, color: Colors.white, size: 16),
+                child: const Icon(Icons.check, color: Colors.white, size: 14),
               ),
           ],
         ),

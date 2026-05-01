@@ -90,20 +90,24 @@ class _AudioAnnouncementsScreenState extends State<AudioAnnouncementsScreen>
     try {
       final apiService = ApiService();
       final announcements = await apiService.getAudioAnnouncements();
+      if (!mounted) return;
       setState(() {
         _announcements = announcements
             .map((a) => a as Map<String, dynamic>)
             .toList();
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _announcements = [];
         _errorMessage = e.toString().replaceAll('Exception: ', '');
       });
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -306,7 +310,7 @@ class _AudioAnnouncementsScreenState extends State<AudioAnnouncementsScreen>
     final l10n = AppLocalizations.of(context)!;
     final announcements = _filteredAnnouncements;
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: const Color(0xFFF4F1EA),
       body: Stack(
         children: [
           // Contenu principal
@@ -652,11 +656,7 @@ class _AudioAnnouncementsScreenState extends State<AudioAnnouncementsScreen>
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [
-                    const Color(0xFF00A86B), // Primary Green
-                    const Color(0xFF008C5E), // Darker Green
-                    Colors.teal.shade700,
-                  ],
+                  colors: [const Color(0xFF1A1F2E), const Color(0xFF2A2F4E)],
                 ),
                 borderRadius: const BorderRadius.only(
                   bottomLeft: Radius.circular(30),
@@ -664,7 +664,7 @@ class _AudioAnnouncementsScreenState extends State<AudioAnnouncementsScreen>
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF00A86B).withValues(alpha: 0.4),
+                    color: Colors.black.withValues(alpha: 0.25),
                     blurRadius: 20,
                     offset: const Offset(0, 10),
                   ),

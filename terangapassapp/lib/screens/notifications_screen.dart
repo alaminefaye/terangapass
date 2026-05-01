@@ -311,37 +311,50 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
-      appBar: AppBar(
-        backgroundColor: AppTheme.primaryGreen,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: Text(
-          l10n.notificationsTitle,
-          style: GoogleFonts.poppins(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 20,
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.filter_list, color: Colors.white),
-            onPressed: () {
-              _showZoneFilterSheet();
-            },
-          ),
-        ],
-      ),
+      backgroundColor: const Color(0xFFF4F1EA),
       body: Column(
         children: [
+          SafeArea(
+            bottom: false,
+            child: Container(
+              margin: const EdgeInsets.fromLTRB(16, 8, 16, 10),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1A1F2E),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back, color: Colors.white),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                  Expanded(
+                    child: Text(
+                      l10n.notificationsTitle,
+                      style: GoogleFonts.poppins(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 18,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.filter_list, color: Colors.white),
+                    onPressed: _showZoneFilterSheet,
+                  ),
+                ],
+              ),
+            ),
+          ),
           // Filtre par zone
           Container(
-            padding: const EdgeInsets.all(16),
-            color: Colors.white,
+            margin: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(14),
+            ),
             child: Row(
               children: [
                 Text(
@@ -353,7 +366,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 ),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: DropdownButton<String?>(
+                    child: DropdownButton<String?>(
                     value: _selectedZone,
                     isExpanded: true,
                     underline: Container(),
@@ -467,7 +480,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                         final isRead = _isRead(notification);
 
                         return Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
+                          padding: const EdgeInsets.only(bottom: 10),
                           child: _buildNotificationCard(
                             type: type.isEmpty
                                 ? l10n.notificationsFallbackTitle
@@ -504,16 +517,22 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     required bool isRead,
     required VoidCallback onTap,
   }) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border(
+          left: BorderSide(color: color, width: 4),
+        ),
+      ),
       child: Material(
+        borderRadius: BorderRadius.circular(14),
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(14),
           onTap: onTap,
           child: Padding(
-            padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

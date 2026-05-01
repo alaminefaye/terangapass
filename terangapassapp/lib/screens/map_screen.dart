@@ -121,109 +121,32 @@ class _MapScreenState extends State<MapScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
-      appBar: AppBar(
-        backgroundColor: AppTheme.primaryGreen,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: Text(
-          l10n.mapTitle,
-          style: GoogleFonts.poppins(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 20,
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.my_location, color: Colors.white),
-            onPressed: () {
-              _centerOnCurrentLocation();
-            },
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // Filtres
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            color: Colors.white,
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  _buildFilterChip(_MapFilter.all, l10n),
-                  const SizedBox(width: 8),
-                  _buildFilterChip(_MapFilter.help, l10n),
-                  const SizedBox(width: 8),
-                  _buildFilterChip(_MapFilter.sites, l10n),
-                  const SizedBox(width: 8),
-                  _buildFilterChip(_MapFilter.hotels, l10n),
-                  const SizedBox(width: 8),
-                  _buildFilterChip(_MapFilter.restaurants, l10n),
-                  const SizedBox(width: 8),
-                  _buildFilterChip(_MapFilter.pharmacies, l10n),
-                  const SizedBox(width: 8),
-                  _buildFilterChip(_MapFilter.hospitals, l10n),
-                ],
-              ),
-            ),
-          ),
-
-          // Carte (placeholder)
-          Expanded(
-            child: Container(
-              color: Colors.grey[200],
-              child: Center(
+      backgroundColor: const Color(0xFFF4F1EA),
+      body: SafeArea(
+        child: Stack(
+          children: [
+            // Carte visuelle style maquette (placeholder design)
+            Positioned.fill(
+              child: Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Color(0xFFD8E4D2), Color(0xFFC8D8C0)],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  ),
+                ),
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.map_rounded, size: 80, color: Colors.grey[400]),
-                    const SizedBox(height: 20),
-                    Text(
-                      l10n.mapPlaceholderTitle,
-                      style: GoogleFonts.poppins(
-                        fontSize: 18,
-                        color: Colors.grey[600],
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      l10n.mapPlaceholderSubtitle,
-                      style: GoogleFonts.poppins(
-                        fontSize: 14,
-                        color: Colors.grey[500],
-                      ),
-                    ),
-                    const SizedBox(height: 30),
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        _openInMaps(
-                          latitude: _currentLat,
-                          longitude: _currentLng,
-                          query: _currentLat == null || _currentLng == null
-                              ? 'Dakar'
-                              : null,
-                        );
-                      },
-                      icon: const Icon(Icons.map),
-                      label: Text(
-                        l10n.mapOpenInGoogleMaps,
-                        style: GoogleFonts.poppins(),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.primaryGreen,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 12,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                    const SizedBox(height: 140),
+                    Expanded(
+                      child: Center(
+                        child: Text(
+                          l10n.mapPlaceholderTitle,
+                          style: GoogleFonts.poppins(
+                            fontSize: 15,
+                            color: AppTheme.textSecondary,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                     ),
@@ -231,91 +154,180 @@ class _MapScreenState extends State<MapScreen> {
                 ),
               ),
             ),
-          ),
-
-          // Liste des points d'intérêt
-          Container(
-            height: 200,
-            color: Colors.white,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Text(
-                    l10n.mapNearbyPointsTitle,
-                    style: GoogleFonts.poppins(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                      color: AppTheme.textPrimary,
+            Positioned(
+              top: 10,
+              left: 16,
+              right: 16,
+              child: Row(
+                children: [
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: IconButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: const Icon(Icons.arrow_back_rounded),
                     ),
                   ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.search_rounded,
+                            color: AppTheme.textSecondary,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              l10n.mapPlaceholderSubtitle,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.poppins(
+                                color: AppTheme.textSecondary,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Positioned(
+              top: 68,
+              left: 16,
+              right: 16,
+              child: SizedBox(
+                height: 34,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  children: [
+                    _buildFilterChip(_MapFilter.all, l10n),
+                    const SizedBox(width: 6),
+                    _buildFilterChip(_MapFilter.help, l10n),
+                    const SizedBox(width: 6),
+                    _buildFilterChip(_MapFilter.sites, l10n),
+                    const SizedBox(width: 6),
+                    _buildFilterChip(_MapFilter.hotels, l10n),
+                    const SizedBox(width: 6),
+                    _buildFilterChip(_MapFilter.restaurants, l10n),
+                    const SizedBox(width: 6),
+                    _buildFilterChip(_MapFilter.pharmacies, l10n),
+                    const SizedBox(width: 6),
+                    _buildFilterChip(_MapFilter.hospitals, l10n),
+                  ],
                 ),
-                Expanded(
-                  child: _isLoadingPoints
-                      ? const Center(child: CircularProgressIndicator())
-                      : _pointsErrorMessage != null
-                      ? Center(
-                          child: Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.wifi_off_rounded,
-                                  size: 40,
+              ),
+            ),
+            Positioned(
+              right: 16,
+              bottom: 250,
+              child: FloatingActionButton.small(
+                heroTag: 'map_locate',
+                backgroundColor: Colors.white,
+                onPressed: _centerOnCurrentLocation,
+                child: Icon(
+                  Icons.my_location_rounded,
+                  color: _isLocating ? AppTheme.primaryGreen : AppTheme.textPrimary,
+                ),
+              ),
+            ),
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: Container(
+                height: 240,
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.08),
+                      blurRadius: 12,
+                      offset: const Offset(0, -2),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 42,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade300,
+                          borderRadius: BorderRadius.circular(99),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      l10n.mapNearbyPointsTitle,
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                        color: AppTheme.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Expanded(
+                      child: _isLoadingPoints
+                          ? const Center(child: CircularProgressIndicator())
+                          : _pointsErrorMessage != null
+                          ? Center(
+                              child: Text(
+                                _pointsErrorMessage!,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 12,
                                   color: AppTheme.textSecondary,
                                 ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  _pointsErrorMessage!,
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 12,
-                                    color: AppTheme.textSecondary,
-                                  ),
-                                  textAlign: TextAlign.center,
+                                textAlign: TextAlign.center,
+                              ),
+                            )
+                          : _pointsOfInterest.isEmpty
+                          ? Center(
+                              child: Text(
+                                l10n.mapNoPoints,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 13,
+                                  color: AppTheme.textSecondary,
                                 ),
-                                const SizedBox(height: 12),
-                                ElevatedButton(
-                                  onPressed: _loadPointsOfInterest,
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: AppTheme.primaryGreen,
-                                  ),
-                                  child: Text(
-                                    l10n.retry,
-                                    style: GoogleFonts.poppins(),
-                                  ),
-                                ),
-                              ],
+                              ),
+                            )
+                          : ListView.separated(
+                              itemCount: _pointsOfInterest.length,
+                              separatorBuilder: (context, index) =>
+                                  const SizedBox(height: 8),
+                              itemBuilder: (context, index) {
+                                return _buildPointOfInterestFromData(
+                                  _pointsOfInterest[index],
+                                );
+                              },
                             ),
-                          ),
-                        )
-                      : _pointsOfInterest.isEmpty
-                      ? Center(
-                          child: Text(
-                            l10n.mapNoPoints,
-                            style: GoogleFonts.poppins(
-                              fontSize: 14,
-                              color: AppTheme.textSecondary,
-                            ),
-                          ),
-                        )
-                      : ListView.separated(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          itemCount: _pointsOfInterest.length,
-                          separatorBuilder: (context, index) =>
-                              const SizedBox(height: 12),
-                          itemBuilder: (context, index) {
-                            return _buildPointOfInterestFromData(
-                              _pointsOfInterest[index],
-                            );
-                          },
-                        ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -332,29 +344,30 @@ class _MapScreenState extends State<MapScreen> {
       _MapFilter.hospitals => l10n.mapFilterHospitals,
     };
 
-    return FilterChip(
+    return ChoiceChip(
       label: Text(
         label,
         style: GoogleFonts.poppins(
-          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          fontWeight: FontWeight.w600,
+          fontSize: 11,
           color: isSelected ? Colors.white : AppTheme.textPrimary,
         ),
       ),
       selected: isSelected,
-      onSelected: (selected) {
+      onSelected: (_) {
         setState(() {
           _selectedFilter = filter;
         });
         _loadPointsOfInterest();
       },
       backgroundColor: Colors.white,
-      selectedColor: AppTheme.primaryGreen,
-      checkmarkColor: Colors.white,
+      selectedColor: const Color(0xFF1A1F2E),
       side: BorderSide(
         color: isSelected
-            ? AppTheme.primaryGreen
+            ? const Color(0xFF1A1F2E)
             : Colors.grey.withValues(alpha: 0.3),
       ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
     );
   }
 
@@ -380,10 +393,10 @@ class _MapScreenState extends State<MapScreen> {
         },
         borderRadius: BorderRadius.circular(12),
         child: Container(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
           decoration: BoxDecoration(
-            color: Colors.grey[50],
-            borderRadius: BorderRadius.circular(12),
+            color: const Color(0xFFFAF7F0),
+            borderRadius: BorderRadius.circular(10),
             border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
           ),
           child: Row(
