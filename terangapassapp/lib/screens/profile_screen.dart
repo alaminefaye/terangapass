@@ -6,6 +6,8 @@ import '../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 import '../services/api_service.dart';
 import 'auth/login_screen.dart';
+import 'incident_history_screen.dart';
+import 'incident_tracking_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -94,6 +96,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       required String defaultTitle,
       required IconData icon,
       required Color color,
+      required String kind,
     }) {
       final createdAt = _parseDate(
         raw['created_at'] ??
@@ -110,6 +113,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         'createdAt': createdAt,
         'icon': icon,
         'color': color,
+        'kind': kind,
+        'id': raw['id'],
       };
     }
 
@@ -120,6 +125,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           defaultTitle: l10n.profileDefaultSosTitle,
           icon: Icons.warning_rounded,
           color: AppTheme.primaryRed,
+          kind: 'alert',
         ),
       ),
       ...reports.whereType<Map<String, dynamic>>().map(
@@ -128,6 +134,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           defaultTitle: l10n.profileDefaultReportTitle,
           icon: Icons.report_rounded,
           color: AppTheme.primaryGreen,
+          kind: 'incident',
         ),
       ),
     ];
@@ -618,6 +625,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           l10n.profileReportsStat,
                           '$_reportsCount',
                           Icons.report_gmailerrorred_rounded,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const IncidentHistoryScreen(),
+                              ),
+                            );
+                          },
                         ),
                       ),
                     ],
@@ -660,6 +675,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         (a['time'] ?? '').toString(),
                         a['icon'] as IconData,
                         a['color'] as Color,
+                        onTap: () {
+                          if ((a['kind'] ?? '').toString() != 'incident') return;
+                          final id = a['id'];
+                          if (id is! int) return;
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  IncidentTrackingScreen(incidentId: id),
+                            ),
+                          );
+                        },
                       ),
                     ),
 
@@ -905,8 +932,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildStatCard(String label, String value, IconData icon) {
-    return Container(
+  Widget _buildStatCard(
+    String label,
+    String value,
+    IconData icon, {
+    VoidCallback? onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
@@ -919,44 +954,45 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    AppTheme.primaryGreen.withValues(alpha: 0.1),
-                    AppTheme.primaryGreen.withValues(alpha: 0.05),
-                  ],
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      AppTheme.primaryGreen.withValues(alpha: 0.1),
+                      AppTheme.primaryGreen.withValues(alpha: 0.05),
+                    ],
+                  ),
+                  shape: BoxShape.circle,
                 ),
-                shape: BoxShape.circle,
+                child: Icon(icon, color: AppTheme.primaryGreen, size: 28),
               ),
-              child: Icon(icon, color: AppTheme.primaryGreen, size: 28),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              value,
-              style: GoogleFonts.poppins(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: AppTheme.textPrimary,
+              const SizedBox(height: 12),
+              Text(
+                value,
+                style: GoogleFonts.poppins(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.textPrimary,
+                ),
               ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: GoogleFonts.poppins(
-                fontSize: 12,
-                color: AppTheme.textSecondary,
-                fontWeight: FontWeight.w500,
+              const SizedBox(height: 4),
+              Text(
+                label,
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  color: AppTheme.textSecondary,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -1236,59 +1272,64 @@ class _ProfileScreenState extends State<ProfileScreen> {
     String time,
     IconData icon,
     Color color,
+    {VoidCallback? onTap}
   ) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.1),
-            offset: const Offset(0, 6),
-            blurRadius: 12,
-            spreadRadius: 0,
-          ),
-        ],
-      ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-        leading: Container(
-          width: 42,
-          height: 42,
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Icon(icon, color: color, size: 22),
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withValues(alpha: 0.1),
+              offset: const Offset(0, 6),
+              blurRadius: 12,
+              spreadRadius: 0,
+            ),
+          ],
         ),
-        title: Text(
-          title,
-          style: GoogleFonts.poppins(
-            fontWeight: FontWeight.w600,
-            fontSize: 14,
-            color: AppTheme.textPrimary,
+        child: ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+          leading: Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(icon, color: color, size: 22),
           ),
-        ),
-        subtitle: time.trim().isEmpty
-            ? null
-            : Text(
-                time,
-                style: GoogleFonts.poppins(
-                  fontSize: 12,
-                  color: AppTheme.textSecondary,
+          title: Text(
+            title,
+            style: GoogleFonts.poppins(
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
+              color: AppTheme.textPrimary,
+            ),
+          ),
+          subtitle: time.trim().isEmpty
+              ? null
+              : Text(
+                  time,
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    color: AppTheme.textSecondary,
+                  ),
                 ),
-              ),
-        trailing: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Colors.grey.withValues(alpha: 0.05),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(
-            Icons.arrow_forward_ios_rounded,
-            color: Colors.grey[400],
-            size: 14,
+          trailing: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.grey.withValues(alpha: 0.05),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.arrow_forward_ios_rounded,
+              color: Colors.grey[400],
+              size: 14,
+            ),
           ),
         ),
       ),

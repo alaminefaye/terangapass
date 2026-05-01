@@ -16,23 +16,22 @@ class TourismController extends Controller
             $query->where('category', $request->category);
         }
 
-        if ($request->has('latitude') && $request->has('longitude')) {
-            // Calculer la distance et trier par proximité
-            // Pour l'instant, on retourne juste les résultats
-        }
+        $hasCoordinates = $request->filled('latitude') && $request->filled('longitude');
 
         $partners = $query->get();
 
         // Formater les données
-        $points = $partners->map(function ($partner) use ($request) {
+        $points = $partners->map(function ($partner) use ($request, $hasCoordinates) {
             $distance = 'N/A';
-            if ($request->has('latitude') && $request->has('longitude') && $partner->latitude && $partner->longitude) {
-                $distance = $this->calculateDistance(
+            $distanceMeters = null;
+            if ($hasCoordinates && $partner->latitude && $partner->longitude) {
+                $distanceMeters = $this->calculateDistanceMeters(
                     $request->latitude,
                     $request->longitude,
                     $partner->latitude,
                     $partner->longitude
                 );
+                $distance = $this->formatDistance($distanceMeters);
             }
 
             $iconUrl = $partner->icon_path ?: $partner->logo_url;
@@ -56,10 +55,17 @@ class TourismController extends Controller
                 'website' => $partner->website,
                 'latitude' => $partner->latitude,
                 'longitude' => $partner->longitude,
+                'distance_meters' => $distanceMeters,
                 'icon_url' => $iconUrl,
                 'photos' => $photos,
             ];
         });
+
+        if ($hasCoordinates) {
+            $points = $points
+                ->sortBy(fn ($point) => $point['distance_meters'] ?? INF)
+                ->values();
+        }
 
         return response()->json(['data' => $points]);
     }
@@ -87,7 +93,7 @@ class TourismController extends Controller
         return response()->json(['data' => $embassies]);
     }
 
-    private function calculateDistance($lat1, $lon1, $lat2, $lon2)
+    private function calculateDistanceMeters($lat1, $lon1, $lat2, $lon2): float
     {
         $earthRadius = 6371; // km
 
@@ -99,12 +105,17 @@ class TourismController extends Controller
              sin($dLon/2) * sin($dLon/2);
 
         $c = 2 * atan2(sqrt($a), sqrt(1-$a));
-        $distance = $earthRadius * $c;
+        $distanceKm = $earthRadius * $c;
 
-        if ($distance < 1) {
-            return round($distance * 1000) . ' m';
+        return $distanceKm * 1000;
+    }
+
+    private function formatDistance(float $distanceMeters): string
+    {
+        if ($distanceMeters < 1000) {
+            return round($distanceMeters) . ' m';
         }
-        return round($distance, 1) . ' km';
+        return round($distanceMeters / 1000, 1) . ' km';
     }
 
     private function getCategoryName($category)

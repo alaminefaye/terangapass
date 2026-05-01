@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../theme/app_theme.dart';
 import '../services/api_service.dart';
 import '../services/location_service.dart';
+import 'embassies_screen.dart';
 
 class TourismScreen extends StatefulWidget {
   const TourismScreen({super.key});
@@ -467,6 +468,22 @@ class _TourismScreenState extends State<TourismScreen>
                               ),
                             ],
                           ),
+                        ),
+                        const Spacer(),
+                        IconButton(
+                          tooltip: 'Ambassades',
+                          icon: const Icon(
+                            Icons.account_balance_rounded,
+                            color: Colors.white,
+                          ),
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const EmbassiesScreen(),
+                              ),
+                            );
+                          },
                         ),
                       ],
                     ),

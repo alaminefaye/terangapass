@@ -14,7 +14,7 @@ class IncidentController extends Controller
     public function report(Request $request)
     {
         $request->validate([
-            'incident_type' => 'required|in:perte,accident,suspect',
+            'incident_type' => 'required|in:perte,accident,suspect,autre',
             'description' => 'required|string',
             'latitude' => 'required|numeric',
             'longitude' => 'required|numeric',
@@ -78,6 +78,51 @@ class IncidentController extends Controller
             ->get();
 
         return response()->json(['data' => $incidents]);
+    }
+
+    public function tracking(Request $request, int $id)
+    {
+        $user = $this->getUserFromToken($request);
+        $incident = Incident::query()
+            ->where('id', $id)
+            ->where('user_id', $user ? $user->id : 1)
+            ->firstOrFail();
+
+        $timeline = [
+            [
+                'key' => 'reported',
+                'label' => 'Signalement envoye',
+                'completed' => true,
+                'at' => optional($incident->created_at)?->toIso8601String(),
+            ],
+            [
+                'key' => 'review',
+                'label' => 'En cours de traitement',
+                'completed' => in_array($incident->status, ['in_progress', 'resolved', 'closed'], true),
+                'at' => in_array($incident->status, ['in_progress', 'resolved', 'closed'], true)
+                    ? optional($incident->updated_at)?->toIso8601String()
+                    : null,
+            ],
+            [
+                'key' => 'resolved',
+                'label' => 'Traite',
+                'completed' => in_array($incident->status, ['resolved', 'closed'], true),
+                'at' => $incident->resolved_at?->toIso8601String(),
+            ],
+        ];
+
+        return response()->json([
+            'data' => [
+                'id' => $incident->id,
+                'type' => $incident->type,
+                'status' => $incident->status,
+                'description' => $incident->description,
+                'address' => $incident->address,
+                'created_at' => optional($incident->created_at)?->toIso8601String(),
+                'updated_at' => optional($incident->updated_at)?->toIso8601String(),
+                'timeline' => $timeline,
+            ],
+        ]);
     }
 
     private function getUserFromToken(Request $request)

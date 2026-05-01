@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
@@ -9,7 +11,9 @@ import '../services/api_service.dart';
 enum _MapFilter { all, help, sites, hotels, restaurants, pharmacies, hospitals }
 
 class MapScreen extends StatefulWidget {
-  const MapScreen({super.key});
+  final String? initialQuery;
+
+  const MapScreen({super.key, this.initialQuery});
 
   @override
   State<MapScreen> createState() => _MapScreenState();
@@ -22,11 +26,24 @@ class _MapScreenState extends State<MapScreen> {
   double? _currentLng;
   bool _isLoadingPoints = true;
   String? _pointsErrorMessage;
+  final MapController _mapController = MapController();
+  final TextEditingController _searchController = TextEditingController();
   List<Map<String, dynamic>> _pointsOfInterest = [];
+  List<Map<String, dynamic>> _allPoints = [];
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
     super.initState();
+    final initial = widget.initialQuery?.trim() ?? '';
+    if (initial.isNotEmpty) {
+      _searchController.text = initial;
+    }
     _loadPointsOfInterest();
   }
 
@@ -35,9 +52,9 @@ class _MapScreenState extends State<MapScreen> {
       case _MapFilter.all:
         return null;
       case _MapFilter.help:
-        return 'Secours';
+        return null;
       case _MapFilter.sites:
-        return 'Sites JOJ';
+        return null;
       case _MapFilter.hotels:
         return 'Hôtels';
       case _MapFilter.restaurants:
@@ -57,20 +74,46 @@ class _MapScreenState extends State<MapScreen> {
 
     try {
       final apiService = ApiService();
-      final points = await apiService.getPointsOfInterest(
-        category: _categoryForFilter(_selectedFilter),
-        latitude: _currentLat,
-        longitude: _currentLng,
-      );
+      final futures = await Future.wait([
+        apiService.getPointsOfInterest(
+          category: _categoryForFilter(_selectedFilter),
+          latitude: _currentLat,
+          longitude: _currentLng,
+        ),
+        apiService.getCompetitionSites(),
+      ]);
+      final points = futures[0];
+      final sites = futures[1];
+      final sitePoints = sites
+          .whereType<Map<String, dynamic>>()
+          .map(
+            (s) => <String, dynamic>{
+              'id': 'site_${s['id']}',
+              'name': s['name'],
+              'category': 'Sites JOJ',
+              'distance': s['location'] ?? '',
+              'latitude': s['latitude'],
+              'longitude': s['longitude'],
+              'address': s['address'] ?? s['location'],
+            },
+          )
+          .toList();
+      final merged = [
+        ...points.whereType<Map<String, dynamic>>(),
+        ...sitePoints,
+      ];
+
+      final filtered = merged.where(_matchesCurrentFilter).toList();
       if (!mounted) return;
       setState(() {
-        _pointsOfInterest = points
-            .map((p) => p as Map<String, dynamic>)
-            .toList();
+        _allPoints = merged;
+        _pointsOfInterest = filtered;
       });
+      _syncMapToPoints();
     } catch (e) {
       if (!mounted) return;
       setState(() {
+        _allPoints = [];
         _pointsOfInterest = [];
         _pointsErrorMessage = e.toString().replaceAll('Exception: ', '');
       });
@@ -80,6 +123,93 @@ class _MapScreenState extends State<MapScreen> {
           _isLoadingPoints = false;
         });
       }
+    }
+  }
+
+  bool _matchesCurrentFilter(Map<String, dynamic> point) {
+    final category = (point['category'] ?? '').toString().toLowerCase();
+    final q = _searchController.text.trim().toLowerCase();
+
+    final matchesQuery =
+        q.isEmpty ||
+        (point['name'] ?? '').toString().toLowerCase().contains(q) ||
+        (point['address'] ?? '').toString().toLowerCase().contains(q) ||
+        category.contains(q);
+
+    if (!matchesQuery) return false;
+
+    switch (_selectedFilter) {
+      case _MapFilter.all:
+        return true;
+      case _MapFilter.help:
+        return category.contains('hôpital') ||
+            category.contains('hopital') ||
+            category.contains('pharm') ||
+            category.contains('ambass');
+      case _MapFilter.sites:
+        return category.contains('site') || category.contains('joj');
+      case _MapFilter.hotels:
+        return category.contains('hôtel') || category.contains('hotel');
+      case _MapFilter.restaurants:
+        return category.contains('restaurant');
+      case _MapFilter.pharmacies:
+        return category.contains('pharm');
+      case _MapFilter.hospitals:
+        return category.contains('hôpital') || category.contains('hopital');
+    }
+  }
+
+  void _applyLocalFilters() {
+    setState(() {
+      _pointsOfInterest = _allPoints.where(_matchesCurrentFilter).toList();
+    });
+    _syncMapToPoints();
+  }
+
+  double? _toDouble(Object? value) {
+    if (value == null) return null;
+    if (value is num) return value.toDouble();
+    return double.tryParse(value.toString().trim());
+  }
+
+  List<Marker> _buildMarkers() {
+    return _pointsOfInterest
+        .map((point) {
+          final lat = _toDouble(point['latitude'] ?? point['lat']);
+          final lng = _toDouble(
+            point['longitude'] ?? point['lng'] ?? point['lon'],
+          );
+          if (lat == null || lng == null) return null;
+          final category = (point['category'] ?? '').toString();
+          final color = _colorForCategory(category);
+          final name = (point['name'] ?? '').toString().trim();
+
+          return Marker(
+            width: 44,
+            height: 44,
+            point: LatLng(lat, lng),
+            child: Tooltip(
+              message: name,
+              child: Icon(Icons.location_on_rounded, color: color, size: 36),
+            ),
+          );
+        })
+        .whereType<Marker>()
+        .toList();
+  }
+
+  void _syncMapToPoints() {
+    final markers = _buildMarkers();
+    if (markers.isEmpty) return;
+    try {
+      _mapController.move(markers.first.point, 13);
+    } catch (_) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        try {
+          _mapController.move(markers.first.point, 13);
+        } catch (_) {}
+      });
     }
   }
 
@@ -125,33 +255,24 @@ class _MapScreenState extends State<MapScreen> {
       body: SafeArea(
         child: Stack(
           children: [
-            // Carte visuelle style maquette (placeholder design)
+            // Carte OSM réelle style maquette
             Positioned.fill(
-              child: Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Color(0xFFD8E4D2), Color(0xFFC8D8C0)],
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
+              child: FlutterMap(
+                mapController: _mapController,
+                options: MapOptions(
+                  initialCenter: LatLng(
+                    _currentLat ?? 14.7167,
+                    _currentLng ?? -17.4677,
                   ),
+                  initialZoom: 12,
                 ),
-                child: Column(
-                  children: [
-                    const SizedBox(height: 140),
-                    Expanded(
-                      child: Center(
-                        child: Text(
-                          l10n.mapPlaceholderTitle,
-                          style: GoogleFonts.poppins(
-                            fontSize: 15,
-                            color: AppTheme.textSecondary,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                children: [
+                  TileLayer(
+                    urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    userAgentPackageName: 'com.terangapass.teranga_pass',
+                  ),
+                  MarkerLayer(markers: _buildMarkers()),
+                ],
               ),
             ),
             Positioned(
@@ -190,12 +311,20 @@ class _MapScreenState extends State<MapScreen> {
                           ),
                           const SizedBox(width: 8),
                           Expanded(
-                            child: Text(
-                              l10n.mapPlaceholderSubtitle,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                            child: TextField(
+                              controller: _searchController,
+                              onChanged: (_) => _applyLocalFilters(),
+                              decoration: InputDecoration(
+                                isDense: true,
+                                border: InputBorder.none,
+                                hintText: l10n.mapPlaceholderSubtitle,
+                                hintStyle: GoogleFonts.poppins(
+                                  color: AppTheme.textSecondary,
+                                  fontSize: 12,
+                                ),
+                              ),
                               style: GoogleFonts.poppins(
-                                color: AppTheme.textSecondary,
+                                color: AppTheme.textPrimary,
                                 fontSize: 12,
                               ),
                             ),
@@ -358,7 +487,7 @@ class _MapScreenState extends State<MapScreen> {
         setState(() {
           _selectedFilter = filter;
         });
-        _loadPointsOfInterest();
+        _applyLocalFilters();
       },
       backgroundColor: Colors.white,
       selectedColor: const Color(0xFF1A1F2E),
@@ -378,6 +507,7 @@ class _MapScreenState extends State<MapScreen> {
     final distance = (point['distance'] ?? '').toString().trim();
     final lat = point['latitude'] ?? point['lat'];
     final lng = point['longitude'] ?? point['lng'] ?? point['lon'];
+    final phone = (point['phone'] ?? '').toString().trim();
     final latitude = lat is num ? lat.toDouble() : double.tryParse('$lat');
     final longitude = lng is num ? lng.toDouble() : double.tryParse('$lng');
 
@@ -439,12 +569,44 @@ class _MapScreenState extends State<MapScreen> {
                   ],
                 ),
               ),
-              Icon(Icons.chevron_right, color: Colors.grey[400]),
+              if (phone.isNotEmpty)
+                IconButton(
+                  onPressed: () => _callPhone(phone),
+                  icon: const Icon(Icons.phone_rounded, size: 18),
+                  color: AppTheme.primaryGreen,
+                  tooltip: l10n.call,
+                )
+              else
+                Icon(Icons.chevron_right, color: Colors.grey[400]),
             ],
           ),
         ),
       ),
     );
+  }
+
+  Future<void> _callPhone(String phone) async {
+    final l10n = AppLocalizations.of(context)!;
+    final uri = Uri(scheme: 'tel', path: phone);
+    try {
+      final ok = await launchUrl(uri);
+      if (!ok && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(l10n.openPhoneError, style: GoogleFonts.poppins()),
+            backgroundColor: AppTheme.primaryRed,
+          ),
+        );
+      }
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(l10n.openPhoneError, style: GoogleFonts.poppins()),
+          backgroundColor: AppTheme.primaryRed,
+        ),
+      );
+    }
   }
 
   Future<void> _centerOnCurrentLocation() async {
@@ -461,6 +623,7 @@ class _MapScreenState extends State<MapScreen> {
         _currentLat = pos.latitude;
         _currentLng = pos.longitude;
       });
+      _mapController.move(LatLng(pos.latitude, pos.longitude), 14);
       _loadPointsOfInterest();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

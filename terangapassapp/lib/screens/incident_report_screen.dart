@@ -9,6 +9,8 @@ import '../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 import '../services/location_service.dart';
 import '../services/api_service.dart';
+import 'incident_history_screen.dart';
+import 'incident_tracking_screen.dart';
 
 class IncidentReportScreen extends StatefulWidget {
   const IncidentReportScreen({super.key});
@@ -265,7 +267,7 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
       );
 
       final apiService = ApiService();
-      await apiService.reportIncident(
+      final response = await apiService.reportIncident(
         incidentType: _selectedIncidentType!,
         description: _descriptionController.text.trim(),
         latitude: location.latitude,
@@ -302,6 +304,32 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                   style: GoogleFonts.poppins(
                     color: AppTheme.primaryGreen,
                     fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              TextButton(
+                onPressed: () {
+                  final incidentData =
+                      response['data'] as Map<String, dynamic>? ?? {};
+                  final id = incidentData['id'];
+                  if (id is int) {
+                    Navigator.of(context).pop();
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            IncidentTrackingScreen(incidentId: id),
+                      ),
+                    );
+                    return;
+                  }
+                  Navigator.of(context).pop();
+                },
+                child: Text(
+                  'Suivre',
+                  style: GoogleFonts.poppins(
+                    color: const Color(0xFFC73E1D),
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
@@ -434,6 +462,22 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                           color: Colors.white,
                           fontSize: 18,
                           fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const Spacer(),
+                      IconButton(
+                        tooltip: 'Historique',
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const IncidentHistoryScreen(),
+                            ),
+                          );
+                        },
+                        icon: const Icon(
+                          Icons.history_rounded,
+                          color: Colors.white,
                         ),
                       ),
                     ],

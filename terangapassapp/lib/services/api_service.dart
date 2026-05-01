@@ -377,6 +377,16 @@ class ApiService {
     }
   }
 
+  /// Récupère le suivi détaillé d'un incident.
+  Future<Map<String, dynamic>> getIncidentTracking(int incidentId) async {
+    try {
+      final response = await _dio.get('/incidents/$incidentId/tracking');
+      return response.data['data'] ?? {};
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
   // ==================== NOTIFICATIONS ====================
 
   /// Récupère les notifications

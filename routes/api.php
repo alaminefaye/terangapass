@@ -53,6 +53,7 @@ Route::middleware([])->prefix('v1')->group(function () {
     // Signalements
     Route::post('/incidents/report', [IncidentController::class, 'report']);
     Route::get('/incidents/history', [IncidentController::class, 'history']);
+    Route::get('/incidents/{id}/tracking', [IncidentController::class, 'tracking']);
 
     // Notifications
     Route::get('/notifications', [NotificationController::class, 'index']);

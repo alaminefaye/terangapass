@@ -15,8 +15,10 @@ import 'audio_announcements_screen.dart';
 import 'joj_info_screen.dart';
 import 'transport_screen.dart';
 import 'tourism_screen.dart';
+import 'map_screen.dart';
 import 'notifications_screen.dart';
 import 'ai_assistant_screen.dart';
+import 'embassies_screen.dart';
 
 enum _HomeFeatureId {
   audioAnnouncements,
@@ -58,6 +60,7 @@ class _HomeScreenState extends State<HomeScreen>
   bool _isNavigating = false;
   int _jojDaysRemaining = 183;
   String _jojDateLabel = 'Dakar 2026 - 31 oct -> 13 nov';
+  final TextEditingController _homeSearchController = TextEditingController();
 
   Future<void> _navigateTo(BuildContext context, _HomeNavId id) async {
     if (_isNavigating) return;
@@ -125,6 +128,7 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _homeSearchController.dispose();
     _aiPulseController.dispose();
     _officialPlayer.dispose();
     super.dispose();
@@ -610,14 +614,44 @@ class _HomeScreenState extends State<HomeScreen>
           ),
           const SizedBox(width: 10),
           Expanded(
-            child: Text(
-              'Restaurants, sites, hotels, evenements...',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppTheme.textSecondary,
+            child: TextField(
+              controller: _homeSearchController,
+              textInputAction: TextInputAction.search,
+              onSubmitted: (_) => _openMapFromHomeSearch(context),
+              decoration: InputDecoration(
+                isDense: true,
+                border: InputBorder.none,
+                hintText: 'Restaurants, sites, hotels, evenements...',
+                hintStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: AppTheme.textSecondary,
+                ),
               ),
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+          ),
+          InkWell(
+            borderRadius: BorderRadius.circular(10),
+            onTap: () => _openMapFromHomeSearch(context),
+            child: Container(
+              padding: const EdgeInsets.all(7),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFAF7F0),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.arrow_forward_rounded, size: 18),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  void _openMapFromHomeSearch(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) =>
+            MapScreen(initialQuery: _homeSearchController.text.trim()),
       ),
     );
   }
@@ -775,7 +809,7 @@ class _HomeScreenState extends State<HomeScreen>
       case _HomePillarId.move:
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => const TransportScreen()),
+          MaterialPageRoute(builder: (context) => const MapScreen()),
         );
         break;
       case _HomePillarId.joj:
@@ -785,12 +819,153 @@ class _HomeScreenState extends State<HomeScreen>
         );
         break;
       case _HomePillarId.help:
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const IncidentReportScreen()),
-        );
+        _openHelpHub(context);
         break;
     }
+  }
+
+  Future<void> _openHelpHub(BuildContext context) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      builder: (context) {
+        final l10n = AppLocalizations.of(context)!;
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 42,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(99),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                const Text(
+                  'Etre aide',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF1A1F2E),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  'Choisissez une action rapide',
+                  style: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
+                ),
+                const SizedBox(height: 12),
+                _buildHelpActionTile(
+                  context: context,
+                  icon: Icons.sos_rounded,
+                  color: const Color(0xFFC73E1D),
+                  title: l10n.sosEmergencyTitle,
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const SOSScreen()),
+                    );
+                  },
+                ),
+                _buildHelpActionTile(
+                  context: context,
+                  icon: Icons.local_hospital_rounded,
+                  color: const Color(0xFFD4A017),
+                  title: l10n.medicalAlertTitle,
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const MedicalAlertScreen(),
+                      ),
+                    );
+                  },
+                ),
+                _buildHelpActionTile(
+                  context: context,
+                  icon: Icons.report_problem_rounded,
+                  color: const Color(0xFF2E8B57),
+                  title: l10n.homeFeatureReportIncident,
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const IncidentReportScreen(),
+                      ),
+                    );
+                  },
+                ),
+                _buildHelpActionTile(
+                  context: context,
+                  icon: Icons.account_balance_rounded,
+                  color: const Color(0xFF3A7CA5),
+                  title: l10n.tourismCategoryEmbassies,
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const EmbassiesScreen(),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildHelpActionTile({
+    required BuildContext context,
+    required IconData icon,
+    required Color color,
+    required String title,
+    required VoidCallback onTap,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFAF7F0),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: ListTile(
+        onTap: onTap,
+        leading: Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, color: color, size: 20),
+        ),
+        title: Text(
+          title,
+          style: const TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 14,
+            color: Color(0xFF1A1F2E),
+          ),
+        ),
+        trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
+      ),
+    );
   }
 
   Widget _buildMainFeaturesSection(BuildContext context) {
