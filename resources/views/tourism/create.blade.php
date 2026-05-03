@@ -37,6 +37,10 @@
                             <option value="hospital" {{ old('category') == 'hospital' ? 'selected' : '' }}>🏥 Hôpital</option>
                             <option value="embassy" {{ old('category') == 'embassy' ? 'selected' : '' }}>🏛️ Ambassade</option>
                             <option value="consulate" {{ old('category') == 'consulate' ? 'selected' : '' }}>🏢 Consulat</option>
+                            <option value="bank" {{ old('category') == 'bank' ? 'selected' : '' }}>🏦 Banque / DAB</option>
+                            <option value="gas_station" {{ old('category') == 'gas_station' ? 'selected' : '' }}>⛽ Station-service</option>
+                            <option value="shop" {{ old('category') == 'shop' ? 'selected' : '' }}>🛍️ Boutique</option>
+                            <option value="other" {{ old('category') == 'other' ? 'selected' : '' }}>📌 Autre</option>
                         </select>
                         @error('category')
                         <div class="invalid-feedback">{{ $message }}</div>

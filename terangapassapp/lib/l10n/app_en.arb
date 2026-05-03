@@ -11,6 +11,7 @@
   "openMapError": "Unable to open the map",
   "settings": "Settings",
   "appLanguage": "App language",
+  "loginValueProps": "Discover · Travel with peace of mind · Stay protected",
   "loginTagline": "Your safety in Dakar",
   "loginEmailLabel": "Email",
   "loginEmailHint": "you@email.com",
@@ -46,6 +47,9 @@
   "sosCountdown": "Alert in...",
   "sosAlertSent": "ALERT SENT!",
   "sosUrgenceLabel": "EMERGENCY SOS",
+  "sosHoldBanner": "EMERGENCY — HOLD TO ALERT",
+  "sosDangerQuestion": "Are you\nin danger?",
+  "sosThreeSecondsBadge": "3 SECONDS",
   "sosPressToAlert": "Tap to alert",
   "sosCancelAlert": "CANCEL ALERT",
   "callServiceTitle": "Call {service}",
@@ -282,5 +286,34 @@
   "sosFallbackAddress": "Dakar Plateau, 9 Rue Carnot",
   "homeAppNamePart1": "Teranga ",
   "homeAppNamePart2": "Pass",
-  "homeTagline": "Your safety in Dakar, discoveries in Senegal"
+  "homeTagline": "Your safety in Dakar, discoveries in Senegal",
+  "homePillarDiscoverTitle": "Discover",
+  "homePillarDiscoverSubtitle": "Venues · Dining · Hotels",
+  "homePillarMoveTitle": "Get around",
+  "homePillarMoveSubtitle": "Map · Shuttles · Taxis",
+  "homePillarJojTitle": "Youth Olympics 2026",
+  "homePillarJojSubtitle": "Schedule · Medals",
+  "homePillarHelpTitle": "Get help",
+  "homePillarHelpSubtitle": "SOS · Medical · Embassy",
+  "homeHelpSheetTitle": "Get help",
+  "homeHelpSheetSubtitle": "Pick a quick action",
+  "homeHeroWelcome": "Welcome to Senegal,",
+  "nearbyAll": "All",
+  "nearbyTitle": "Nearby",
+  "nearbyNearMeTooltip": "Near me",
+  "nearbyRadiusLabel": "Radius: {meters} m",
+  "@nearbyRadiusLabel": {
+    "placeholders": {
+      "meters": {
+        "type": "int"
+      }
+    }
+  },
+  "nearbyEmpty": "No places in this radius for this category.",
+  "nearbyLocationError": "Enable location to see nearby places.",
+  "nearbySponsorBadge": "Partner",
+  "profileEsimTitle": "eSIM plans",
+  "profileEsimSubtitle": "Travel data (coming soon)",
+  "esimComingTitle": "Teranga Pass eSIM",
+  "esimComingBody": "Partner integration (e.g. Airalo), payments (PayDunya, Wave) and QR activation will ship in a later release. This screen is a placeholder for demo and product sign-off."
 }

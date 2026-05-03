@@ -45,6 +45,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appLanguage => 'App language';
 
   @override
+  String get loginValueProps =>
+      'Discover · Travel with peace of mind · Stay protected';
+
+  @override
   String get loginTagline => 'Your safety in Dakar';
 
   @override
@@ -150,6 +154,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get sosUrgenceLabel => 'EMERGENCY SOS';
+
+  @override
+  String get sosHoldBanner => 'EMERGENCY — HOLD TO ALERT';
+
+  @override
+  String get sosDangerQuestion => 'Are you\nin danger?';
+
+  @override
+  String get sosThreeSecondsBadge => '3 SECONDS';
 
   @override
   String get sosPressToAlert => 'Tap to alert';
@@ -717,4 +730,73 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get homeTagline => 'Your safety in Dakar, discoveries in Senegal';
+
+  @override
+  String get homePillarDiscoverTitle => 'Discover';
+
+  @override
+  String get homePillarDiscoverSubtitle => 'Venues · Dining · Hotels';
+
+  @override
+  String get homePillarMoveTitle => 'Get around';
+
+  @override
+  String get homePillarMoveSubtitle => 'Map · Shuttles · Taxis';
+
+  @override
+  String get homePillarJojTitle => 'Youth Olympics 2026';
+
+  @override
+  String get homePillarJojSubtitle => 'Schedule · Medals';
+
+  @override
+  String get homePillarHelpTitle => 'Get help';
+
+  @override
+  String get homePillarHelpSubtitle => 'SOS · Medical · Embassy';
+
+  @override
+  String get homeHelpSheetTitle => 'Get help';
+
+  @override
+  String get homeHelpSheetSubtitle => 'Pick a quick action';
+
+  @override
+  String get homeHeroWelcome => 'Welcome to Senegal,';
+
+  @override
+  String get nearbyAll => 'All';
+
+  @override
+  String get nearbyTitle => 'Nearby';
+
+  @override
+  String get nearbyNearMeTooltip => 'Near me';
+
+  @override
+  String nearbyRadiusLabel(int meters) {
+    return 'Radius: $meters m';
+  }
+
+  @override
+  String get nearbyEmpty => 'No places in this radius for this category.';
+
+  @override
+  String get nearbyLocationError => 'Enable location to see nearby places.';
+
+  @override
+  String get nearbySponsorBadge => 'Partner';
+
+  @override
+  String get profileEsimTitle => 'eSIM plans';
+
+  @override
+  String get profileEsimSubtitle => 'Travel data (coming soon)';
+
+  @override
+  String get esimComingTitle => 'Teranga Pass eSIM';
+
+  @override
+  String get esimComingBody =>
+      'Partner integration (e.g. Airalo), payments (PayDunya, Wave) and QR activation will ship in a later release. This screen is a placeholder for demo and product sign-off.';
 }

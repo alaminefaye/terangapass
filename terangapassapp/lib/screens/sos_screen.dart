@@ -348,7 +348,7 @@ class _SOSScreenState extends State<SOSScreen> {
               ),
               const Spacer(),
               Text(
-                'URGENCE - MAINTENEZ APPUYE',
+                l10n.sosHoldBanner,
                 style: GoogleFonts.poppins(
                   color: const Color(0xFFC73E1D),
                   letterSpacing: 2,
@@ -358,7 +358,7 @@ class _SOSScreenState extends State<SOSScreen> {
               ),
               const SizedBox(height: 12),
               Text(
-                'Vous etes\nen danger ?',
+                l10n.sosDangerQuestion,
                 textAlign: TextAlign.center,
                 style: GoogleFonts.poppins(
                   color: Colors.white,
@@ -420,7 +420,7 @@ class _SOSScreenState extends State<SOSScreen> {
                                 ),
                               ),
                               Text(
-                                '3 SECONDES',
+                                l10n.sosThreeSecondsBadge,
                                 style: GoogleFonts.poppins(
                                   color: Colors.white70,
                                   letterSpacing: 2,

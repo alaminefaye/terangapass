@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 import '../services/api_service.dart';
+import '../widgets/loading_placeholders.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -54,6 +55,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       final notifications = await apiService.getNotifications(
         zone: _selectedZone,
       );
+      if (!mounted) return;
       setState(() {
         _notifications = notifications
             .map((n) => n as Map<String, dynamic>)
@@ -64,15 +66,18 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         _zones = unique;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _notifications = [];
         _zones = const [];
         _errorMessage = e.toString().replaceAll('Exception: ', '');
       });
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -113,35 +118,29 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       context: context,
       backgroundColor: Colors.white,
       isScrollControlled: true,
+      showDragHandle: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) {
         final l10n = AppLocalizations.of(context)!;
+        final maxH = MediaQuery.sizeOf(context).height * 0.88;
         return SafeArea(
-          child: Padding(
-            padding: EdgeInsets.only(
-              left: 16,
-              right: 16,
-              top: 10,
-              bottom: MediaQuery.of(context).viewInsets.bottom + 16,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 44,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade300,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxHeight: maxH),
+            child: SingleChildScrollView(
+              padding: EdgeInsets.only(
+                left: 16,
+                right: 16,
+                top: 8,
+                bottom: MediaQuery.viewInsetsOf(context).bottom + 16,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
                       padding: const EdgeInsets.all(10),
@@ -155,6 +154,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     Expanded(
                       child: Text(
                         title.isEmpty ? l10n.notificationsFallbackTitle : title,
+                        maxLines: 4,
+                        overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.poppins(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -168,12 +169,16 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 Row(
                   children: [
                     if (type.isNotEmpty)
-                      Text(
-                        type,
-                        style: GoogleFonts.poppins(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: color,
+                      Flexible(
+                        child: Text(
+                          type,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.poppins(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: color,
+                          ),
                         ),
                       ),
                     if (type.isNotEmpty) const SizedBox(width: 10),
@@ -231,7 +236,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                           ),
                         ),
                         child: Text(
-                          AppLocalizations.of(context)!.close,
+                          l10n.close,
                           style: GoogleFonts.poppins(),
                         ),
                       ),
@@ -241,7 +246,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               ],
             ),
           ),
-        );
+        ),
+      );
       },
     );
   }
@@ -326,7 +332,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               child: Row(
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.arrow_back, color: Colors.white),
+                    icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                   Expanded(
@@ -403,7 +409,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           // Liste des notifications
           Expanded(
             child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
+                ? const CardListLoadingSkeleton()
                 : _errorMessage != null
                 ? Center(
                     child: Padding(
@@ -537,30 +543,37 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: color.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(icon, color: color, size: 16),
-                          const SizedBox(width: 6),
-                          Text(
-                            type,
-                            style: GoogleFonts.poppins(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: color,
+                    Expanded(
+                      flex: 3,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: color.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(icon, color: color, size: 16),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                type,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: color,
+                                ),
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                     if (!isRead) ...[
@@ -587,6 +600,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 const SizedBox(height: 12),
                 Text(
                   title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.poppins(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
@@ -643,6 +658,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     final selected = await showModalBottomSheet<String?>(
       context: context,
       backgroundColor: Colors.white,
+      showDragHandle: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -651,18 +667,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           child: ListView(
             shrinkWrap: true,
             children: [
-              const SizedBox(height: 8),
-              Center(
-                child: Container(
-                  width: 44,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 10),
               ListTile(
                 title: Text(l10n.allZones, style: GoogleFonts.poppins()),
                 trailing: _selectedZone == null

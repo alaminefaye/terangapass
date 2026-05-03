@@ -6,6 +6,7 @@ import '../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 import '../services/api_service.dart';
 import '../constants/api_constants.dart';
+import '../widgets/loading_placeholders.dart';
 
 class AudioAnnouncementsScreen extends StatefulWidget {
   const AudioAnnouncementsScreen({super.key});
@@ -317,7 +318,7 @@ class _AudioAnnouncementsScreenState extends State<AudioAnnouncementsScreen>
           Padding(
             padding: const EdgeInsets.only(top: 140),
             child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
+                ? const CardListLoadingSkeleton()
                 : _errorMessage != null
                 ? Center(
                     child: Padding(

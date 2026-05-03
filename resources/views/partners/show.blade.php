@@ -50,6 +50,12 @@
                                 <span class="badge bg-warning">🏛️ Ambassade</span>
                                 @elseif($partner->category == 'consulate')
                                 <span class="badge bg-dark">🏢 Consulat</span>
+                                @elseif($partner->category == 'bank')
+                                <span class="badge bg-secondary">🏦 Banque / DAB</span>
+                                @elseif($partner->category == 'gas_station')
+                                <span class="badge bg-secondary">⛽ Station-service</span>
+                                @elseif($partner->category == 'shop')
+                                <span class="badge bg-secondary">🛍️ Boutique</span>
                                 @else
                                 <span class="badge bg-secondary">Autre</span>
                                 @endif

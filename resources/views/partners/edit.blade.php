@@ -37,6 +37,9 @@
                             <option value="hospital" {{ old('category', $partner->category) == 'hospital' ? 'selected' : '' }}>Hôpital</option>
                             <option value="embassy" {{ old('category', $partner->category) == 'embassy' ? 'selected' : '' }}>Ambassade</option>
                             <option value="consulate" {{ old('category', $partner->category) == 'consulate' ? 'selected' : '' }}>Consulat</option>
+                            <option value="bank" {{ old('category', $partner->category) == 'bank' ? 'selected' : '' }}>Banque / DAB</option>
+                            <option value="gas_station" {{ old('category', $partner->category) == 'gas_station' ? 'selected' : '' }}>Station-service</option>
+                            <option value="shop" {{ old('category', $partner->category) == 'shop' ? 'selected' : '' }}>Boutique</option>
                             <option value="other" {{ old('category', $partner->category) == 'other' ? 'selected' : '' }}>Autre</option>
                         </select>
                         @error('category')

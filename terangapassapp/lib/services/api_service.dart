@@ -492,6 +492,29 @@ class ApiService {
 
   // ==================== TOURISME ====================
 
+  /// Lieux à proximité (rayon en mètres, défaut 2000).
+  Future<List<dynamic>> getNearby({
+    required double latitude,
+    required double longitude,
+    int radiusMeters = 2000,
+    String? category,
+  }) async {
+    try {
+      final response = await _dio.get(
+        '/nearby',
+        queryParameters: {
+          'latitude': latitude,
+          'longitude': longitude,
+          'radius': radiusMeters,
+          if (category != null && category.isNotEmpty) 'category': category,
+        },
+      );
+      return response.data['data'] ?? [];
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
   /// Récupère les points d'intérêt (hôtels, restaurants, etc.)
   Future<List<dynamic>> getPointsOfInterest({
     String? category,

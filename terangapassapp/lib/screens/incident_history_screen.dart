@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../services/api_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/loading_placeholders.dart';
 import 'incident_tracking_screen.dart';
 
 class IncidentHistoryScreen extends StatefulWidget {
@@ -104,7 +105,7 @@ class _IncidentHistoryScreenState extends State<IncidentHistoryScreen> {
             ),
             Expanded(
               child: _isLoading
-                  ? const Center(child: CircularProgressIndicator())
+                  ? const CardListLoadingSkeleton()
                   : _error != null
                   ? Center(
                       child: Padding(

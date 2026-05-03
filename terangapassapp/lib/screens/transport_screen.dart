@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 import '../services/api_service.dart';
+import '../widgets/loading_placeholders.dart';
 
 class TransportScreen extends StatefulWidget {
   const TransportScreen({super.key});
@@ -70,7 +71,7 @@ class _TransportScreenState extends State<TransportScreen> {
           Padding(
             padding: const EdgeInsets.only(top: 132),
             child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
+                ? const CardListLoadingSkeleton()
                 : _errorMessage != null
                 ? Center(
                     child: Padding(

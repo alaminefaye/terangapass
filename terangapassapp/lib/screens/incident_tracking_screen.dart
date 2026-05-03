@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../services/api_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/loading_placeholders.dart';
 
 class IncidentTrackingScreen extends StatefulWidget {
   final int incidentId;
@@ -125,7 +126,7 @@ class _IncidentTrackingScreenState extends State<IncidentTrackingScreen> {
       backgroundColor: const Color(0xFFFAF7F0),
       body: SafeArea(
         child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
+            ? const CardListLoadingSkeleton()
             : _error != null
             ? Center(
                 child: Padding(

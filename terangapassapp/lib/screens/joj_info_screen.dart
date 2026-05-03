@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 import '../services/api_service.dart';
+import '../widgets/loading_placeholders.dart';
 import 'currency_converter_screen.dart';
 
 class JOJInfoScreen extends StatefulWidget {
@@ -165,7 +166,7 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
     return Scaffold(
       backgroundColor: const Color(0xFFF4F1EA),
       body: _isLoading
-            ? const Center(child: CircularProgressIndicator())
+            ? const CardListLoadingSkeleton()
             : _errorMessage != null
             ? Center(
                 child: Padding(

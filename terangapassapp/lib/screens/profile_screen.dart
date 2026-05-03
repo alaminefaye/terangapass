@@ -8,6 +8,8 @@ import '../services/api_service.dart';
 import 'auth/login_screen.dart';
 import 'incident_history_screen.dart';
 import 'incident_tracking_screen.dart';
+import 'esim_coming_screen.dart';
+import '../widgets/loading_placeholders.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -256,9 +258,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     if (_isLoading) {
-      return Scaffold(
-        backgroundColor: const Color(0xFFF4F1EA),
-        body: const Center(child: CircularProgressIndicator()),
+      return const AuthGateLoadingScaffold(
+        backgroundColor: Color(0xFFF4F1EA),
       );
     }
 
@@ -360,7 +361,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           children: [
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(18, 20, 18, 18),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(24),
                 gradient: const LinearGradient(
@@ -379,26 +380,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: Column(
                 children: [
                   CircleAvatar(
-                    radius: 42,
+                    radius: 34,
                     backgroundColor: Colors.white,
                     child: Icon(
                       Icons.person_rounded,
-                      size: 52,
+                      size: 42,
                       color: AppTheme.primaryGreen.withValues(alpha: 0.9),
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 10),
                   Text(
                     displayName.isEmpty ? '—' : displayName,
                     style: GoogleFonts.poppins(
                       color: Colors.white,
-                      fontSize: 22,
+                      fontSize: 18,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 5),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.16),
                       borderRadius: BorderRadius.circular(999),
@@ -407,12 +408,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       displayEmail.isEmpty ? '—' : displayEmail,
                       style: GoogleFonts.poppins(
                         color: Colors.white,
-                        fontSize: 13,
+                        fontSize: 12,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 10),
                   Row(
                     children: [
                       Expanded(
@@ -422,7 +423,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           Icons.warning_amber_rounded,
                         ),
                       ),
-                      const SizedBox(width: 10),
+                      const SizedBox(width: 8),
                       Expanded(
                         child: _buildStatCard(
                           l10n.profileReportsStat,
@@ -443,7 +444,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 14),
             Text(
               l10n.profilePersonalInfoSection,
               style: GoogleFonts.poppins(
@@ -509,6 +510,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
               l10n.profileGeolocationSetting,
               Icons.location_on_outlined,
               true,
+            ),
+            _buildSettingTile(
+              l10n.profileEsimTitle,
+              Icons.sim_card_outlined,
+              false,
+              value: l10n.profileEsimSubtitle,
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (context) => const EsimComingScreen()),
+                );
+              },
             ),
             _buildSettingTile(
               l10n.appLanguage,
@@ -797,11 +809,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(16),
       child: Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
             color: AppTheme.primaryGreen.withValues(alpha: 0.1),
@@ -812,11 +824,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ],
       ),
         child: Padding(
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
           child: Column(
             children: [
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(9),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
@@ -830,20 +842,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 child: Icon(icon, color: AppTheme.primaryGreen, size: 28),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
               Text(
                 value,
                 style: GoogleFonts.poppins(
-                  fontSize: 22,
+                  fontSize: 18,
                   fontWeight: FontWeight.bold,
                   color: AppTheme.textPrimary,
                 ),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 3),
               Text(
                 label,
                 style: GoogleFonts.poppins(
-                  fontSize: 12,
+                  fontSize: 11,
                   color: AppTheme.textSecondary,
                   fontWeight: FontWeight.w500,
                 ),

@@ -133,7 +133,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        'Decouvrir - Voyager sereinement - Etre protege',
+                        l10n.loginValueProps,
                         style: GoogleFonts.poppins(
                           fontSize: 11,
                           color: const Color(0xFFD4A017),

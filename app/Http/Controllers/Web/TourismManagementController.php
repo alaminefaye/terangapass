@@ -45,7 +45,7 @@ class TourismManagementController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'category' => 'required|in:hotel,restaurant,pharmacy,hospital,embassy,consulate',
+            'category' => 'required|in:hotel,restaurant,pharmacy,hospital,embassy,consulate,bank,gas_station,shop,other',
             'description' => 'nullable|string',
             'address' => 'required|string',
             'latitude' => 'nullable|numeric',
@@ -96,7 +96,7 @@ class TourismManagementController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'category' => 'required|in:hotel,restaurant,pharmacy,hospital,embassy,consulate',
+            'category' => 'required|in:hotel,restaurant,pharmacy,hospital,embassy,consulate,bank,gas_station,shop,other',
             'description' => 'nullable|string',
             'address' => 'required|string',
             'latitude' => 'nullable|numeric',

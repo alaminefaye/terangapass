@@ -7,6 +7,7 @@ import 'constants/app_constants.dart';
 import 'l10n/app_localizations.dart';
 import 'theme/app_theme.dart';
 import 'screens/home_screen.dart';
+import 'widgets/loading_placeholders.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/register_screen.dart';
 import 'screens/notifications_screen.dart';
@@ -132,7 +133,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const AuthGateLoadingScaffold();
     }
 
     return _isAuthenticated ? const HomeScreen() : const LoginScreen();
@@ -154,6 +155,9 @@ class _GlobalSosOverlay extends StatefulWidget {
 
 class _GlobalSosOverlayState extends State<_GlobalSosOverlay>
     with SingleTickerProviderStateMixin {
+  /// Hauteur barre d’accueil + bouton IA (`HomeScreen` ~114 px) — évite le chevauchement P0.
+  static const double _homeBottomChromeReserve = 118;
+
   late final AnimationController _pulseController;
   double _dx = 0;
   double _dy = 0;
@@ -193,7 +197,12 @@ class _GlobalSosOverlayState extends State<_GlobalSosOverlay>
         final minX = margin;
         final maxX = maxW - btnSize - margin;
         final minY = margin + MediaQuery.of(context).padding.top;
-        final maxY = maxH - btnSize - margin - MediaQuery.of(context).padding.bottom;
+        final maxY =
+            maxH -
+            btnSize -
+            margin -
+            MediaQuery.of(context).padding.bottom -
+            _homeBottomChromeReserve;
 
         if (!_initialized) {
           _dx = math.max(minX, maxX - 10);

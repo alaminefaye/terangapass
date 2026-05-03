@@ -11,6 +11,7 @@
   "openMapError": "Impossible d’ouvrir la carte",
   "settings": "Paramètres",
   "appLanguage": "Langue de l’application",
+  "loginValueProps": "Découvrir · Voyager sereinement · Être protégé",
   "loginTagline": "Votre sécurité à Dakar",
   "loginEmailLabel": "Email",
   "loginEmailHint": "votre@email.com",
@@ -46,6 +47,9 @@
   "sosCountdown": "Alerte dans...",
   "sosAlertSent": "ALERTE ENVOYÉE !",
   "sosUrgenceLabel": "SOS URGENCE",
+  "sosHoldBanner": "URGENCE – MAINTENEZ APPUYÉ",
+  "sosDangerQuestion": "Vous êtes\nen danger ?",
+  "sosThreeSecondsBadge": "3 SECONDES",
   "sosPressToAlert": "Appuyez pour alerter",
   "sosCancelAlert": "ANNULER L’ALERTE",
   "callServiceTitle": "Appeler {service}",
@@ -282,5 +286,34 @@
   "sosFallbackAddress": "Dakar Plateau, 9 Rue Carnot",
   "homeAppNamePart1": "Teranga ",
   "homeAppNamePart2": "Pass",
-  "homeTagline": "Votre sécurité à Dakar, découvertes au Sénégal"
+  "homeTagline": "Votre sécurité à Dakar, découvertes au Sénégal",
+  "homePillarDiscoverTitle": "Découvrir",
+  "homePillarDiscoverSubtitle": "Sites · Restos · Hôtels",
+  "homePillarMoveTitle": "Se déplacer",
+  "homePillarMoveSubtitle": "Carte · Navettes · Taxis",
+  "homePillarJojTitle": "JOJ 2026",
+  "homePillarJojSubtitle": "Calendrier · Médailles",
+  "homePillarHelpTitle": "Être aidé",
+  "homePillarHelpSubtitle": "SOS · Médical · Ambassade",
+  "homeHelpSheetTitle": "Être aidé",
+  "homeHelpSheetSubtitle": "Choisissez une action rapide",
+  "homeHeroWelcome": "Bienvenue au Sénégal,",
+  "nearbyAll": "Tous",
+  "nearbyTitle": "À deux pas",
+  "nearbyNearMeTooltip": "Près de moi",
+  "nearbyRadiusLabel": "Rayon : {meters} m",
+  "@nearbyRadiusLabel": {
+    "placeholders": {
+      "meters": {
+        "type": "int"
+      }
+    }
+  },
+  "nearbyEmpty": "Aucun lieu dans ce rayon pour cette catégorie.",
+  "nearbyLocationError": "Activez la localisation pour voir les lieux à proximité.",
+  "nearbySponsorBadge": "Partenaire",
+  "profileEsimTitle": "Forfaits eSIM",
+  "profileEsimSubtitle": "Data voyage (bientôt)",
+  "esimComingTitle": "eSIM Teranga Pass",
+  "esimComingBody": "L’intégration partenaire (ex. Airalo), les paiements (PayDunya, Wave) et l’activation par QR arriveront dans une prochaine version. Cet écran sert de repère pour la démo et la recette produit."
 }

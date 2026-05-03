@@ -27,6 +27,9 @@
                         <option value="hospital" {{ request('category') == 'hospital' ? 'selected' : '' }}>Hôpital</option>
                         <option value="embassy" {{ request('category') == 'embassy' ? 'selected' : '' }}>Ambassade</option>
                         <option value="consulate" {{ request('category') == 'consulate' ? 'selected' : '' }}>Consulat</option>
+                        <option value="bank" {{ request('category') == 'bank' ? 'selected' : '' }}>Banque / DAB</option>
+                        <option value="gas_station" {{ request('category') == 'gas_station' ? 'selected' : '' }}>Station-service</option>
+                        <option value="shop" {{ request('category') == 'shop' ? 'selected' : '' }}>Boutique</option>
                         <option value="other" {{ request('category') == 'other' ? 'selected' : '' }}>Autre</option>
                     </select>
                 </div>
@@ -94,6 +97,12 @@
                             <span class="badge bg-warning">Ambassade</span>
                             @elseif($partner->category == 'consulate')
                             <span class="badge bg-dark">Consulat</span>
+                            @elseif($partner->category == 'bank')
+                            <span class="badge bg-secondary">Banque / DAB</span>
+                            @elseif($partner->category == 'gas_station')
+                            <span class="badge bg-secondary">Station-service</span>
+                            @elseif($partner->category == 'shop')
+                            <span class="badge bg-secondary">Boutique</span>
                             @else
                             <span class="badge bg-secondary">Autre</span>
                             @endif

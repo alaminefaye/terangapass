@@ -7,6 +7,7 @@ import '../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 import '../services/location_service.dart';
 import '../services/api_service.dart';
+import '../widgets/loading_placeholders.dart';
 
 enum _MapFilter { all, help, sites, hotels, restaurants, pharmacies, hospitals }
 
@@ -472,7 +473,7 @@ class _MapScreenState extends State<MapScreen> {
                       const SizedBox(height: 8),
                       Expanded(
                         child: _isLoadingPoints
-                            ? const Center(child: CircularProgressIndicator())
+                            ? const CardListLoadingSkeleton(itemCount: 5)
                             : _pointsErrorMessage != null
                             ? Center(
                                 child: Text(

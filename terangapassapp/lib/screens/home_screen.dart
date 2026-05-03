@@ -21,6 +21,7 @@ import 'notifications_screen.dart';
 import 'ai_assistant_screen.dart';
 import 'embassies_screen.dart';
 import 'currency_converter_screen.dart';
+import '../widgets/loading_placeholders.dart';
 
 enum _HomeFeatureId {
   audioAnnouncements,
@@ -552,50 +553,52 @@ class _HomeScreenState extends State<HomeScreen>
 
   Widget _buildHeroBanner(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    return Container(
-      height: 180,
-      width: double.infinity,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(18),
-        image: DecorationImage(
-          image: const AssetImage('assets/images/home_header_dakar.png'),
-          fit: BoxFit.cover,
-          colorFilter: ColorFilter.mode(
-            Colors.black.withValues(alpha: 0.3),
-            BlendMode.darken,
-          ),
-        ),
-      ),
-      child: Stack(
-        children: [
-          Positioned(
-            bottom: 14,
-            left: 16,
-            right: 16,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Bienvenue au Senegal,',
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  l10n.homeTagline,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(18),
+      child: SizedBox(
+        height: 180,
+        width: double.infinity,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            Image.asset(
+              'assets/images/home_header_dakar.png',
+              fit: BoxFit.cover,
+              color: Colors.black.withValues(alpha: 0.3),
+              colorBlendMode: BlendMode.darken,
             ),
-          ),
-        ],
+            Positioned(
+              bottom: 14,
+              left: 16,
+              right: 16,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    l10n.homeHeroWelcome,
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    l10n.homeTagline,
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                      height: 1.15,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -684,33 +687,34 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Widget _buildPillarsSection(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final pillars = [
       (
         id: _HomePillarId.discover,
         icon: Icons.explore_rounded,
-        title: 'Decouvrir',
-        subtitle: 'Sites - Restos - Hotels',
+        title: l10n.homePillarDiscoverTitle,
+        subtitle: l10n.homePillarDiscoverSubtitle,
         color: const Color(0xFF2E8B57),
       ),
       (
         id: _HomePillarId.move,
         icon: Icons.alt_route_rounded,
-        title: 'Se deplacer',
-        subtitle: 'Carte - Navettes - Taxis',
+        title: l10n.homePillarMoveTitle,
+        subtitle: l10n.homePillarMoveSubtitle,
         color: const Color(0xFF3A7CA5),
       ),
       (
         id: _HomePillarId.joj,
         icon: Icons.emoji_events_rounded,
-        title: 'JOJ 2026',
-        subtitle: 'Calendrier - Medailles',
+        title: l10n.homePillarJojTitle,
+        subtitle: l10n.homePillarJojSubtitle,
         color: const Color(0xFFD4A017),
       ),
       (
         id: _HomePillarId.help,
         icon: Icons.health_and_safety_rounded,
-        title: 'Etre aide',
-        subtitle: 'SOS - Medical - Ambassade',
+        title: l10n.homePillarHelpTitle,
+        subtitle: l10n.homePillarHelpSubtitle,
         color: const Color(0xFFC73E1D),
       ),
     ];
@@ -977,18 +981,18 @@ class _HomeScreenState extends State<HomeScreen>
                   ),
                 ),
                 const SizedBox(height: 10),
-                const Text(
-                  'Etre aide',
-                  style: TextStyle(
+                Text(
+                  l10n.homeHelpSheetTitle,
+                  style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
                     color: Color(0xFF1A1F2E),
                   ),
                 ),
                 const SizedBox(height: 4),
-                const Text(
-                  'Choisissez une action rapide',
-                  style: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
+                Text(
+                  l10n.homeHelpSheetSubtitle,
+                  style: const TextStyle(color: AppTheme.textSecondary, fontSize: 13),
                 ),
                 const SizedBox(height: 12),
                 _buildHelpActionTile(
@@ -1475,7 +1479,7 @@ class _HomeScreenState extends State<HomeScreen>
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(12),
                 child: _isLoadingCompetitionSites
-                    ? const Center(child: CircularProgressIndicator())
+                    ? const CompactRowSkeleton()
                     : _competitionSitesError != null
                     ? Center(
                         child: Padding(
@@ -1738,6 +1742,7 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Widget _buildNavDiscoverItem(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return InkWell(
       onTap: () {
         Navigator.push(
@@ -1754,7 +1759,7 @@ class _HomeScreenState extends State<HomeScreen>
             const Icon(Icons.public_rounded, color: Color(0xFF2E8B57), size: 20),
             const SizedBox(height: 2),
             Text(
-              'Decouvrir',
+              l10n.homePillarDiscoverTitle,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 fontSize: 10,
                 color: AppTheme.textSecondary,

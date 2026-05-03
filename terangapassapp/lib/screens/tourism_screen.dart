@@ -5,7 +5,9 @@ import 'package:url_launcher/url_launcher.dart';
 import '../theme/app_theme.dart';
 import '../services/api_service.dart';
 import '../services/location_service.dart';
+import '../widgets/loading_placeholders.dart';
 import 'embassies_screen.dart';
+import 'nearby_screen.dart';
 
 class TourismScreen extends StatefulWidget {
   const TourismScreen({super.key});
@@ -399,16 +401,42 @@ class _TourismScreenState extends State<TourismScreen>
                             onPressed: () => Navigator.of(context).pop(),
                           ),
                         ),
-                        const Spacer(),
-                        Text(
-                          'Tourisme & Services',
-                          style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
+                        Expanded(
+                          child: Text(
+                            'Tourisme & Services',
+                            textAlign: TextAlign.center,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.plusJakartaSans(
+                              color: Colors.white,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ),
-                        const Spacer(),
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.17),
+                            shape: BoxShape.circle,
+                          ),
+                          child: IconButton(
+                            tooltip: 'À deux pas',
+                            icon: const Icon(
+                              Icons.near_me_rounded,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const NearbyScreen(),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 4),
                         Container(
                           decoration: BoxDecoration(
                             color: Colors.white.withValues(alpha: 0.17),
@@ -492,7 +520,7 @@ class _TourismScreenState extends State<TourismScreen>
           ),
           Expanded(
             child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
+                ? const CardListLoadingSkeleton()
                 : _errorMessage != null
                 ? Center(
                     child: Padding(

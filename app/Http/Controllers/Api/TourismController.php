@@ -130,6 +130,9 @@ class TourismController extends Controller
             'hospital' => 'Hôpitaux',
             'embassy' => 'Ambassades',
             'consulate' => 'Consulats',
+            'bank' => 'Banques & DAB',
+            'gas_station' => 'Stations-service',
+            'shop' => 'Boutiques',
             'other' => 'Autres',
         ];
 

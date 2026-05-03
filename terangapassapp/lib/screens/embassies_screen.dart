@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../services/api_service.dart';
 import '../services/location_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/loading_placeholders.dart';
 
 class EmbassiesScreen extends StatefulWidget {
   const EmbassiesScreen({super.key});
@@ -256,7 +257,7 @@ class _EmbassiesScreenState extends State<EmbassiesScreen> {
       backgroundColor: const Color(0xFFF4F1EA),
       body: SafeArea(
         child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
+            ? const CardListLoadingSkeleton()
             : _error != null
             ? Center(
                 child: Padding(

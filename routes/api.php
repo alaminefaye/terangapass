@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\AudioAnnouncementController;
 use App\Http\Controllers\Api\CompetitionSiteController;
 use App\Http\Controllers\Api\TransportController;
 use App\Http\Controllers\Api\TourismController;
+use App\Http\Controllers\Api\NearbyController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\DeviceTokenController;
 use App\Http\Controllers\Api\AIChatController;
@@ -72,6 +73,7 @@ Route::middleware([])->prefix('v1')->group(function () {
     // Tourisme
     Route::get('/tourism/points-of-interest', [TourismController::class, 'pointsOfInterest']);
     Route::get('/tourism/embassies', [TourismController::class, 'embassies']);
+    Route::get('/nearby', [NearbyController::class, 'index']);
 
     // Assistant IA
     Route::post('/ai/chat', [AIChatController::class, 'chat']);

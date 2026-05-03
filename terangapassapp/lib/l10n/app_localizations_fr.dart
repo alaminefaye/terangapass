@@ -45,6 +45,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get appLanguage => 'Langue de l’application';
 
   @override
+  String get loginValueProps =>
+      'Découvrir · Voyager sereinement · Être protégé';
+
+  @override
   String get loginTagline => 'Votre sécurité à Dakar';
 
   @override
@@ -153,6 +157,15 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get sosUrgenceLabel => 'SOS URGENCE';
+
+  @override
+  String get sosHoldBanner => 'URGENCE – MAINTENEZ APPUYÉ';
+
+  @override
+  String get sosDangerQuestion => 'Vous êtes\nen danger ?';
+
+  @override
+  String get sosThreeSecondsBadge => '3 SECONDES';
 
   @override
   String get sosPressToAlert => 'Appuyez pour alerter';
@@ -726,4 +739,74 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get homeTagline => 'Votre sécurité à Dakar, découvertes au Sénégal';
+
+  @override
+  String get homePillarDiscoverTitle => 'Découvrir';
+
+  @override
+  String get homePillarDiscoverSubtitle => 'Sites · Restos · Hôtels';
+
+  @override
+  String get homePillarMoveTitle => 'Se déplacer';
+
+  @override
+  String get homePillarMoveSubtitle => 'Carte · Navettes · Taxis';
+
+  @override
+  String get homePillarJojTitle => 'JOJ 2026';
+
+  @override
+  String get homePillarJojSubtitle => 'Calendrier · Médailles';
+
+  @override
+  String get homePillarHelpTitle => 'Être aidé';
+
+  @override
+  String get homePillarHelpSubtitle => 'SOS · Médical · Ambassade';
+
+  @override
+  String get homeHelpSheetTitle => 'Être aidé';
+
+  @override
+  String get homeHelpSheetSubtitle => 'Choisissez une action rapide';
+
+  @override
+  String get homeHeroWelcome => 'Bienvenue au Sénégal,';
+
+  @override
+  String get nearbyAll => 'Tous';
+
+  @override
+  String get nearbyTitle => 'À deux pas';
+
+  @override
+  String get nearbyNearMeTooltip => 'Près de moi';
+
+  @override
+  String nearbyRadiusLabel(int meters) {
+    return 'Rayon : $meters m';
+  }
+
+  @override
+  String get nearbyEmpty => 'Aucun lieu dans ce rayon pour cette catégorie.';
+
+  @override
+  String get nearbyLocationError =>
+      'Activez la localisation pour voir les lieux à proximité.';
+
+  @override
+  String get nearbySponsorBadge => 'Partenaire';
+
+  @override
+  String get profileEsimTitle => 'Forfaits eSIM';
+
+  @override
+  String get profileEsimSubtitle => 'Data voyage (bientôt)';
+
+  @override
+  String get esimComingTitle => 'eSIM Teranga Pass';
+
+  @override
+  String get esimComingBody =>
+      'L’intégration partenaire (ex. Airalo), les paiements (PayDunya, Wave) et l’activation par QR arriveront dans une prochaine version. Cet écran sert de repère pour la démo et la recette produit.';
 }

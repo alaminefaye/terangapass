@@ -170,6 +170,12 @@ abstract class AppLocalizations {
   /// **'Langue de l’application'**
   String get appLanguage;
 
+  /// No description provided for @loginValueProps.
+  ///
+  /// In fr, this message translates to:
+  /// **'Découvrir · Voyager sereinement · Être protégé'**
+  String get loginValueProps;
+
   /// No description provided for @loginTagline.
   ///
   /// In fr, this message translates to:
@@ -379,6 +385,24 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'SOS URGENCE'**
   String get sosUrgenceLabel;
+
+  /// No description provided for @sosHoldBanner.
+  ///
+  /// In fr, this message translates to:
+  /// **'URGENCE – MAINTENEZ APPUYÉ'**
+  String get sosHoldBanner;
+
+  /// No description provided for @sosDangerQuestion.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous êtes\nen danger ?'**
+  String get sosDangerQuestion;
+
+  /// No description provided for @sosThreeSecondsBadge.
+  ///
+  /// In fr, this message translates to:
+  /// **'3 SECONDES'**
+  String get sosThreeSecondsBadge;
 
   /// No description provided for @sosPressToAlert.
   ///
@@ -1459,6 +1483,138 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Votre sécurité à Dakar, découvertes au Sénégal'**
   String get homeTagline;
+
+  /// No description provided for @homePillarDiscoverTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Découvrir'**
+  String get homePillarDiscoverTitle;
+
+  /// No description provided for @homePillarDiscoverSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sites · Restos · Hôtels'**
+  String get homePillarDiscoverSubtitle;
+
+  /// No description provided for @homePillarMoveTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Se déplacer'**
+  String get homePillarMoveTitle;
+
+  /// No description provided for @homePillarMoveSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Carte · Navettes · Taxis'**
+  String get homePillarMoveSubtitle;
+
+  /// No description provided for @homePillarJojTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'JOJ 2026'**
+  String get homePillarJojTitle;
+
+  /// No description provided for @homePillarJojSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Calendrier · Médailles'**
+  String get homePillarJojSubtitle;
+
+  /// No description provided for @homePillarHelpTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Être aidé'**
+  String get homePillarHelpTitle;
+
+  /// No description provided for @homePillarHelpSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'SOS · Médical · Ambassade'**
+  String get homePillarHelpSubtitle;
+
+  /// No description provided for @homeHelpSheetTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Être aidé'**
+  String get homeHelpSheetTitle;
+
+  /// No description provided for @homeHelpSheetSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisissez une action rapide'**
+  String get homeHelpSheetSubtitle;
+
+  /// No description provided for @homeHeroWelcome.
+  ///
+  /// In fr, this message translates to:
+  /// **'Bienvenue au Sénégal,'**
+  String get homeHeroWelcome;
+
+  /// No description provided for @nearbyAll.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tous'**
+  String get nearbyAll;
+
+  /// No description provided for @nearbyTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'À deux pas'**
+  String get nearbyTitle;
+
+  /// No description provided for @nearbyNearMeTooltip.
+  ///
+  /// In fr, this message translates to:
+  /// **'Près de moi'**
+  String get nearbyNearMeTooltip;
+
+  /// No description provided for @nearbyRadiusLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rayon : {meters} m'**
+  String nearbyRadiusLabel(int meters);
+
+  /// No description provided for @nearbyEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun lieu dans ce rayon pour cette catégorie.'**
+  String get nearbyEmpty;
+
+  /// No description provided for @nearbyLocationError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Activez la localisation pour voir les lieux à proximité.'**
+  String get nearbyLocationError;
+
+  /// No description provided for @nearbySponsorBadge.
+  ///
+  /// In fr, this message translates to:
+  /// **'Partenaire'**
+  String get nearbySponsorBadge;
+
+  /// No description provided for @profileEsimTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Forfaits eSIM'**
+  String get profileEsimTitle;
+
+  /// No description provided for @profileEsimSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Data voyage (bientôt)'**
+  String get profileEsimSubtitle;
+
+  /// No description provided for @esimComingTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'eSIM Teranga Pass'**
+  String get esimComingTitle;
+
+  /// No description provided for @esimComingBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'L’intégration partenaire (ex. Airalo), les paiements (PayDunya, Wave) et l’activation par QR arriveront dans une prochaine version. Cet écran sert de repère pour la démo et la recette produit.'**
+  String get esimComingBody;
 }
 
 class _AppLocalizationsDelegate
