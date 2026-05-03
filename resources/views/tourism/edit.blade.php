@@ -48,6 +48,8 @@
                             <option value="school" {{ old('category', $tourism->category) == 'school' ? 'selected' : '' }}>🎓 École</option>
                             <option value="university" {{ old('category', $tourism->category) == 'university' ? 'selected' : '' }}>🎓 Université</option>
                             <option value="media" {{ old('category', $tourism->category) == 'media' ? 'selected' : '' }}>📻 Média / culture</option>
+                            <option value="professional_service" {{ old('category', $tourism->category) == 'professional_service' ? 'selected' : '' }}>🔧 Service professionnel</option>
+                            <option value="religious_site" {{ old('category', $tourism->category) == 'religious_site' ? 'selected' : '' }}>🕌 Lieu de culte</option>
                             <option value="other" {{ old('category', $tourism->category) == 'other' ? 'selected' : '' }}>📌 Autre</option>
                         </select>
                         @error('category')

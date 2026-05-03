@@ -18,7 +18,7 @@ class NearbyController extends Controller
             'latitude' => 'required|numeric|between:-90,90',
             'longitude' => 'required|numeric|between:-180,180',
             'radius' => 'sometimes|integer|min:100|max:50000',
-            'category' => 'sometimes|nullable|string|in:hotel,restaurant,pharmacy,hospital,embassy,consulate,bank,gas_station,shop,notary,lawyer,doctor,clinic,government,school,university,media,other',
+            'category' => 'sometimes|nullable|string|in:hotel,restaurant,pharmacy,hospital,embassy,consulate,bank,gas_station,shop,notary,lawyer,doctor,clinic,government,school,university,media,professional_service,religious_site,other',
         ]);
 
         $lat = (float) $validated['latitude'];
@@ -142,6 +142,8 @@ class NearbyController extends Controller
             'school' => 'Écoles',
             'university' => 'Universités',
             'media' => 'Médias & culture',
+            'professional_service' => 'Services professionnels',
+            'religious_site' => 'Lieux de culte',
             default => 'Autres',
         };
     }

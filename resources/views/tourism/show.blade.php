@@ -72,6 +72,10 @@
                                 <span class="badge bg-secondary">🎓 Université</span>
                                 @elseif($tourism->category == 'media')
                                 <span class="badge bg-secondary">📻 Média / culture</span>
+                                @elseif($tourism->category == 'professional_service')
+                                <span class="badge bg-secondary">🔧 Service professionnel</span>
+                                @elseif($tourism->category == 'religious_site')
+                                <span class="badge bg-secondary">🕌 Lieu de culte</span>
                                 @else
                                 <span class="badge bg-secondary">📌 Autre</span>
                                 @endif

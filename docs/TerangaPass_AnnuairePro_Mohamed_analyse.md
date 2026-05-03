@@ -50,6 +50,7 @@ Tableau cumulé **Y1** fourni dans le PDF : fourchette **~540 M à ~1,25 Md FCFA
 | **5 catégories bêta dans l’app** | Écran **À deux pas** : restos, banques, stations, **hôtels**, pharmacies (+ boutiques). |
 | **Sprint 2 annuaire (code)** | Catégories **`notary`**, **`lawyer`**, **`doctor`**, **`clinic`** en base (`partners`), admin + API `/nearby`, chips **À deux pas** (hôpitaux, cliniques, notaires, avocats, médecins). Seeder **`DirectoryAnnuaireSprint2Seeder`** (échantillons Dakar). |
 | **Sprint 3 annuaire (code)** | **`government`**, **`school`**, **`university`**, **`media`** : migration, seed **`DirectoryAnnuaireSprint3Seeder`** (mairie, UCAD, RTS, MCN, etc.), admin, API, chips **À deux pas**. |
+| **Sprint 4 annuaire (code)** | **`professional_service`**, **`religious_site`** : migration `2026_05_06_100000_add_annuaire_sprint4_professional_religious.php`, seed **`DirectoryAnnuaireSprint4Seeder`** (échantillons artisans / agence / coiffure + lieux de culte connus à Dakar — données indicatives), admin, API, chips **Pros** / **Culte** (FR) et **Faith** (EN). Sous-types métiers (plombier, électricien…) : **V2** (JSON ou table dédiée). |
 | **Table `banks` dédiée** | **Non** — champs avancés (frais ATM, SWIFT, `services[]`…) à concevoir en migration V2 si le produit valide le modèle relationnel. |
 | **Table `places`** | **Non** — même remarque ; `partners` sert de véhicule d’intégration rapide. |
 | **Collecte terrain** (Catherine, El Gamou, Codou) | Processus humain — hors code. |
@@ -58,13 +59,13 @@ Tableau cumulé **Y1** fourni dans le PDF : fourchette **~540 M à ~1,25 Md FCFA
 
 - **Données officielles** : droits d’usage des listes (notaires, barreau) — accords / lettres de partenariat mentionnés dans le PDF.
 - **Coordonnées** : ne pas publier en production des positions **fictives** ; le seeder est pour **démo / dev**.
-- **Religion & spiritualité** : catégorie sensible — produit, légal et communautés à cadrer avant intégration (Sprint 4).
+- **Religion & spiritualité** : le sprint 4 ajoute un type **`religious_site`** avec données **démo** ; cadrage éditorial, respect des communautés et sources officielles restent indispensables avant production.
 
 ## 7. Références fichiers
 
-- Seeder : `DirectoryBanksBceaoSeeder`, `DirectoryAnnuaireSprint2Seeder`, `DirectoryAnnuaireSprint3Seeder`  
+- Seeder : `DirectoryBanksBceaoSeeder`, `DirectoryAnnuaireSprint2Seeder`, `DirectoryAnnuaireSprint3Seeder`, `DirectoryAnnuaireSprint4Seeder`  
 - Enregistrement : `database/seeders/DatabaseSeeder.php`  
-- Migrations catégories : `2026_05_04_160000_add_annuaire_categories_notary_lawyer_doctor_clinic.php`, `2026_05_05_120000_add_annuaire_sprint3_government_school_university_media.php`  
+- Migrations catégories : `2026_05_04_160000_add_annuaire_categories_notary_lawyer_doctor_clinic.php`, `2026_05_05_120000_add_annuaire_sprint3_government_school_university_media.php`, `2026_05_06_100000_add_annuaire_sprint4_professional_religious.php`  
 - Proximité API : `app/Http/Controllers/Api/NearbyController.php`  
 - App : `terangapassapp/lib/screens/nearby_screen.dart`  
 

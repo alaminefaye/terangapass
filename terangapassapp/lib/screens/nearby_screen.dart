@@ -51,6 +51,8 @@ class _NearbyScreenState extends State<NearbyScreen> {
     _ChipDef(l10n.nearbyChipSchools, 'school'),
     _ChipDef(l10n.nearbyChipUniversities, 'university'),
     _ChipDef(l10n.nearbyChipMedia, 'media'),
+    _ChipDef(l10n.nearbyChipProfessionalServices, 'professional_service'),
+    _ChipDef(l10n.nearbyChipReligiousSites, 'religious_site'),
     const _ChipDef('Boutiques', 'shop'),
   ];
 

@@ -804,6 +804,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String get nearbyChipMedia => 'Médias';
 
   @override
+  String get nearbyChipProfessionalServices => 'Pros';
+
+  @override
+  String get nearbyChipReligiousSites => 'Culte';
+
+  @override
   String get nearbyAll => 'Tous';
 
   @override

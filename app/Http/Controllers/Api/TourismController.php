@@ -141,6 +141,8 @@ class TourismController extends Controller
             'school' => 'Écoles',
             'university' => 'Universités',
             'media' => 'Médias & culture',
+            'professional_service' => 'Services professionnels',
+            'religious_site' => 'Lieux de culte',
             'other' => 'Autres',
         ];
 

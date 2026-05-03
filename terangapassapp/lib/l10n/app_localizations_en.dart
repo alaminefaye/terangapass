@@ -795,6 +795,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get nearbyChipMedia => 'Media';
 
   @override
+  String get nearbyChipProfessionalServices => 'Pros';
+
+  @override
+  String get nearbyChipReligiousSites => 'Faith';
+
+  @override
   String get nearbyAll => 'All';
 
   @override

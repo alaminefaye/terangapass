@@ -308,6 +308,8 @@
   "nearbyChipSchools": "Schools",
   "nearbyChipUniversities": "Universities",
   "nearbyChipMedia": "Media",
+  "nearbyChipProfessionalServices": "Pros",
+  "nearbyChipReligiousSites": "Faith",
   "nearbyAll": "All",
   "nearbyTitle": "Nearby",
   "nearbyNearMeTooltip": "Near me",

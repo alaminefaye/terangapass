@@ -38,6 +38,8 @@
                         <option value="school" {{ request('category') == 'school' ? 'selected' : '' }}>École</option>
                         <option value="university" {{ request('category') == 'university' ? 'selected' : '' }}>Université</option>
                         <option value="media" {{ request('category') == 'media' ? 'selected' : '' }}>Média / culture</option>
+                        <option value="professional_service" {{ request('category') == 'professional_service' ? 'selected' : '' }}>Service professionnel</option>
+                        <option value="religious_site" {{ request('category') == 'religious_site' ? 'selected' : '' }}>Lieu de culte</option>
                         <option value="other" {{ request('category') == 'other' ? 'selected' : '' }}>Autre</option>
                     </select>
                 </div>
@@ -111,6 +113,10 @@
                             <span class="badge bg-secondary">🎓 Université</span>
                             @elseif($point->category == 'media')
                             <span class="badge bg-secondary">📻 Média / culture</span>
+                            @elseif($point->category == 'professional_service')
+                            <span class="badge bg-secondary">🔧 Service professionnel</span>
+                            @elseif($point->category == 'religious_site')
+                            <span class="badge bg-secondary">🕌 Lieu de culte</span>
                             @else
                             <span class="badge bg-secondary">📌 Autre</span>
                             @endif

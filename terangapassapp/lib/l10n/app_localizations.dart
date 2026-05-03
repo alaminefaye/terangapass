@@ -1610,6 +1610,18 @@ abstract class AppLocalizations {
   /// **'Médias'**
   String get nearbyChipMedia;
 
+  /// No description provided for @nearbyChipProfessionalServices.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pros'**
+  String get nearbyChipProfessionalServices;
+
+  /// No description provided for @nearbyChipReligiousSites.
+  ///
+  /// In fr, this message translates to:
+  /// **'Culte'**
+  String get nearbyChipReligiousSites;
+
   /// No description provided for @nearbyAll.
   ///
   /// In fr, this message translates to:

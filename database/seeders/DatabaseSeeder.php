@@ -23,6 +23,7 @@ class DatabaseSeeder extends Seeder
             DirectoryBanksBceaoSeeder::class,
             DirectoryAnnuaireSprint2Seeder::class,
             DirectoryAnnuaireSprint3Seeder::class,
+            DirectoryAnnuaireSprint4Seeder::class,
             DiplomaticMissionSeeder::class,
             
             // 4. Sites de compétition

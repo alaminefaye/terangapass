@@ -48,6 +48,8 @@
                             <option value="school" {{ old('category', $partner->category) == 'school' ? 'selected' : '' }}>École</option>
                             <option value="university" {{ old('category', $partner->category) == 'university' ? 'selected' : '' }}>Université / grande école</option>
                             <option value="media" {{ old('category', $partner->category) == 'media' ? 'selected' : '' }}>Média / culture</option>
+                            <option value="professional_service" {{ old('category', $partner->category) == 'professional_service' ? 'selected' : '' }}>Service professionnel (artisan, agence…)</option>
+                            <option value="religious_site" {{ old('category', $partner->category) == 'religious_site' ? 'selected' : '' }}>Lieu de culte</option>
                             <option value="other" {{ old('category', $partner->category) == 'other' ? 'selected' : '' }}>Autre</option>
                         </select>
                         @error('category')
