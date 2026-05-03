@@ -56,6 +56,22 @@
                                 <span class="badge bg-secondary">⛽ Station-service</span>
                                 @elseif($partner->category == 'shop')
                                 <span class="badge bg-secondary">🛍️ Boutique</span>
+                                @elseif($partner->category == 'notary')
+                                <span class="badge bg-secondary">📜 Notaire</span>
+                                @elseif($partner->category == 'lawyer')
+                                <span class="badge bg-secondary">⚖️ Avocat</span>
+                                @elseif($partner->category == 'doctor')
+                                <span class="badge bg-secondary">🩺 Médecin</span>
+                                @elseif($partner->category == 'clinic')
+                                <span class="badge bg-secondary">🏥 Clinique</span>
+                                @elseif($partner->category == 'government')
+                                <span class="badge bg-secondary">🏛️ Administration</span>
+                                @elseif($partner->category == 'school')
+                                <span class="badge bg-secondary">🎓 École</span>
+                                @elseif($partner->category == 'university')
+                                <span class="badge bg-secondary">🎓 Université</span>
+                                @elseif($partner->category == 'media')
+                                <span class="badge bg-secondary">📻 Média / culture</span>
                                 @else
                                 <span class="badge bg-secondary">Autre</span>
                                 @endif

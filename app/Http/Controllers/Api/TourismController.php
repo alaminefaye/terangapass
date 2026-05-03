@@ -133,6 +133,14 @@ class TourismController extends Controller
             'bank' => 'Banques & DAB',
             'gas_station' => 'Stations-service',
             'shop' => 'Boutiques',
+            'notary' => 'Notaires',
+            'lawyer' => 'Avocats',
+            'doctor' => 'Médecins',
+            'clinic' => 'Cliniques',
+            'government' => 'Services publics',
+            'school' => 'Écoles',
+            'university' => 'Universités',
+            'media' => 'Médias & culture',
             'other' => 'Autres',
         ];
 

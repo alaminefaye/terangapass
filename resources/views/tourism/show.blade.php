@@ -56,6 +56,22 @@
                                 <span class="badge bg-secondary">⛽ Station-service</span>
                                 @elseif($tourism->category == 'shop')
                                 <span class="badge bg-secondary">🛍️ Boutique</span>
+                                @elseif($tourism->category == 'notary')
+                                <span class="badge bg-secondary">📜 Notaire</span>
+                                @elseif($tourism->category == 'lawyer')
+                                <span class="badge bg-secondary">⚖️ Avocat</span>
+                                @elseif($tourism->category == 'doctor')
+                                <span class="badge bg-secondary">🩺 Médecin</span>
+                                @elseif($tourism->category == 'clinic')
+                                <span class="badge bg-secondary">🏥 Clinique</span>
+                                @elseif($tourism->category == 'government')
+                                <span class="badge bg-secondary">🏛️ Administration</span>
+                                @elseif($tourism->category == 'school')
+                                <span class="badge bg-secondary">🎓 École</span>
+                                @elseif($tourism->category == 'university')
+                                <span class="badge bg-secondary">🎓 Université</span>
+                                @elseif($tourism->category == 'media')
+                                <span class="badge bg-secondary">📻 Média / culture</span>
                                 @else
                                 <span class="badge bg-secondary">📌 Autre</span>
                                 @endif

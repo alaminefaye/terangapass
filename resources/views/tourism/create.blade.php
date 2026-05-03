@@ -40,6 +40,14 @@
                             <option value="bank" {{ old('category') == 'bank' ? 'selected' : '' }}>🏦 Banque / DAB</option>
                             <option value="gas_station" {{ old('category') == 'gas_station' ? 'selected' : '' }}>⛽ Station-service</option>
                             <option value="shop" {{ old('category') == 'shop' ? 'selected' : '' }}>🛍️ Boutique</option>
+                            <option value="notary" {{ old('category') == 'notary' ? 'selected' : '' }}>📜 Notaire</option>
+                            <option value="lawyer" {{ old('category') == 'lawyer' ? 'selected' : '' }}>⚖️ Avocat</option>
+                            <option value="doctor" {{ old('category') == 'doctor' ? 'selected' : '' }}>🩺 Médecin</option>
+                            <option value="clinic" {{ old('category') == 'clinic' ? 'selected' : '' }}>🏥 Clinique</option>
+                            <option value="government" {{ old('category') == 'government' ? 'selected' : '' }}>🏛️ Administration</option>
+                            <option value="school" {{ old('category') == 'school' ? 'selected' : '' }}>🎓 École</option>
+                            <option value="university" {{ old('category') == 'university' ? 'selected' : '' }}>🎓 Université</option>
+                            <option value="media" {{ old('category') == 'media' ? 'selected' : '' }}>📻 Média / culture</option>
                             <option value="other" {{ old('category') == 'other' ? 'selected' : '' }}>📌 Autre</option>
                         </select>
                         @error('category')

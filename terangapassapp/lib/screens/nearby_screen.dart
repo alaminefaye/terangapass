@@ -40,8 +40,18 @@ class _NearbyScreenState extends State<NearbyScreen> {
     const _ChipDef('Restos', 'restaurant'),
     const _ChipDef('Banques', 'bank'),
     const _ChipDef('Stations', 'gas_station'),
-    const _ChipDef('Boutiques', 'shop'),
+    _ChipDef(l10n.nearbyChipHotels, 'hotel'),
     const _ChipDef('Pharmacies', 'pharmacy'),
+    _ChipDef(l10n.nearbyChipHospitals, 'hospital'),
+    _ChipDef(l10n.nearbyChipClinics, 'clinic'),
+    _ChipDef(l10n.nearbyChipNotaries, 'notary'),
+    _ChipDef(l10n.nearbyChipLawyers, 'lawyer'),
+    _ChipDef(l10n.nearbyChipDoctors, 'doctor'),
+    _ChipDef(l10n.nearbyChipGovernment, 'government'),
+    _ChipDef(l10n.nearbyChipSchools, 'school'),
+    _ChipDef(l10n.nearbyChipUniversities, 'university'),
+    _ChipDef(l10n.nearbyChipMedia, 'media'),
+    const _ChipDef('Boutiques', 'shop'),
   ];
 
   @override

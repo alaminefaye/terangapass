@@ -1102,6 +1102,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppTheme.primaryGreen,
+                        minimumSize: const Size(132, 48),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14),
                         ),

@@ -30,6 +30,14 @@
                         <option value="bank" {{ request('category') == 'bank' ? 'selected' : '' }}>Banque / DAB</option>
                         <option value="gas_station" {{ request('category') == 'gas_station' ? 'selected' : '' }}>Station-service</option>
                         <option value="shop" {{ request('category') == 'shop' ? 'selected' : '' }}>Boutique</option>
+                        <option value="notary" {{ request('category') == 'notary' ? 'selected' : '' }}>Notaire</option>
+                        <option value="lawyer" {{ request('category') == 'lawyer' ? 'selected' : '' }}>Avocat</option>
+                        <option value="doctor" {{ request('category') == 'doctor' ? 'selected' : '' }}>Médecin</option>
+                        <option value="clinic" {{ request('category') == 'clinic' ? 'selected' : '' }}>Clinique</option>
+                        <option value="government" {{ request('category') == 'government' ? 'selected' : '' }}>Administration</option>
+                        <option value="school" {{ request('category') == 'school' ? 'selected' : '' }}>École</option>
+                        <option value="university" {{ request('category') == 'university' ? 'selected' : '' }}>Université</option>
+                        <option value="media" {{ request('category') == 'media' ? 'selected' : '' }}>Média / culture</option>
                         <option value="other" {{ request('category') == 'other' ? 'selected' : '' }}>Autre</option>
                     </select>
                 </div>
@@ -87,6 +95,22 @@
                             <span class="badge bg-secondary">⛽ Station-service</span>
                             @elseif($point->category == 'shop')
                             <span class="badge bg-secondary">🛍️ Boutique</span>
+                            @elseif($point->category == 'notary')
+                            <span class="badge bg-secondary">📜 Notaire</span>
+                            @elseif($point->category == 'lawyer')
+                            <span class="badge bg-secondary">⚖️ Avocat</span>
+                            @elseif($point->category == 'doctor')
+                            <span class="badge bg-secondary">🩺 Médecin</span>
+                            @elseif($point->category == 'clinic')
+                            <span class="badge bg-secondary">🏥 Clinique</span>
+                            @elseif($point->category == 'government')
+                            <span class="badge bg-secondary">🏛️ Administration</span>
+                            @elseif($point->category == 'school')
+                            <span class="badge bg-secondary">🎓 École</span>
+                            @elseif($point->category == 'university')
+                            <span class="badge bg-secondary">🎓 Université</span>
+                            @elseif($point->category == 'media')
+                            <span class="badge bg-secondary">📻 Média / culture</span>
                             @else
                             <span class="badge bg-secondary">📌 Autre</span>
                             @endif

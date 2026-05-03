@@ -106,7 +106,7 @@ class _IncidentTrackingScreenState extends State<IncidentTrackingScreen> {
     final s = (value ?? '').toString().trim();
     if (s.isEmpty) return 'A venir';
     final dt = DateTime.tryParse(s);
-    if (dt == null) return 'A venir';
+    if (dt == null) return 'À venir';
     final hh = dt.hour.toString().padLeft(2, '0');
     final mm = dt.minute.toString().padLeft(2, '0');
     return '$hh:$mm';

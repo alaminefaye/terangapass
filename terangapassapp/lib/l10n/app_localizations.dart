@@ -1550,6 +1550,66 @@ abstract class AppLocalizations {
   /// **'Bienvenue au Sénégal,'**
   String get homeHeroWelcome;
 
+  /// No description provided for @nearbyChipHotels.
+  ///
+  /// In fr, this message translates to:
+  /// **'Hôtels'**
+  String get nearbyChipHotels;
+
+  /// No description provided for @nearbyChipHospitals.
+  ///
+  /// In fr, this message translates to:
+  /// **'Hôpitaux'**
+  String get nearbyChipHospitals;
+
+  /// No description provided for @nearbyChipClinics.
+  ///
+  /// In fr, this message translates to:
+  /// **'Cliniques'**
+  String get nearbyChipClinics;
+
+  /// No description provided for @nearbyChipNotaries.
+  ///
+  /// In fr, this message translates to:
+  /// **'Notaires'**
+  String get nearbyChipNotaries;
+
+  /// No description provided for @nearbyChipLawyers.
+  ///
+  /// In fr, this message translates to:
+  /// **'Avocats'**
+  String get nearbyChipLawyers;
+
+  /// No description provided for @nearbyChipDoctors.
+  ///
+  /// In fr, this message translates to:
+  /// **'Médecins'**
+  String get nearbyChipDoctors;
+
+  /// No description provided for @nearbyChipGovernment.
+  ///
+  /// In fr, this message translates to:
+  /// **'État'**
+  String get nearbyChipGovernment;
+
+  /// No description provided for @nearbyChipSchools.
+  ///
+  /// In fr, this message translates to:
+  /// **'Écoles'**
+  String get nearbyChipSchools;
+
+  /// No description provided for @nearbyChipUniversities.
+  ///
+  /// In fr, this message translates to:
+  /// **'Universités'**
+  String get nearbyChipUniversities;
+
+  /// No description provided for @nearbyChipMedia.
+  ///
+  /// In fr, this message translates to:
+  /// **'Médias'**
+  String get nearbyChipMedia;
+
   /// No description provided for @nearbyAll.
   ///
   /// In fr, this message translates to:

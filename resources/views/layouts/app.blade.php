@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="light-style layout-menu-fixed" dir="ltr" data-theme="theme-default" data-assets-path="{{ asset('assets/') }}" data-template="vertical-menu-template-free">
+<html lang="fr" class="light-style layout-menu-fixed" dir="ltr" data-theme="theme-default" data-assets-path="{{ asset('assets/') }}" data-template="vertical-menu-template-free">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0" />
@@ -194,12 +194,13 @@
                     
                     <div class="navbar-nav-right d-flex align-items-center" id="navbar-collapse">
                         <!-- Search -->
-                        <div class="navbar-nav align-items-center">
-                            <div class="nav-item d-flex align-items-center">
-                                <i class="bx bx-search fs-4 lh-0"></i>
-                                <input type="text" class="form-control border-0 shadow-none" placeholder="Search..." aria-label="Search..." />
+                        <form method="GET" action="{{ route('admin.search.index') }}" class="navbar-nav align-items-center flex-grow-1 flex-xl-grow-0 me-xl-2" role="search">
+                            <div class="nav-item d-flex align-items-center w-100" style="max-width: 22rem;">
+                                <i class="bx bx-search fs-4 lh-0 text-muted flex-shrink-0"></i>
+                                <input type="search" name="q" value="{{ request('q') }}" class="form-control border-0 shadow-none"
+                                       placeholder="Rechercher…" aria-label="Rechercher dans le tableau de bord" maxlength="200" autocomplete="off" />
                             </div>
-                        </div>
+                        </form>
                         <!-- /Search -->
                         
                         <ul class="navbar-nav flex-row align-items-center ms-auto">
@@ -220,7 +221,7 @@
                                                     </div>
                                                 </div>
                                                 <div class="flex-grow-1">
-                                                    <span class="fw-semibold d-block">{{ Auth::check() ? Auth::user()->name : 'User' }}</span>
+                                                    <span class="fw-semibold d-block">{{ Auth::check() ? Auth::user()->name : 'Utilisateur' }}</span>
                                                     <small class="text-muted">Admin</small>
                                                 </div>
                                             </div>
@@ -249,7 +250,7 @@
                                             @csrf
                                             <button type="submit" class="dropdown-item">
                                                 <i class="bx bx-power-off me-2"></i>
-                                                <span class="align-middle">Log Out</span>
+                                                <span class="align-middle">Déconnexion</span>
                                             </button>
                                         </form>
                                     </li>
@@ -268,14 +269,14 @@
                         @if(session('success'))
                             <div class="alert alert-success alert-dismissible" role="alert">
                                 {{ session('success') }}
-                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fermer"></button>
                             </div>
                         @endif
                         
                         @if(session('error'))
                             <div class="alert alert-danger alert-dismissible" role="alert">
                                 {{ session('error') }}
-                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fermer"></button>
                             </div>
                         @endif
                         

@@ -16,6 +16,7 @@ use App\Http\Controllers\Web\StatisticsController;
 use App\Http\Controllers\Web\ContactController;
 use App\Http\Controllers\Web\ProfileController;
 use App\Http\Controllers\Web\SettingsController;
+use App\Http\Controllers\Web\AdminSearchController;
 use Illuminate\Support\Facades\File;
 
 // Authentication Routes
@@ -36,6 +37,7 @@ Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/search', [AdminSearchController::class, 'index'])->name('search.index');
 
     // Notifications
     Route::resource('notifications', NotificationManagementController::class);

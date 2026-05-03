@@ -765,6 +765,36 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeHeroWelcome => 'Welcome to Senegal,';
 
   @override
+  String get nearbyChipHotels => 'Hotels';
+
+  @override
+  String get nearbyChipHospitals => 'Hospitals';
+
+  @override
+  String get nearbyChipClinics => 'Clinics';
+
+  @override
+  String get nearbyChipNotaries => 'Notaries';
+
+  @override
+  String get nearbyChipLawyers => 'Lawyers';
+
+  @override
+  String get nearbyChipDoctors => 'Doctors';
+
+  @override
+  String get nearbyChipGovernment => 'Government';
+
+  @override
+  String get nearbyChipSchools => 'Schools';
+
+  @override
+  String get nearbyChipUniversities => 'Universities';
+
+  @override
+  String get nearbyChipMedia => 'Media';
+
+  @override
   String get nearbyAll => 'All';
 
   @override

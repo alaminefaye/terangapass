@@ -40,6 +40,14 @@
                             <option value="bank" {{ old('category', $partner->category) == 'bank' ? 'selected' : '' }}>Banque / DAB</option>
                             <option value="gas_station" {{ old('category', $partner->category) == 'gas_station' ? 'selected' : '' }}>Station-service</option>
                             <option value="shop" {{ old('category', $partner->category) == 'shop' ? 'selected' : '' }}>Boutique</option>
+                            <option value="notary" {{ old('category', $partner->category) == 'notary' ? 'selected' : '' }}>Notaire</option>
+                            <option value="lawyer" {{ old('category', $partner->category) == 'lawyer' ? 'selected' : '' }}>Avocat / cabinet</option>
+                            <option value="doctor" {{ old('category', $partner->category) == 'doctor' ? 'selected' : '' }}>Médecin</option>
+                            <option value="clinic" {{ old('category', $partner->category) == 'clinic' ? 'selected' : '' }}>Clinique</option>
+                            <option value="government" {{ old('category', $partner->category) == 'government' ? 'selected' : '' }}>Service public / administration</option>
+                            <option value="school" {{ old('category', $partner->category) == 'school' ? 'selected' : '' }}>École</option>
+                            <option value="university" {{ old('category', $partner->category) == 'university' ? 'selected' : '' }}>Université / grande école</option>
+                            <option value="media" {{ old('category', $partner->category) == 'media' ? 'selected' : '' }}>Média / culture</option>
                             <option value="other" {{ old('category', $partner->category) == 'other' ? 'selected' : '' }}>Autre</option>
                         </select>
                         @error('category')

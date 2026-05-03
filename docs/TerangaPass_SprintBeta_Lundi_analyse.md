@@ -21,6 +21,12 @@ Le sprint vise une **application stable** pour une démonstration, avec notammen
 | **Proximité** | **Implémenté en V1** : `GET /api/v1/nearby` (Haversine, rayon, filtre catégorie, sponsors en tête) sur la table **`partners`** ; catégories **`bank`**, **`gas_station`**, **`shop`** ajoutées en base ; écran Flutter **« À deux pas »** + entrée depuis **Tourisme**. |
 | **eSIM** | **Écran placeholder** + entrée profil ; pas encore d’Airalo / PayDunya / QR en production. |
 | Tables dédiées `places` / `sponsored_listings` (nommage PDF) | **Non** — réutilisation de **`partners`** + `is_sponsor` pour limiter la dette avant la bêta ; migration possible ensuite. |
+| **Admin web** | Layout **FR** (`lang`, recherche navbar, déconnexion, alertes). **Recherche globale** : `GET /admin/search?q=` (signalements, alertes, partenaires, utilisateurs, sites JOJ) + formulaire dans la navbar. |
+
+## 2 bis. Statut « continu » (post–sprint doc)
+
+- **Réalisé en code** : proximité V1, squelettes Flutter, correctifs SOS/FR/notifications/hero, eSIM **placeholder**, seeders catégories proximité, recherche admin.
+- **Hors périmètre code actuel** : eSIM production, QA P0 exhaustive, tables `places` dédiées, contrat design system PDF à l’identique.
 
 ## 3. Plan de complétion recommandé
 
@@ -41,6 +47,9 @@ Le sprint vise une **application stable** pour une démonstration, avec notammen
 - **Contrôleur** : `App\Http\Controllers\Api\NearbyController`.
 - **App mobile** : `terangapassapp/lib/screens/nearby_screen.dart`, `ApiService.getNearby`, navigation depuis `tourism_screen.dart`.
 - **eSIM UI** : `terangapassapp/lib/screens/esim_coming_screen.dart`, lien profil.
+- **Admin recherche** : `routes/web.php` (`admin.search.index`), `App\Http\Controllers\Web\AdminSearchController`, vue `resources/views/search/index.blade.php`, champ `q` dans `layouts/app.blade.php`.
+
+Annuaire professionnel (12 catégories, phasage, banques BCEAO) : voir `docs/TerangaPass_AnnuairePro_Mohamed_analyse.md`.
 
 ---
 
