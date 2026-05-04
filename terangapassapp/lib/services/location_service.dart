@@ -62,10 +62,23 @@ class LocationService {
   Future<Position> getCurrentPosition() async {
     await checkAndRequestPermissions();
 
-    return await Geolocator.getCurrentPosition(
-      desiredAccuracy: LocationAccuracy.high,
-      timeLimit: const Duration(seconds: 10),
-    );
+    try {
+      return await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+        timeLimit: const Duration(seconds: 10),
+      );
+    } catch (_) {
+      // Fallback utile sur certains appareils (MIUI/Android) quand le fix GPS
+      // est lent: on tente d'abord la dernière position connue.
+      final lastKnown = await Geolocator.getLastKnownPosition();
+      if (lastKnown != null) return lastKnown;
+
+      // Dernière tentative avec une précision plus permissive et un peu plus de temps.
+      return await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.medium,
+        timeLimit: const Duration(seconds: 20),
+      );
+    }
   }
 
   /// Obtient la position actuelle avec une précision élevée (pour SOS)

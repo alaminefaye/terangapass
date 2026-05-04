@@ -221,12 +221,15 @@ class _AIAssistantScreenState extends State<AIAssistantScreen> {
         );
       });
     } finally {
-      if (!mounted) return;
-      setState(() {
-        _isSending = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isSending = false;
+        });
+      }
       await _persistMessages();
-      _scrollToBottom();
+      if (mounted) {
+        _scrollToBottom();
+      }
     }
   }
 
@@ -379,7 +382,7 @@ class _AIAssistantScreenState extends State<AIAssistantScreen> {
                     scrollDirection: Axis.horizontal,
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     itemCount: _kAiSuggestions.length,
-                    separatorBuilder: (_, __) => const SizedBox(width: 8),
+                    separatorBuilder: (_, _) => const SizedBox(width: 8),
                     itemBuilder: (context, index) {
                       final s = _kAiSuggestions[index];
                       return ActionChip(

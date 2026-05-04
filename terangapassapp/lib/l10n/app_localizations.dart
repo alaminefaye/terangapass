@@ -1655,7 +1655,7 @@ abstract class AppLocalizations {
   /// No description provided for @nearbyLocationError.
   ///
   /// In fr, this message translates to:
-  /// **'Activez la localisation pour voir les lieux à proximité.'**
+  /// **'La localisation n’est pas activée. Activez-la pour voir les lieux à proximité.'**
   String get nearbyLocationError;
 
   /// No description provided for @nearbySponsorBadge.

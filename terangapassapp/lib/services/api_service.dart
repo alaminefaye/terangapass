@@ -499,18 +499,39 @@ class ApiService {
     int radiusMeters = 2000,
     String? category,
   }) async {
+    final params = {
+      'latitude': latitude,
+      'longitude': longitude,
+      'radius': radiusMeters,
+      if (category != null && category.isNotEmpty) 'category': category,
+    };
+
     try {
-      final response = await _dio.get(
-        '/nearby',
-        queryParameters: {
-          'latitude': latitude,
-          'longitude': longitude,
-          'radius': radiusMeters,
-          if (category != null && category.isNotEmpty) 'category': category,
-        },
-      );
+      final response = await _dio.get('/nearby', queryParameters: params);
       return response.data['data'] ?? [];
     } on DioException catch (e) {
+      final status = e.response?.statusCode;
+      final data = e.response?.data;
+      final routeMissing =
+          data is Map &&
+          data['message'] is String &&
+          (data['message'] as String).toLowerCase().contains('route') &&
+          (data['message'] as String).toLowerCase().contains('nearby') &&
+          (data['message'] as String).toLowerCase().contains('could not be found');
+
+      // Fallback compatibilité: certains backends n'exposent pas /nearby
+      // mais gardent l'endpoint tourisme plus ancien.
+      if (status == 404 || routeMissing) {
+        try {
+          final fallback = await _dio.get(
+            '/tourism/points-of-interest',
+            queryParameters: params,
+          );
+          return fallback.data['data'] ?? [];
+        } on DioException {
+          // On laisse ensuite remonter l'erreur d'origine pour garder le contexte.
+        }
+      }
       throw _handleError(e);
     }
   }

@@ -31,6 +31,7 @@ class _NearbyScreenState extends State<NearbyScreen> {
   double? _userLng;
   String? _locationError;
   List<Map<String, dynamic>> _places = [];
+  Map<String, int> _categoryCounts = const {};
   bool _loading = true;
   String? _apiError;
   int _chipIndex = 0;
@@ -72,6 +73,7 @@ class _NearbyScreenState extends State<NearbyScreen> {
     setState(() {
       _loading = true;
       _apiError = null;
+      _locationError = null;
     });
 
     try {
@@ -84,10 +86,12 @@ class _NearbyScreenState extends State<NearbyScreen> {
         lng = pos.longitude;
       } catch (e) {
         locErr = e.toString().replaceAll('Exception: ', '').trim();
+        debugPrint('[Nearby] location error: $locErr');
       }
 
       if (!mounted) return;
       if (lat == null || lng == null) {
+        locErr ??= 'Impossible d’obtenir votre position (cause inconnue).';
         setState(() {
           _userLat = null;
           _userLng = null;
@@ -99,21 +103,29 @@ class _NearbyScreenState extends State<NearbyScreen> {
       }
 
       final chips = _chips(AppLocalizations.of(context)!);
-      final cat = chips[_chipIndex.clamp(0, chips.length - 1)].categoryKey;
+      final selectedCat = chips[_chipIndex.clamp(0, chips.length - 1)].categoryKey;
 
-      final raw = await ApiService().getNearby(
+      // On récupère d'abord tous les lieux pour calculer les compteurs par catégorie.
+      final allRaw = await ApiService().getNearby(
         latitude: lat,
         longitude: lng,
         radiusMeters: _radiusM,
-        category: cat,
       );
+      final allPlaces = allRaw.map((e) => e as Map<String, dynamic>).toList();
+      final counts = _computeCategoryCounts(allPlaces);
+      final placesForSelection = selectedCat == null
+          ? allPlaces
+          : allPlaces
+                .where((p) => _normalizeCategory(p['category']) == selectedCat)
+                .toList();
 
       if (!mounted) return;
       setState(() {
         _userLat = lat;
         _userLng = lng;
         _locationError = null;
-        _places = raw.map((e) => e as Map<String, dynamic>).toList();
+        _categoryCounts = counts;
+        _places = placesForSelection;
         _loading = false;
       });
     } catch (e) {
@@ -136,6 +148,57 @@ class _NearbyScreenState extends State<NearbyScreen> {
     if (s == null || s.isEmpty) return null;
     final cleaned = s.replaceAll(RegExp(r'\s'), '');
     return 'tel:$cleaned';
+  }
+
+  double? _toDouble(Object? value) {
+    if (value == null) return null;
+    if (value is num) return value.toDouble();
+    if (value is String) return double.tryParse(value.trim());
+    return null;
+  }
+
+  String _normalizeCategory(Object? value) =>
+      value?.toString().trim().toLowerCase() ?? '';
+
+  Map<String, int> _computeCategoryCounts(List<Map<String, dynamic>> places) {
+    final counts = <String, int>{};
+    for (final p in places) {
+      final key = _normalizeCategory(p['category']);
+      if (key.isEmpty) continue;
+      counts[key] = (counts[key] ?? 0) + 1;
+    }
+    return counts;
+  }
+
+  int _chipCount(String? categoryKey) {
+    if (categoryKey == null) {
+      return _categoryCounts.values.fold(0, (sum, c) => sum + c);
+    }
+    return _categoryCounts[categoryKey] ?? 0;
+  }
+
+  String _friendlyLocationError(AppLocalizations l10n) {
+    final raw = _locationError?.trim();
+    if (raw == null || raw.isEmpty) return l10n.nearbyLocationError;
+
+    final msg = raw.toLowerCase();
+    if (msg.contains('services de localisation sont desactives') ||
+        msg.contains('services de localisation sont désactivés') ||
+        msg.contains('location services are disabled')) {
+      return 'La localisation du téléphone est désactivée. Activez le GPS puis réessayez.';
+    }
+    if (msg.contains('permission') ||
+        msg.contains('refuse') ||
+        msg.contains('refus') ||
+        msg.contains('denied')) {
+      return 'La permission de localisation pour Teranga Pass est refusée. Autorisez-la dans les réglages de l’app.';
+    }
+    if (msg.contains('timeout') ||
+        msg.contains('time limit') ||
+        msg.contains('timed out')) {
+      return 'Position introuvable pour le moment. Vérifiez le GPS et réessayez.';
+    }
+    return raw;
   }
 
   @override
@@ -210,19 +273,20 @@ class _NearbyScreenState extends State<NearbyScreen> {
                           return Padding(
                             padding: const EdgeInsets.only(right: 8),
                             child: ChoiceChip(
-                              label: Text(chips[i].label),
+                              label: Text('${chips[i].label} (${_chipCount(chips[i].categoryKey)})'),
                               selected: selected,
                               onSelected: (_) => _onChipSelected(i),
-                              selectedColor: Colors.white,
+                              selectedColor: const Color(0xFFE6F4EC),
                               labelStyle: GoogleFonts.poppins(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
-                                color: selected ? AppTheme.primaryGreen : Colors.white,
+                                color: const Color(0xFF1D603D),
                               ),
-                              backgroundColor: Colors.white.withValues(alpha: 0.15),
+                              backgroundColor: Colors.white.withValues(alpha: 0.95),
                               side: BorderSide(
-                                color: Colors.white.withValues(alpha: 0.35),
+                                color: Colors.white,
                               ),
+                              showCheckmark: false,
                             ),
                           );
                         }),
@@ -244,7 +308,23 @@ class _NearbyScreenState extends State<NearbyScreen> {
   }
 
   Widget _buildBody(AppLocalizations l10n) {
-    if (_locationError != null || _userLat == null || _userLng == null) {
+    if (_apiError != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(_apiError!, textAlign: TextAlign.center),
+              const SizedBox(height: 16),
+              FilledButton(onPressed: _refresh, child: Text(l10n.retry)),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (_userLat == null || _userLng == null) {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -254,7 +334,7 @@ class _NearbyScreenState extends State<NearbyScreen> {
               Icon(Icons.location_off_rounded, size: 48, color: Colors.grey[500]),
               const SizedBox(height: 12),
               Text(
-                l10n.nearbyLocationError,
+                _friendlyLocationError(l10n),
                 textAlign: TextAlign.center,
                 style: GoogleFonts.poppins(fontSize: 14, color: AppTheme.textSecondary),
               ),
@@ -272,22 +352,6 @@ class _NearbyScreenState extends State<NearbyScreen> {
                 icon: const Icon(Icons.refresh_rounded),
                 label: Text(l10n.retry),
               ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    if (_apiError != null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(_apiError!, textAlign: TextAlign.center),
-              const SizedBox(height: 16),
-              FilledButton(onPressed: _refresh, child: Text(l10n.retry)),
             ],
           ),
         ),
@@ -323,8 +387,8 @@ class _NearbyScreenState extends State<NearbyScreen> {
                         child: const Icon(Icons.person_pin_circle, color: Color(0xFF1565C0), size: 36),
                       ),
                       ..._places.map((p) {
-                        final lat = (p['latitude'] as num?)?.toDouble();
-                        final lng = (p['longitude'] as num?)?.toDouble();
+                        final lat = _toDouble(p['latitude']);
+                        final lng = _toDouble(p['longitude']);
                         if (lat == null || lng == null) return null;
                         return Marker(
                           point: LatLng(lat, lng),

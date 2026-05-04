@@ -828,7 +828,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get nearbyLocationError =>
-      'Activez la localisation pour voir les lieux à proximité.';
+      'La localisation n’est pas activée. Activez-la pour voir les lieux à proximité.';
 
   @override
   String get nearbySponsorBadge => 'Partenaire';

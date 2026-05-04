@@ -322,7 +322,7 @@
     }
   },
   "nearbyEmpty": "Aucun lieu dans ce rayon pour cette catégorie.",
-  "nearbyLocationError": "Activez la localisation pour voir les lieux à proximité.",
+  "nearbyLocationError": "La localisation n’est pas activée. Activez-la pour voir les lieux à proximité.",
   "nearbySponsorBadge": "Partenaire",
   "profileEsimTitle": "Forfaits eSIM",
   "profileEsimSubtitle": "Data voyage (bientôt)",
