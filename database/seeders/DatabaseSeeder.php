@@ -24,6 +24,7 @@ class DatabaseSeeder extends Seeder
             DirectoryAnnuaireSprint2Seeder::class,
             DirectoryAnnuaireSprint3Seeder::class,
             DirectoryAnnuaireSprint4Seeder::class,
+            DirectoryWifiProspectsDocxSeeder::class,
             DiplomaticMissionSeeder::class,
             
             // 4. Sites de compétition

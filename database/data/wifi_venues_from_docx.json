@@ -1,0 +1,1886 @@
+{
+  "source_doc": "Document – 200 Types De Boîtes, Espaces Publics Et Lieux Propices À L’implémentation D’un Wi‑fi Communautaire Ou Clientèle (3).docx",
+  "extracted_count": 188,
+  "rows": [
+    {
+      "name": "Hôtel Faidherbe",
+      "address": "Plateau, Dakar",
+      "phone": "+221338234411",
+      "subtype": "Hôtel urbain",
+      "wifi_note": "Wi‑Fi client",
+      "category": "hotel",
+      "latitude": 14.6939,
+      "longitude": -17.4441
+    },
+    {
+      "name": "Hôtel Le Djembé",
+      "address": "Yoff, Dakar",
+      "phone": "+221338205612",
+      "subtype": "Hôtel local",
+      "wifi_note": "Portail captif",
+      "category": "hotel",
+      "latitude": 14.75835,
+      "longitude": -17.47765
+    },
+    {
+      "name": "Résidence Les Mamelles",
+      "address": "Mamelles, Dakar",
+      "phone": "+221775552244",
+      "subtype": "Résidence",
+      "wifi_note": "Wi‑Fi résidentiel",
+      "category": "hotel",
+      "latitude": 14.7252,
+      "longitude": -17.4673
+    },
+    {
+      "name": "Hôtel du Plateau",
+      "address": "Dakar Plateau",
+      "phone": "+221338223455",
+      "subtype": "Business hôtel",
+      "wifi_note": "Wi‑Fi premium",
+      "category": "hotel",
+      "latitude": 14.69495,
+      "longitude": -17.44305
+    },
+    {
+      "name": "Hôtel Ngor Diarama",
+      "address": "Ngor",
+      "phone": "+221338209000",
+      "subtype": "Hôtel bord mer",
+      "wifi_note": "Marketing Wi‑Fi",
+      "category": "hotel",
+      "latitude": 14.7524,
+      "longitude": -17.5146
+    },
+    {
+      "name": "La Résidence Dakar",
+      "address": "Almadies",
+      "phone": "+221338693322",
+      "subtype": "Boutique hôtel",
+      "wifi_note": "Hotspot client",
+      "category": "hotel",
+      "latitude": 14.74375,
+      "longitude": -17.51025
+    },
+    {
+      "name": "Hôtel Al Afifa",
+      "address": "Plateau",
+      "phone": "+221338895757",
+      "subtype": "Hôtel affaires",
+      "wifi_note": "Wi‑Fi analytics",
+      "category": "hotel",
+      "latitude": 14.696,
+      "longitude": -17.442
+    },
+    {
+      "name": "Hôtel Fana",
+      "address": "Dakar",
+      "phone": "+221338239011",
+      "subtype": "Hôtel milieu de gamme",
+      "wifi_note": "Wi‑Fi visiteur",
+      "category": "hotel",
+      "latitude": 14.71915,
+      "longitude": -17.46525
+    },
+    {
+      "name": "Résidence Atlantic",
+      "address": "Almadies",
+      "phone": "+221774442323",
+      "subtype": "Résidence hôtelière",
+      "wifi_note": "Portail login",
+      "category": "hotel",
+      "latitude": 14.7448,
+      "longitude": -17.5092
+    },
+    {
+      "name": "Hôtel Savana",
+      "address": "Saly",
+      "phone": "+221339571111",
+      "subtype": "Hôtel touristique",
+      "wifi_note": "Wi‑Fi vacances",
+      "category": "hotel",
+      "latitude": 14.44915,
+      "longitude": -17.01185
+    },
+    {
+      "name": "Royam Hotel",
+      "address": "Saly",
+      "phone": "+221339571010",
+      "subtype": "Resort",
+      "wifi_note": "Wi‑Fi marketing",
+      "category": "hotel",
+      "latitude": 14.4495,
+      "longitude": -17.0115
+    },
+    {
+      "name": "Neptune Hotel",
+      "address": "Saly",
+      "phone": "+221339571212",
+      "subtype": "Hôtel plage",
+      "wifi_note": "Portail captif",
+      "category": "hotel",
+      "latitude": 14.44985,
+      "longitude": -17.01115
+    },
+    {
+      "name": "Royal Saly",
+      "address": "Saly Portudal",
+      "phone": "+221339572020",
+      "subtype": "Resort",
+      "wifi_note": "Wi‑Fi visiteurs",
+      "category": "hotel",
+      "latitude": 14.4502,
+      "longitude": -17.0108
+    },
+    {
+      "name": "Mövenpick Resort Lamantin Saly",
+      "address": "Saly",
+      "phone": "+221339574444",
+      "subtype": "Resort luxe",
+      "wifi_note": "Analytics Wi‑Fi",
+      "category": "hotel",
+      "latitude": 14.45055,
+      "longitude": -17.01045
+    },
+    {
+      "name": "Hotel Rhino Resort",
+      "address": "Saly",
+      "phone": "+221339576666",
+      "subtype": "Hôtel",
+      "wifi_note": "Wi‑Fi premium",
+      "category": "hotel",
+      "latitude": 14.4509,
+      "longitude": -17.0101
+    },
+    {
+      "name": "Hotel Blue Africa",
+      "address": "Saly",
+      "phone": "+221339570000",
+      "subtype": "Hôtel",
+      "wifi_note": "Hotspot sponsorisé",
+      "category": "hotel",
+      "latitude": 14.45125,
+      "longitude": -17.00975
+    },
+    {
+      "name": "Hotel Safari Village",
+      "address": "Saly",
+      "phone": "+221339575555",
+      "subtype": "Village vacances",
+      "wifi_note": "Wi‑Fi fidélisation",
+      "category": "hotel",
+      "latitude": 14.4516,
+      "longitude": -17.0094
+    },
+    {
+      "name": "Hotel Les Flamboyants",
+      "address": "Saly",
+      "phone": "+221339573333",
+      "subtype": "Hôtel touristique",
+      "wifi_note": "Captive portal",
+      "category": "hotel",
+      "latitude": 14.446,
+      "longitude": -17.015
+    },
+    {
+      "name": "Hotel Royam Lodge",
+      "address": "Saly",
+      "phone": "+221339579999",
+      "subtype": "Lodge",
+      "wifi_note": "Wi‑Fi client",
+      "category": "hotel",
+      "latitude": 14.44635,
+      "longitude": -17.01465
+    },
+    {
+      "name": "Hôtel Keur Saloum",
+      "address": "Toubacouta",
+      "phone": "+221339484848",
+      "subtype": "Lodge",
+      "wifi_note": "Wi‑Fi tourisme",
+      "category": "hotel",
+      "latitude": 13.8337,
+      "longitude": -16.2323
+    },
+    {
+      "name": "Les Cordons Bleus",
+      "address": "Ndangane",
+      "phone": "+221339481010",
+      "subtype": "Hébergement",
+      "wifi_note": "Wi‑Fi visiteurs",
+      "category": "hotel",
+      "latitude": 14.13405,
+      "longitude": -16.33195
+    },
+    {
+      "name": "Campement Nianing",
+      "address": "Nianing",
+      "phone": "+221773214567",
+      "subtype": "Campement",
+      "wifi_note": "Wi‑Fi local",
+      "category": "hotel",
+      "latitude": 14.3344,
+      "longitude": -16.9816
+    },
+    {
+      "name": "Hôtel Les Palétuviers",
+      "address": "Sine Saloum",
+      "phone": "+221339487777",
+      "subtype": "Lodge",
+      "wifi_note": "Portail captif",
+      "category": "hotel",
+      "latitude": 14.15175,
+      "longitude": -16.34825
+    },
+    {
+      "name": "Les Manguiers de Guéréo",
+      "address": "Guéréo",
+      "phone": "+221339579090",
+      "subtype": "Lodge",
+      "wifi_note": "Wi‑Fi premium",
+      "category": "hotel",
+      "latitude": 14.5521,
+      "longitude": -17.0479
+    },
+    {
+      "name": "Lodge du Delta",
+      "address": "Saloum",
+      "phone": "+221774458754",
+      "subtype": "Hôtel nature",
+      "wifi_note": "Analytics visiteurs",
+      "category": "hotel",
+      "latitude": 14.15245,
+      "longitude": -16.34755
+    },
+    {
+      "name": "Hôtel Le Calao",
+      "address": "Dakar",
+      "phone": "+221338202222",
+      "subtype": "Hôtel local",
+      "wifi_note": "Wi‑Fi client",
+      "category": "hotel",
+      "latitude": 14.7195,
+      "longitude": -17.4649
+    },
+    {
+      "name": "Residence Hotelière Fleurie",
+      "address": "Dakar",
+      "phone": "+221771110099",
+      "subtype": "Résidence",
+      "wifi_note": "Portail captif",
+      "category": "hotel",
+      "latitude": 14.71985,
+      "longitude": -17.46455
+    },
+    {
+      "name": "Dakar Résidence",
+      "address": "Sacré‑Cœur",
+      "phone": "+221338670000",
+      "subtype": "Résidence",
+      "wifi_note": "Wi‑Fi visiteurs",
+      "category": "hotel",
+      "latitude": 14.7075,
+      "longitude": -17.4525
+    },
+    {
+      "name": "Hôtel Al Baraka",
+      "address": "Dakar",
+      "phone": "+221338239999",
+      "subtype": "Hôtel",
+      "wifi_note": "Wi‑Fi marketing",
+      "category": "hotel",
+      "latitude": 14.72055,
+      "longitude": -17.46385
+    },
+    {
+      "name": "Hôtel La Détente",
+      "address": "Ouakam",
+      "phone": "+221338208080",
+      "subtype": "Hôtel",
+      "wifi_note": "Hotspot social",
+      "category": "hotel",
+      "latitude": 14.7287,
+      "longitude": -17.4878
+    },
+    {
+      "name": "Résidence du Plateau",
+      "address": "Plateau",
+      "phone": "+221338227676",
+      "subtype": "Résidence",
+      "wifi_note": "Wi‑Fi premium",
+      "category": "hotel",
+      "latitude": 14.69845,
+      "longitude": -17.43955
+    },
+    {
+      "name": "Hôtel Keur Marrakis",
+      "address": "Saly",
+      "phone": "+221339577777",
+      "subtype": "Hôtel",
+      "wifi_note": "Portail marketing",
+      "category": "hotel",
+      "latitude": 14.4509,
+      "longitude": -17.0101
+    },
+    {
+      "name": "Hôtel Le Warang",
+      "address": "Warang",
+      "phone": "+221775457700",
+      "subtype": "Hôtel plage",
+      "wifi_note": "Wi‑Fi client",
+      "category": "hotel",
+      "latitude": 14.42195,
+      "longitude": -16.96145
+    },
+    {
+      "name": "Hôtel Les Cristaux Roses",
+      "address": "Toubab Dialaw",
+      "phone": "+221338362828",
+      "subtype": "Hôtel artistique",
+      "wifi_note": "Wi‑Fi visiteurs",
+      "category": "hotel",
+      "latitude": 14.5223,
+      "longitude": -17.0111
+    },
+    {
+      "name": "Hotel Chez Salim",
+      "address": "Toubab Dialaw",
+      "phone": "+221775551919",
+      "subtype": "Auberge",
+      "wifi_note": "Hotspot",
+      "category": "hotel",
+      "latitude": 14.5167,
+      "longitude": -17.0167
+    },
+    {
+      "name": "Hôtel Cap Ouest",
+      "address": "Dakar",
+      "phone": "+221338206060",
+      "subtype": "Hôtel",
+      "wifi_note": "Captive portal",
+      "category": "hotel",
+      "latitude": 14.71705,
+      "longitude": -17.46735
+    },
+    {
+      "name": "Résidence Marina Bay",
+      "address": "Almadies",
+      "phone": "+221774446677",
+      "subtype": "Résidence",
+      "wifi_note": "Wi‑Fi business",
+      "category": "hotel",
+      "latitude": 14.7427,
+      "longitude": -17.5113
+    },
+    {
+      "name": "Hôtel Le Virage",
+      "address": "Yoff",
+      "phone": "+221338204444",
+      "subtype": "Hôtel",
+      "wifi_note": "Wi‑Fi invité",
+      "category": "hotel",
+      "latitude": 14.75905,
+      "longitude": -17.47695
+    },
+    {
+      "name": "Hôtel Océanic",
+      "address": "Dakar",
+      "phone": "+221338214590",
+      "subtype": "Hôtel",
+      "wifi_note": "Portail visiteurs",
+      "category": "hotel",
+      "latitude": 14.7181,
+      "longitude": -17.4663
+    },
+    {
+      "name": "Hôtel Le Littoral",
+      "address": "Dakar",
+      "phone": "+221338253211",
+      "subtype": "Hôtel",
+      "wifi_note": "Wi‑Fi premium",
+      "category": "hotel",
+      "latitude": 14.71845,
+      "longitude": -17.46595
+    },
+    {
+      "name": "Hôtel de la Corniche",
+      "address": "Fann",
+      "phone": "+221338206688",
+      "subtype": "Hôtel",
+      "wifi_note": "Wi‑Fi client",
+      "category": "hotel",
+      "latitude": 14.6921,
+      "longitude": -17.4529
+    },
+    {
+      "name": "Hôtel Prestige",
+      "address": "Dakar",
+      "phone": "+221338247700",
+      "subtype": "Hôtel",
+      "wifi_note": "Analytics",
+      "category": "hotel",
+      "latitude": 14.71915,
+      "longitude": -17.46525
+    },
+    {
+      "name": "Résidence Sunugal",
+      "address": "Dakar",
+      "phone": "+221776674488",
+      "subtype": "Résidence",
+      "wifi_note": "Wi‑Fi partagé",
+      "category": "hotel",
+      "latitude": 14.7195,
+      "longitude": -17.4649
+    },
+    {
+      "name": "Hôtel Relax",
+      "address": "Dakar",
+      "phone": "+221338219990",
+      "subtype": "Hôtel",
+      "wifi_note": "Captive portal",
+      "category": "hotel",
+      "latitude": 14.71985,
+      "longitude": -17.46455
+    },
+    {
+      "name": "Hôtel Atlantic Palm",
+      "address": "Saly",
+      "phone": "+221339578888",
+      "subtype": "Hôtel",
+      "wifi_note": "Wi‑Fi vacances",
+      "category": "hotel",
+      "latitude": 14.4495,
+      "longitude": -17.0115
+    },
+    {
+      "name": "Hôtel Hacienda",
+      "address": "Saly",
+      "phone": "+221339577070",
+      "subtype": "Hôtel",
+      "wifi_note": "Wi‑Fi client",
+      "category": "hotel",
+      "latitude": 14.44985,
+      "longitude": -17.01115
+    },
+    {
+      "name": "Hôtel Les Bougainvillées",
+      "address": "Somone",
+      "phone": "+221339572525",
+      "subtype": "Hôtel",
+      "wifi_note": "Marketing Wi‑Fi",
+      "category": "hotel",
+      "latitude": 14.5042,
+      "longitude": -17.0758
+    },
+    {
+      "name": "Hôtel Africa Queen",
+      "address": "Somone",
+      "phone": "+221339570202",
+      "subtype": "Hôtel",
+      "wifi_note": "Portail captif",
+      "category": "hotel",
+      "latitude": 14.50455,
+      "longitude": -17.07545
+    },
+    {
+      "name": "Auberge Keur Elias",
+      "address": "Saly",
+      "phone": "+221773315555",
+      "subtype": "Auberge",
+      "wifi_note": "Wi‑Fi local",
+      "category": "hotel",
+      "latitude": 14.4509,
+      "longitude": -17.0101
+    },
+    {
+      "name": "Résidence les Calanques",
+      "address": "Ngaparou",
+      "phone": "+221778992244",
+      "subtype": "Résidence",
+      "wifi_note": "Wi‑Fi premium",
+      "category": "hotel",
+      "latitude": 14.48525,
+      "longitude": -17.01475
+    },
+    {
+      "name": "Hôtel Résidence Khadija",
+      "address": "Dakar",
+      "phone": "+221778889090",
+      "subtype": "Résidence",
+      "wifi_note": "Wi‑Fi visiteur",
+      "category": "hotel",
+      "latitude": 14.7223,
+      "longitude": -17.4621
+    },
+    {
+      "name": "Hôtel Le Phare des Mamelles",
+      "address": "Mamelles",
+      "phone": "+221338600000",
+      "subtype": "Hôtel",
+      "wifi_note": "Portail Wi‑Fi",
+      "category": "hotel",
+      "latitude": 14.7245,
+      "longitude": -17.468
+    },
+    {
+      "name": "Hôtel Le Ganalé",
+      "address": "Dakar",
+      "phone": "+221338254411",
+      "subtype": "Hôtel",
+      "wifi_note": "Wi‑Fi social login",
+      "category": "hotel",
+      "latitude": 14.71705,
+      "longitude": -17.46735
+    },
+    {
+      "name": "Hôtel Keur Niane",
+      "address": "Dakar",
+      "phone": "+221338201313",
+      "subtype": "Hôtel",
+      "wifi_note": "Wi‑Fi analytics",
+      "category": "hotel",
+      "latitude": 14.7174,
+      "longitude": -17.467
+    },
+    {
+      "name": "Hôtel Ocean Bay",
+      "address": "Dakar",
+      "phone": "+221338222121",
+      "subtype": "Hôtel",
+      "wifi_note": "Captive portal",
+      "category": "hotel",
+      "latitude": 14.71775,
+      "longitude": -17.46665
+    },
+    {
+      "name": "Résidence Keur Diame",
+      "address": "Dakar",
+      "phone": "+221779899911",
+      "subtype": "Résidence",
+      "wifi_note": "Wi‑Fi résidentiel",
+      "category": "hotel",
+      "latitude": 14.7181,
+      "longitude": -17.4663
+    },
+    {
+      "name": "Hôtel Les Ambassades",
+      "address": "Plateau",
+      "phone": "+221338216677",
+      "subtype": "Hôtel",
+      "wifi_note": "Wi‑Fi premium",
+      "category": "hotel",
+      "latitude": 14.69565,
+      "longitude": -17.44235
+    },
+    {
+      "name": "Hôtel Golden Sea",
+      "address": "Dakar",
+      "phone": "+221338205252",
+      "subtype": "Hôtel",
+      "wifi_note": "Portail client",
+      "category": "hotel",
+      "latitude": 14.7188,
+      "longitude": -17.4656
+    },
+    {
+      "name": "Hôtel Palm Beach",
+      "address": "Saly",
+      "phone": "+221339573030",
+      "subtype": "Hôtel",
+      "wifi_note": "Wi‑Fi tourisme",
+      "category": "hotel",
+      "latitude": 14.44845,
+      "longitude": -17.01255
+    },
+    {
+      "name": "Hôtel Palm Village",
+      "address": "Saly",
+      "phone": "+221339574242",
+      "subtype": "Résidence",
+      "wifi_note": "Hotspot sponsorisé",
+      "category": "hotel",
+      "latitude": 14.4488,
+      "longitude": -17.0122
+    },
+    {
+      "name": "Hôtel Les Arcades",
+      "address": "Dakar",
+      "phone": "+221338211919",
+      "subtype": "Hôtel",
+      "wifi_note": "Wi‑Fi visiteurs",
+      "category": "hotel",
+      "latitude": 14.71985,
+      "longitude": -17.46455
+    },
+    {
+      "name": "Hôtel Dakar Horizon",
+      "address": "Dakar",
+      "phone": "+221778125678",
+      "subtype": "Hôtel",
+      "wifi_note": "Wi‑Fi client",
+      "category": "hotel",
+      "latitude": 14.7202,
+      "longitude": -17.4642
+    },
+    {
+      "name": "Hôtel Baobab Soleil",
+      "address": "Somone",
+      "phone": "+221339578822",
+      "subtype": "Hôtel",
+      "wifi_note": "Captive portal",
+      "category": "hotel",
+      "latitude": 14.50385,
+      "longitude": -17.07615
+    },
+    {
+      "name": "Hôtel Villa Sorano",
+      "address": "Dakar",
+      "phone": "+221338233000",
+      "subtype": "Hôtel",
+      "wifi_note": "Wi‑Fi analytics",
+      "category": "hotel",
+      "latitude": 14.7209,
+      "longitude": -17.4635
+    },
+    {
+      "name": "Hôtel La Maison Rouge",
+      "address": "Dakar",
+      "phone": "+221338228866",
+      "subtype": "Hôtel",
+      "wifi_note": "Portail premium",
+      "category": "hotel",
+      "latitude": 14.72125,
+      "longitude": -17.46315
+    },
+    {
+      "name": "Hôtel Teranga House",
+      "address": "Dakar",
+      "phone": "+221775540022",
+      "subtype": "Maison d’hôtes",
+      "wifi_note": "Wi‑Fi client",
+      "category": "hotel",
+      "latitude": 14.7216,
+      "longitude": -17.4628
+    },
+    {
+      "name": "Hôtel Paradise Lodge",
+      "address": "Popenguine",
+      "phone": "+221776401122",
+      "subtype": "Lodge",
+      "wifi_note": "Wi‑Fi visiteurs",
+      "category": "hotel",
+      "latitude": 14.52195,
+      "longitude": -17.01145
+    },
+    {
+      "name": "Hôtel Keur Sokhna",
+      "address": "Dakar",
+      "phone": "+221338257575",
+      "subtype": "Hôtel",
+      "wifi_note": "Wi‑Fi invité",
+      "category": "hotel",
+      "latitude": 14.7223,
+      "longitude": -17.4621
+    },
+    {
+      "name": "Hôtel Grand Bleu",
+      "address": "Saly",
+      "phone": "+221339571414",
+      "subtype": "Hôtel",
+      "wifi_note": "Marketing Wi‑Fi",
+      "category": "hotel",
+      "latitude": 14.446,
+      "longitude": -17.015
+    },
+    {
+      "name": "Résidence Alizés",
+      "address": "Dakar",
+      "phone": "+221777655533",
+      "subtype": "Résidence",
+      "wifi_note": "Wi‑Fi partagé",
+      "category": "hotel",
+      "latitude": 14.71705,
+      "longitude": -17.46735
+    },
+    {
+      "name": "Hôtel Palmier",
+      "address": "Mbour",
+      "phone": "+221339571515",
+      "subtype": "Hôtel",
+      "wifi_note": "Wi‑Fi touristes",
+      "category": "hotel",
+      "latitude": 14.4174,
+      "longitude": -16.966
+    },
+    {
+      "name": "Hôtel Horizon Bleu",
+      "address": "Ngaparou",
+      "phone": "+221776009090",
+      "subtype": "Hôtel",
+      "wifi_note": "Wi‑Fi analytics",
+      "category": "hotel",
+      "latitude": 14.48105,
+      "longitude": -17.01895
+    },
+    {
+      "name": "Hôtel Les Cocotiers",
+      "address": "Dakar",
+      "phone": "+221338217171",
+      "subtype": "Hôtel",
+      "wifi_note": "Portail social",
+      "category": "hotel",
+      "latitude": 14.7181,
+      "longitude": -17.4663
+    },
+    {
+      "name": "Hôtel Sama Hotels",
+      "address": "Dakar",
+      "phone": "+221338602020",
+      "subtype": "Hôtel",
+      "wifi_note": "Hotspot client",
+      "category": "hotel",
+      "latitude": 14.71845,
+      "longitude": -17.46595
+    },
+    {
+      "name": "Hôtel Belle Vue",
+      "address": "Dakar",
+      "phone": "+221338227373",
+      "subtype": "Hôtel",
+      "wifi_note": "Wi‑Fi premium",
+      "category": "hotel",
+      "latitude": 14.7188,
+      "longitude": -17.4656
+    },
+    {
+      "name": "Résidence Liberté",
+      "address": "Liberté 6",
+      "phone": "+221773442121",
+      "subtype": "Résidence",
+      "wifi_note": "Wi‑Fi résidentiel",
+      "category": "hotel",
+      "latitude": 14.71445,
+      "longitude": -17.45555
+    },
+    {
+      "name": "Hôtel Blue Horizon",
+      "address": "Saly",
+      "phone": "+221339579191",
+      "subtype": "Hôtel",
+      "wifi_note": "Wi‑Fi visiteurs",
+      "category": "hotel",
+      "latitude": 14.4488,
+      "longitude": -17.0122
+    },
+    {
+      "name": "Hôtel Le Repos",
+      "address": "Dakar",
+      "phone": "+221338211010",
+      "subtype": "Hôtel",
+      "wifi_note": "Portail captif",
+      "category": "hotel",
+      "latitude": 14.71985,
+      "longitude": -17.46455
+    },
+    {
+      "name": "Hôtel Atlantic View",
+      "address": "Dakar",
+      "phone": "+221338202020",
+      "subtype": "Hôtel",
+      "wifi_note": "Wi‑Fi client",
+      "category": "hotel",
+      "latitude": 14.7202,
+      "longitude": -17.4642
+    },
+    {
+      "name": "Hôtel Résidence Diamniadio",
+      "address": "Diamniadio",
+      "phone": "+221779031111",
+      "subtype": "Résidence",
+      "wifi_note": "Wi‑Fi business",
+      "category": "hotel",
+      "latitude": 14.72385,
+      "longitude": -17.17915
+    },
+    {
+      "name": "Le Bazoff Restaurant",
+      "address": "Fann Résidence",
+      "phone": "+221338697676",
+      "subtype": "Restaurant",
+      "wifi_note": "Wi‑Fi clientèle",
+      "category": "restaurant",
+      "latitude": 14.6942,
+      "longitude": -17.4508
+    },
+    {
+      "name": "Le Lodge Restaurant",
+      "address": "Almadies",
+      "phone": "+221338201414",
+      "subtype": "Restaurant",
+      "wifi_note": "Portail captif",
+      "category": "restaurant",
+      "latitude": 14.74655,
+      "longitude": -17.50745
+    },
+    {
+      "name": "La Fourchette",
+      "address": "Dakar",
+      "phone": "+221338222255",
+      "subtype": "Restaurant",
+      "wifi_note": "Wi‑Fi marketing",
+      "category": "restaurant",
+      "latitude": 14.7216,
+      "longitude": -17.4628
+    },
+    {
+      "name": "Chez Loutcha",
+      "address": "Plateau",
+      "phone": "+221338211012",
+      "subtype": "Restaurant",
+      "wifi_note": "Wi‑Fi visiteurs",
+      "category": "restaurant",
+      "latitude": 14.69915,
+      "longitude": -17.43885
+    },
+    {
+      "name": "Chez Katia",
+      "address": "Dakar",
+      "phone": "+221338210510",
+      "subtype": "Restaurant",
+      "wifi_note": "Captive portal",
+      "category": "restaurant",
+      "latitude": 14.7223,
+      "longitude": -17.4621
+    },
+    {
+      "name": "Restaurant Farid",
+      "address": "Plateau",
+      "phone": "+221338234040",
+      "subtype": "Restaurant",
+      "wifi_note": "Wi‑Fi client",
+      "category": "restaurant",
+      "latitude": 14.6939,
+      "longitude": -17.4441
+    },
+    {
+      "name": "Le Jardin Thaïlandais",
+      "address": "Almadies",
+      "phone": "+221338204567",
+      "subtype": "Restaurant",
+      "wifi_note": "Wi‑Fi premium",
+      "category": "restaurant",
+      "latitude": 14.74235,
+      "longitude": -17.51165
+    },
+    {
+      "name": "Le Ngor Pieds dans l’Eau",
+      "address": "Ngor",
+      "phone": "+221338200303",
+      "subtype": "Restaurant plage",
+      "wifi_note": "Wi‑Fi touristes",
+      "category": "restaurant",
+      "latitude": 14.7517,
+      "longitude": -17.5153
+    },
+    {
+      "name": "Chez Fatou",
+      "address": "Dakar",
+      "phone": "+221338215656",
+      "subtype": "Restaurant",
+      "wifi_note": "Portail marketing",
+      "category": "restaurant",
+      "latitude": 14.71775,
+      "longitude": -17.46665
+    },
+    {
+      "name": "Le Patio",
+      "address": "Almadies",
+      "phone": "+221338601111",
+      "subtype": "Restaurant",
+      "wifi_note": "Hotspot social",
+      "category": "restaurant",
+      "latitude": 14.7434,
+      "longitude": -17.5106
+    },
+    {
+      "name": "La Parrilla",
+      "address": "Almadies",
+      "phone": "+221338607777",
+      "subtype": "Grill",
+      "wifi_note": "Captive portal",
+      "category": "restaurant",
+      "latitude": 14.74375,
+      "longitude": -17.51025
+    },
+    {
+      "name": "Le Ryad",
+      "address": "Dakar",
+      "phone": "+221338225050",
+      "subtype": "Restaurant",
+      "wifi_note": "Wi‑Fi analytics",
+      "category": "restaurant",
+      "latitude": 14.7188,
+      "longitude": -17.4656
+    },
+    {
+      "name": "La Calebasse",
+      "address": "Dakar",
+      "phone": "+221338211100",
+      "subtype": "Restaurant",
+      "wifi_note": "Portail Wi‑Fi",
+      "category": "restaurant",
+      "latitude": 14.71915,
+      "longitude": -17.46525
+    },
+    {
+      "name": "Restaurant Le Dionevar",
+      "address": "Dakar",
+      "phone": "+221338219901",
+      "subtype": "Restaurant",
+      "wifi_note": "Wi‑Fi visiteurs",
+      "category": "restaurant",
+      "latitude": 14.7195,
+      "longitude": -17.4649
+    },
+    {
+      "name": "Le Coste Grill",
+      "address": "Dakar",
+      "phone": "+221779007777",
+      "subtype": "Grill",
+      "wifi_note": "Wi‑Fi client",
+      "category": "restaurant",
+      "latitude": 14.71985,
+      "longitude": -17.46455
+    },
+    {
+      "name": "Restaurant Chez Thio",
+      "address": "Dakar",
+      "phone": "+221774008888",
+      "subtype": "Restaurant",
+      "wifi_note": "Wi‑Fi local",
+      "category": "restaurant",
+      "latitude": 14.7202,
+      "longitude": -17.4642
+    },
+    {
+      "name": "Le Bayékou",
+      "address": "Dakar",
+      "phone": "+221338213131",
+      "subtype": "Restaurant",
+      "wifi_note": "Wi‑Fi analytics",
+      "category": "restaurant",
+      "latitude": 14.72055,
+      "longitude": -17.46385
+    },
+    {
+      "name": "La Cabane du Pêcheur",
+      "address": "Ngor",
+      "phone": "+221338200909",
+      "subtype": "Restaurant plage",
+      "wifi_note": "Wi‑Fi touristes",
+      "category": "restaurant",
+      "latitude": 14.7552,
+      "longitude": -17.5118
+    },
+    {
+      "name": "Le Phare des Mamelles Café",
+      "address": "Mamelles",
+      "phone": "+221338600101",
+      "subtype": "Café",
+      "wifi_note": "Wi‑Fi marketing",
+      "category": "restaurant",
+      "latitude": 14.72905,
+      "longitude": -17.46345
+    },
+    {
+      "name": "Le Bideew Rooftop",
+      "address": "Dakar",
+      "phone": "+221777006677",
+      "subtype": "Rooftop",
+      "wifi_note": "Wi‑Fi premium",
+      "category": "restaurant",
+      "latitude": 14.7216,
+      "longitude": -17.4628
+    },
+    {
+      "name": "La Brioche Dorée Dakar",
+      "address": "Dakar",
+      "phone": "+221338259090",
+      "subtype": "Café",
+      "wifi_note": "Wi‑Fi visiteurs",
+      "category": "restaurant",
+      "latitude": 14.72195,
+      "longitude": -17.46245
+    },
+    {
+      "name": "La Pause Gourmande",
+      "address": "Dakar",
+      "phone": "+221776542121",
+      "subtype": "Café",
+      "wifi_note": "Wi‑Fi marketing",
+      "category": "restaurant",
+      "latitude": 14.7223,
+      "longitude": -17.4621
+    },
+    {
+      "name": "Restaurant Le Palmier",
+      "address": "Dakar",
+      "phone": "+221338221414",
+      "subtype": "Restaurant",
+      "wifi_note": "Wi‑Fi client",
+      "category": "restaurant",
+      "latitude": 14.7167,
+      "longitude": -17.4677
+    },
+    {
+      "name": "Restaurant Horizon",
+      "address": "Dakar",
+      "phone": "+221778995555",
+      "subtype": "Restaurant",
+      "wifi_note": "Wi‑Fi visiteurs",
+      "category": "restaurant",
+      "latitude": 14.71705,
+      "longitude": -17.46735
+    },
+    {
+      "name": "Restaurant Marina",
+      "address": "Dakar",
+      "phone": "+221338202828",
+      "subtype": "Restaurant",
+      "wifi_note": "Portail captif",
+      "category": "restaurant",
+      "latitude": 14.7174,
+      "longitude": -17.467
+    },
+    {
+      "name": "Le Jardin Secret",
+      "address": "Dakar",
+      "phone": "+221773112121",
+      "subtype": "Restaurant",
+      "wifi_note": "Wi‑Fi premium",
+      "category": "restaurant",
+      "latitude": 14.71775,
+      "longitude": -17.46665
+    },
+    {
+      "name": "Le Gourmet Dakar",
+      "address": "Dakar",
+      "phone": "+221338221919",
+      "subtype": "Restaurant",
+      "wifi_note": "Wi‑Fi visiteursL’Esca",
+      "category": "restaurant",
+      "latitude": 14.7181,
+      "longitude": -17.4663
+    },
+    {
+      "name": "le Gourmande",
+      "address": "Dakar",
+      "phone": "+221776201010",
+      "subtype": "Restaurant",
+      "wifi_note": "Hotspot sponsorisé",
+      "category": "restaurant",
+      "latitude": 14.71845,
+      "longitude": -17.46595
+    },
+    {
+      "name": "Le Gourmet Express",
+      "address": "Dakar",
+      "phone": "+221773008888",
+      "subtype": "Snack",
+      "wifi_note": "Wi‑Fi client",
+      "category": "restaurant",
+      "latitude": 14.7188,
+      "longitude": -17.4656
+    },
+    {
+      "name": "Le Rendez‑Vous",
+      "address": "Dakar",
+      "phone": "+221778099000",
+      "subtype": "Restaurant",
+      "wifi_note": "Wi‑Fi visiteurs",
+      "category": "restaurant",
+      "latitude": 14.71915,
+      "longitude": -17.46525
+    },
+    {
+      "name": "Le Patio Café",
+      "address": "Dakar",
+      "phone": "+221778785454",
+      "subtype": "Café",
+      "wifi_note": "Portail captif",
+      "category": "restaurant",
+      "latitude": 14.7195,
+      "longitude": -17.4649
+    },
+    {
+      "name": "Le Sunset Bar",
+      "address": "Almadies",
+      "phone": "+221773459090",
+      "subtype": "Lounge",
+      "wifi_note": "Wi‑Fi social login",
+      "category": "restaurant",
+      "latitude": 14.74515,
+      "longitude": -17.50885
+    },
+    {
+      "name": "Restaurant Prestige",
+      "address": "Dakar",
+      "phone": "+221776548989",
+      "subtype": "Restaurant",
+      "wifi_note": "Portail marketing",
+      "category": "restaurant",
+      "latitude": 14.7202,
+      "longitude": -17.4642
+    },
+    {
+      "name": "Le Rooftop 221",
+      "address": "Dakar",
+      "phone": "+221772001122",
+      "subtype": "Rooftop",
+      "wifi_note": "Wi‑Fi analytics",
+      "category": "restaurant",
+      "latitude": 14.72055,
+      "longitude": -17.46385
+    },
+    {
+      "name": "Restaurant Le Baobab",
+      "address": "Dakar",
+      "phone": "+221338222727",
+      "subtype": "Restaurant",
+      "wifi_note": "Wi‑Fi client",
+      "category": "restaurant",
+      "latitude": 14.7209,
+      "longitude": -17.4635
+    },
+    {
+      "name": "La Table Sénégalaise",
+      "address": "Dakar",
+      "phone": "+221777332121",
+      "subtype": "Restaurant",
+      "wifi_note": "Wi‑Fi visiteurs",
+      "category": "restaurant",
+      "latitude": 14.72125,
+      "longitude": -17.46315
+    },
+    {
+      "name": "Le Garden Lounge",
+      "address": "Dakar",
+      "phone": "+221778229090",
+      "subtype": "Lounge",
+      "wifi_note": "Wi‑Fi premium",
+      "category": "restaurant",
+      "latitude": 14.7216,
+      "longitude": -17.4628
+    },
+    {
+      "name": "Restaurant Corniche",
+      "address": "Dakar",
+      "phone": "+221338217070",
+      "subtype": "Restaurant",
+      "wifi_note": "Wi‑Fi touristes",
+      "category": "restaurant",
+      "latitude": 14.72195,
+      "longitude": -17.46245
+    },
+    {
+      "name": "Le Délice Café",
+      "address": "Dakar",
+      "phone": "+221776442020",
+      "subtype": "Café",
+      "wifi_note": "Captive portal",
+      "category": "restaurant",
+      "latitude": 14.7223,
+      "longitude": -17.4621
+    },
+    {
+      "name": "Restaurant La Terrasse",
+      "address": "Dakar",
+      "phone": "+221772335544",
+      "subtype": "Restaurant",
+      "wifi_note": "Wi‑Fi premium",
+      "category": "restaurant",
+      "latitude": 14.7167,
+      "longitude": -17.4677
+    },
+    {
+      "name": "Le Comptoir Dakar",
+      "address": "Dakar",
+      "phone": "+221771114545",
+      "subtype": "Restaurant",
+      "wifi_note": "Wi‑Fi client",
+      "category": "restaurant",
+      "latitude": 14.71705,
+      "longitude": -17.46735
+    },
+    {
+      "name": "Restaurant Océan Bleu",
+      "address": "Dakar",
+      "phone": "+221777017777",
+      "subtype": "Restaurant",
+      "wifi_note": "Wi‑Fi visiteurs",
+      "category": "restaurant",
+      "latitude": 14.7174,
+      "longitude": -17.467
+    },
+    {
+      "name": "Le Coin Café",
+      "address": "Dakar",
+      "phone": "+221776037777",
+      "subtype": "Café",
+      "wifi_note": "Wi‑Fi social",
+      "category": "restaurant",
+      "latitude": 14.71775,
+      "longitude": -17.46665
+    },
+    {
+      "name": "Restaurant Prestige Plus",
+      "address": "Dakar",
+      "phone": "+221778119090",
+      "subtype": "Restaurant",
+      "wifi_note": "Wi‑Fi premium",
+      "category": "restaurant",
+      "latitude": 14.7181,
+      "longitude": -17.4663
+    },
+    {
+      "name": "Restaurant Teranga Plus",
+      "address": "Dakar",
+      "phone": "+221779215566",
+      "subtype": "Restaurant",
+      "wifi_note": "Captive portal",
+      "category": "restaurant",
+      "latitude": 14.71845,
+      "longitude": -17.46595
+    },
+    {
+      "name": "le Sénégal",
+      "address": "Almadies",
+      "phone": "+221777771212",
+      "subtype": "High‑tech",
+      "wifi_note": "Wi‑Fi premium",
+      "category": "restaurant",
+      "latitude": 14.7441,
+      "longitude": -17.5099
+    },
+    {
+      "name": "le Shop",
+      "address": "Dakar",
+      "phone": "+221777667777",
+      "subtype": "Téléphonie",
+      "wifi_note": "Portail captif",
+      "category": "restaurant",
+      "latitude": 14.71915,
+      "longitude": -17.46525
+    },
+    {
+      "name": "le Plus",
+      "address": "Dakar",
+      "phone": "+221777225555",
+      "subtype": "Dentaire",
+      "wifi_note": "Portail patient",
+      "category": "restaurant",
+      "latitude": 14.7195,
+      "longitude": -17.4649
+    },
+    {
+      "name": "le Yavuz Selim",
+      "address": "Dakar",
+      "phone": "+221338691010",
+      "subtype": "Éducation",
+      "wifi_note": "Wi‑Fi campus",
+      "category": "restaurant",
+      "latitude": 14.71985,
+      "longitude": -17.46455
+    },
+    {
+      "name": "le Dakar",
+      "address": "Dakar",
+      "phone": "+221338243030",
+      "subtype": "Formation",
+      "wifi_note": "Wi‑Fi premium",
+      "category": "restaurant",
+      "latitude": 14.7202,
+      "longitude": -17.4642
+    },
+    {
+      "name": "le Sénégal",
+      "address": "Dakar",
+      "phone": "+221777226666",
+      "subtype": "Tech",
+      "wifi_note": "Wi‑Fi marketing",
+      "category": "restaurant",
+      "latitude": 14.72055,
+      "longitude": -17.46385
+    },
+    {
+      "name": "le Dakar",
+      "address": "Dakar",
+      "phone": "+221338214545",
+      "subtype": "Bibliothèque",
+      "wifi_note": "Hotspot public",
+      "category": "restaurant",
+      "latitude": 14.7209,
+      "longitude": -17.4635
+    },
+    {
+      "name": "le Informatique Dakar",
+      "address": "Dakar",
+      "phone": "+221776332222",
+      "subtype": "IT",
+      "wifi_note": "Wi‑Fi visiteurs",
+      "category": "restaurant",
+      "latitude": 14.72125,
+      "longitude": -17.46315
+    },
+    {
+      "name": "le Excellence Sénégal",
+      "address": "Dakar",
+      "phone": "+221771223344",
+      "subtype": "Enseignement",
+      "wifi_note": "Wi‑Fi campus",
+      "category": "restaurant",
+      "latitude": 14.7216,
+      "longitude": -17.4628
+    },
+    {
+      "name": "le Privée Horizon",
+      "address": "Dakar",
+      "phone": "+221774222020",
+      "subtype": "École",
+      "wifi_note": "Wi‑Fi campus",
+      "category": "restaurant",
+      "latitude": 14.72195,
+      "longitude": -17.46245
+    },
+    {
+      "name": "le Digitale Dakar",
+      "address": "Dakar",
+      "phone": "+221774332020",
+      "subtype": "IT",
+      "wifi_note": "Wi‑Fi premium",
+      "category": "restaurant",
+      "latitude": 14.7223,
+      "longitude": -17.4621
+    },
+    {
+      "name": "le Supérieure Numérique",
+      "address": "Dakar",
+      "phone": "+221778332020",
+      "subtype": "Numérique",
+      "wifi_note": "Wi‑Fi marketing",
+      "category": "restaurant",
+      "latitude": 14.7167,
+      "longitude": -17.4677
+    },
+    {
+      "name": "Le Vogue Club",
+      "address": "Dakar",
+      "phone": "+221773115555",
+      "subtype": "Boîte de nuit",
+      "wifi_note": "Wi‑Fi analyticsCerc",
+      "category": "restaurant",
+      "latitude": 14.71705,
+      "longitude": -17.46735
+    },
+    {
+      "name": "le de Concert Dakar Arena",
+      "address": "Diamniadio",
+      "phone": "+221338797979",
+      "subtype": "Arena",
+      "wifi_note": "Wi‑Fi événementiel",
+      "category": "restaurant",
+      "latitude": 14.7207,
+      "longitude": -17.1823
+    },
+    {
+      "name": "le Expo Dakar",
+      "address": "Dakar",
+      "phone": "+221778119000",
+      "subtype": "Exposition",
+      "wifi_note": "Wi‑Fi visiteurs",
+      "category": "restaurant",
+      "latitude": 14.71775,
+      "longitude": -17.46665
+    },
+    {
+      "name": "le Multi‑Events Dakar",
+      "address": "Dakar",
+      "phone": "+221776229090",
+      "subtype": "Événementiel",
+      "wifi_note": "Wi‑Fi analytics",
+      "category": "restaurant",
+      "latitude": 14.7181,
+      "longitude": -17.4663
+    },
+    {
+      "name": "le Expo Prestige",
+      "address": "Dakar",
+      "phone": "+221778112020",
+      "subtype": "Expo",
+      "wifi_note": "Wi‑Fi visiteurs",
+      "category": "restaurant",
+      "latitude": 14.71845,
+      "longitude": -17.46595
+    },
+    {
+      "name": "le Service",
+      "address": "Dakar",
+      "phone": "+221778226600",
+      "subtype": "Navette",
+      "wifi_note": "Wi‑Fi voyageurs",
+      "category": "restaurant",
+      "latitude": 14.7188,
+      "longitude": -17.4656
+    },
+    {
+      "name": "le Hub",
+      "address": "Dakar",
+      "phone": "+221776119090",
+      "subtype": "Auto",
+      "wifi_note": "Wi‑Fi visiteurs",
+      "category": "restaurant",
+      "latitude": 14.71915,
+      "longitude": -17.46525
+    },
+    {
+      "name": "le Services",
+      "address": "Dakar",
+      "phone": "+221775003355",
+      "subtype": "Transport",
+      "wifi_note": "Wi‑Fi visiteurs",
+      "category": "restaurant",
+      "latitude": 14.7195,
+      "longitude": -17.4649
+    },
+    {
+      "name": "le attentePoste de Police Plateau",
+      "address": "Dakar",
+      "phone": "+221338214455",
+      "subtype": "Police",
+      "wifi_note": "Wi‑Fi visiteurs",
+      "category": "restaurant",
+      "latitude": 14.71985,
+      "longitude": -17.46455
+    },
+    {
+      "name": "le Plateau",
+      "address": "Dakar",
+      "phone": "+221338214545",
+      "subtype": "Bibliothèque",
+      "wifi_note": "Wi‑Fi public",
+      "category": "restaurant",
+      "latitude": 14.7202,
+      "longitude": -17.4642
+    },
+    {
+      "name": "le Dakar",
+      "address": "Dakar",
+      "phone": "+221779118080",
+      "subtype": "Culture",
+      "wifi_note": "Wi‑Fi visiteurs",
+      "category": "restaurant",
+      "latitude": 14.72055,
+      "longitude": -17.46385
+    },
+    {
+      "name": "le Dakar",
+      "address": "Dakar",
+      "phone": "+221776008080",
+      "subtype": "Social",
+      "wifi_note": "Wi‑Fi public",
+      "category": "restaurant",
+      "latitude": 14.7209,
+      "longitude": -17.4635
+    },
+    {
+      "name": "le Dakar",
+      "address": "Dakar",
+      "phone": "+221776888080",
+      "subtype": "Administration",
+      "wifi_note": "Wi‑Fi premium",
+      "category": "restaurant",
+      "latitude": 14.72125,
+      "longitude": -17.46315
+    },
+    {
+      "name": "le Dakar",
+      "address": "Dakar",
+      "phone": "+221776887070",
+      "subtype": "Place",
+      "wifi_note": "Wi‑Fi premium",
+      "category": "restaurant",
+      "latitude": 14.7216,
+      "longitude": -17.4628
+    },
+    {
+      "name": "le Musculation Dakar",
+      "address": "Dakar",
+      "phone": "+221776882020",
+      "subtype": "Gym",
+      "wifi_note": "Wi‑Fi client",
+      "category": "restaurant",
+      "latitude": 14.72195,
+      "longitude": -17.46245
+    },
+    {
+      "name": "le Club",
+      "address": "Dakar",
+      "phone": "+221773221100",
+      "subtype": "Paddle",
+      "wifi_note": "Wi‑Fi visiteurs",
+      "category": "restaurant",
+      "latitude": 14.7223,
+      "longitude": -17.4621
+    },
+    {
+      "name": "le Sport Prestige",
+      "address": "Dakar",
+      "phone": "+221777111100",
+      "subtype": "Sport",
+      "wifi_note": "Wi‑Fi visiteurs",
+      "category": "restaurant",
+      "latitude": 14.7167,
+      "longitude": -17.4677
+    },
+    {
+      "name": "le Sport Liberté",
+      "address": "Dakar",
+      "phone": "+221772991100",
+      "subtype": "Gym",
+      "wifi_note": "Portail captif",
+      "category": "restaurant",
+      "latitude": 14.71705,
+      "longitude": -17.46735
+    },
+    {
+      "name": "le Dakar",
+      "address": "Dakar",
+      "phone": "+221338211122",
+      "subtype": "Comptabilité",
+      "wifi_note": "Wi‑Fi client",
+      "category": "restaurant",
+      "latitude": 14.7174,
+      "longitude": -17.467
+    },
+    {
+      "name": "le Sénégal",
+      "address": "Dakar",
+      "phone": "+221772881011",
+      "subtype": "Digital",
+      "wifi_note": "Wi‑Fi premium",
+      "category": "restaurant",
+      "latitude": 14.71775,
+      "longitude": -17.46665
+    },
+    {
+      "name": "Royal Saly Hotel",
+      "address": "Saly Portudal",
+      "phone": "+221339572020",
+      "subtype": "Hôtel balnéaire",
+      "wifi_note": "Wi‑Fi premium",
+      "category": "hotel",
+      "latitude": 14.4474,
+      "longitude": -17.0136
+    },
+    {
+      "name": "Mövenpick Resort Lamantin Beach",
+      "address": "Saly",
+      "phone": "+221339574040",
+      "subtype": "Resort",
+      "wifi_note": "Wi‑Fi client",
+      "category": "hotel",
+      "latitude": 14.44775,
+      "longitude": -17.01325
+    },
+    {
+      "name": "Hôtel Neptune Saly",
+      "address": "Saly",
+      "phone": "+221339575050",
+      "subtype": "Tourisme",
+      "wifi_note": "Wi‑Fi visiteurs",
+      "category": "hotel",
+      "latitude": 14.4481,
+      "longitude": -17.0129
+    },
+    {
+      "name": "Les Manguiers de Guéréo",
+      "address": "Guéréo",
+      "phone": "+221339577070",
+      "subtype": "Lodge",
+      "wifi_note": "Wi‑Fi visiteurs",
+      "category": "hotel",
+      "latitude": 14.55245,
+      "longitude": -17.04755
+    },
+    {
+      "name": "Hôtel Royam Saly",
+      "address": "Saly",
+      "phone": "+221339578080",
+      "subtype": "Resort",
+      "wifi_note": "Wi‑Fi marketing",
+      "category": "hotel",
+      "latitude": 14.4488,
+      "longitude": -17.0122
+    },
+    {
+      "name": "Hotel Club Royal Saly",
+      "address": "Saly",
+      "phone": "+221339579090",
+      "subtype": "Club hôtelier",
+      "wifi_note": "Wi‑Fi premium",
+      "category": "hotel",
+      "latitude": 14.44915,
+      "longitude": -17.01185
+    },
+    {
+      "name": "Les Cordons Bleus Lodge",
+      "address": "Ndangane",
+      "phone": "+221339482020",
+      "subtype": "Lodge",
+      "wifi_note": "Wi‑Fi visiteurs",
+      "category": "hotel",
+      "latitude": 14.1365,
+      "longitude": -16.3295
+    },
+    {
+      "name": "Campement Nianing",
+      "address": "Nianing",
+      "phone": "+221778114400",
+      "subtype": "Campement",
+      "wifi_note": "Wi‑Fi touristes",
+      "category": "hotel",
+      "latitude": 14.33685,
+      "longitude": -16.97915
+    },
+    {
+      "name": "Résidence Marina Saly",
+      "address": "Saly",
+      "phone": "+221777224400",
+      "subtype": "Résidence",
+      "wifi_note": "Wi‑Fi visiteurs",
+      "category": "hotel",
+      "latitude": 14.4502,
+      "longitude": -17.0108
+    },
+    {
+      "name": "Résidence Safari Village",
+      "address": "Saly",
+      "phone": "+221776334400",
+      "subtype": "Tourisme",
+      "wifi_note": "Portail captif",
+      "category": "hotel",
+      "latitude": 14.45055,
+      "longitude": -17.01045
+    },
+    {
+      "name": "Hôtel Cap Skirring Resort",
+      "address": "Cap Skirring",
+      "phone": "+221339931010",
+      "subtype": "Resort",
+      "wifi_note": "Wi‑Fi premium",
+      "category": "hotel",
+      "latitude": 14.7216,
+      "longitude": -17.4628
+    },
+    {
+      "name": "Campement Le Fromager",
+      "address": "Casamance",
+      "phone": "+221339932020",
+      "subtype": "Lodge",
+      "wifi_note": "Wi‑Fi visiteurs",
+      "category": "hotel",
+      "latitude": 14.72195,
+      "longitude": -17.46245
+    },
+    {
+      "name": "Hôtel Hibiscus Cap Skirring",
+      "address": "Cap Skirring",
+      "phone": "+221339933030",
+      "subtype": "Hôtel",
+      "wifi_note": "Wi‑Fi marketing",
+      "category": "hotel",
+      "latitude": 14.7223,
+      "longitude": -17.4621
+    },
+    {
+      "name": "Résidence Le Calao",
+      "address": "Somone",
+      "phone": "+221775224400",
+      "subtype": "Résidence",
+      "wifi_note": "Wi‑Fi client",
+      "category": "hotel",
+      "latitude": 14.5,
+      "longitude": -17.08
+    },
+    {
+      "name": "Hôtel Les Filaos",
+      "address": "Saly",
+      "phone": "+221339573333",
+      "subtype": "Hôtel",
+      "wifi_note": "Wi‑Fi premium",
+      "category": "hotel",
+      "latitude": 14.44635,
+      "longitude": -17.01465
+    },
+    {
+      "name": "Résidence Les Cristaux",
+      "address": "Saly",
+      "phone": "+221777114400",
+      "subtype": "Résidence",
+      "wifi_note": "Wi‑Fi visiteurs",
+      "category": "hotel",
+      "latitude": 14.4467,
+      "longitude": -17.0143
+    },
+    {
+      "name": "Hotel Les Bougainvillées",
+      "address": "Saly",
+      "phone": "+221339574444",
+      "subtype": "Tourisme",
+      "wifi_note": "Portail captif",
+      "category": "hotel",
+      "latitude": 14.44705,
+      "longitude": -17.01395
+    },
+    {
+      "name": "Lodge du Delta",
+      "address": "Foundiougne",
+      "phone": "+221339484040",
+      "subtype": "Lodge",
+      "wifi_note": "Wi‑Fi touristes",
+      "category": "hotel",
+      "latitude": 14.7181,
+      "longitude": -17.4663
+    },
+    {
+      "name": "Hôtel Le Warang",
+      "address": "Warang",
+      "phone": "+221339575555",
+      "subtype": "Hôtel",
+      "wifi_note": "Wi‑Fi premium",
+      "category": "hotel",
+      "latitude": 14.41845,
+      "longitude": -16.96495
+    },
+    {
+      "name": "Résidence Keur Palmier",
+      "address": "Saly",
+      "phone": "+221778224400",
+      "subtype": "Résidence",
+      "wifi_note": "Wi‑Fi visiteurs",
+      "category": "hotel",
+      "latitude": 14.4481,
+      "longitude": -17.0129
+    },
+    {
+      "name": "Hotel Le Sine Saloum",
+      "address": "Fatick",
+      "phone": "+221339485050",
+      "subtype": "Tourisme",
+      "wifi_note": "Wi‑Fi marketing",
+      "category": "hotel",
+      "latitude": 14.71915,
+      "longitude": -17.46525
+    },
+    {
+      "name": "Campement Océan & Savane",
+      "address": "Palmarin",
+      "phone": "+221339486060",
+      "subtype": "Lodge",
+      "wifi_note": "Wi‑Fi premium",
+      "category": "hotel",
+      "latitude": 14.7195,
+      "longitude": -17.4649
+    },
+    {
+      "name": "Résidence Atlantique",
+      "address": "Ngaparou",
+      "phone": "+221779334400",
+      "subtype": "Résidence",
+      "wifi_note": "Wi‑Fi visiteurs",
+      "category": "hotel",
+      "latitude": 14.48315,
+      "longitude": -17.01685
+    },
+    {
+      "name": "Résidence Paradise Saly",
+      "address": "Saly",
+      "phone": "+221776444400",
+      "subtype": "Résidence",
+      "wifi_note": "Wi‑Fi client",
+      "category": "hotel",
+      "latitude": 14.4495,
+      "longitude": -17.0115
+    },
+    {
+      "name": "Campement Le Calao",
+      "address": "Joal",
+      "phone": "+221339488080",
+      "subtype": "Campement",
+      "wifi_note": "Wi‑Fi visiteurs",
+      "category": "hotel",
+      "latitude": 14.72055,
+      "longitude": -17.46385
+    },
+    {
+      "name": "Hôtel La Madrague",
+      "address": "Ngor",
+      "phone": "+221338201111",
+      "subtype": "Tourisme",
+      "wifi_note": "Wi‑Fi premium",
+      "category": "hotel",
+      "latitude": 14.7552,
+      "longitude": -17.5118
+    },
+    {
+      "name": "Résidence Océan Bleu",
+      "address": "Somone",
+      "phone": "+221777554400",
+      "subtype": "Résidence",
+      "wifi_note": "Wi‑Fi visiteurs",
+      "category": "hotel",
+      "latitude": 14.50455,
+      "longitude": -17.07545
+    },
+    {
+      "name": "Hôtel Les Palétuviers",
+      "address": "Toubacouta",
+      "phone": "+221339489090",
+      "subtype": "Lodge",
+      "wifi_note": "Wi‑Fi premium",
+      "category": "hotel",
+      "latitude": 13.8379,
+      "longitude": -16.2281
+    },
+    {
+      "name": "Hôtel Le Djoloff",
+      "address": "Dakar",
+      "phone": "+221338697676",
+      "subtype": "Tourisme",
+      "wifi_note": "Wi‑Fi visiteurs",
+      "category": "hotel",
+      "latitude": 14.72195,
+      "longitude": -17.46245
+    },
+    {
+      "name": "Résidence Les Baobabs",
+      "address": "Saly",
+      "phone": "+221772884400",
+      "subtype": "Résidence",
+      "wifi_note": "Wi‑Fi premium",
+      "category": "hotel",
+      "latitude": 14.4516,
+      "longitude": -17.0094
+    },
+    {
+      "name": "Campement Villageois Sénégal",
+      "address": "Casamance",
+      "phone": "+221775004400",
+      "subtype": "Écotourisme",
+      "wifi_note": "Wi‑Fi public",
+      "category": "hotel",
+      "latitude": 14.7167,
+      "longitude": -17.4677
+    }
+  ]
+}
