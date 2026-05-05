@@ -118,6 +118,24 @@
                     @endif
 
                     <div class="mb-3">
+                        <strong>Horaires d'ouverture:</strong>
+                        <p>{{ $tourism->opening_hours ?: 'Non renseignés' }}</p>
+                    </div>
+
+                    <div class="mb-3">
+                        <strong>Ouverture actuelle:</strong>
+                        <p>
+                            @if($tourism->is_open_now === true)
+                                <span class="badge bg-success">Ouvert</span>
+                            @elseif($tourism->is_open_now === false)
+                                <span class="badge bg-danger">Fermé</span>
+                            @else
+                                <span class="badge bg-label-secondary">Non renseigné</span>
+                            @endif
+                        </p>
+                    </div>
+
+                    <div class="mb-3">
                         <strong>Statut:</strong>
                         <p>
                             @if($tourism->is_active)

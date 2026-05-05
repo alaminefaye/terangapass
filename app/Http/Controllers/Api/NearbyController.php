@@ -35,9 +35,9 @@ class NearbyController extends Controller
             )
             ->whereRaw(
                 '(6371000 * acos(least(1, greatest(-1, '
-                . 'cos(radians(?)) * cos(radians(latitude)) * cos(radians(longitude) - radians(?)) '
-                . '+ sin(radians(?)) * sin(radians(latitude))'
-                . ')))) <= ?',
+                .'cos(radians(?)) * cos(radians(latitude)) * cos(radians(longitude) - radians(?)) '
+                .'+ sin(radians(?)) * sin(radians(latitude))'
+                .')))) <= ?',
                 [$lat, $lng, $lat, $radius]
             );
 
@@ -71,6 +71,10 @@ class NearbyController extends Controller
                 'description' => $partner->description,
                 'email' => $partner->email,
                 'website' => $partner->website,
+                'rating' => $partner->rating,
+                'opening_hours' => $partner->opening_hours,
+                'is_open_now' => $partner->is_open_now,
+                'opening_status' => $partner->opening_status_label,
                 'latitude' => $partner->latitude,
                 'longitude' => $partner->longitude,
                 'icon_url' => $iconUrl,
@@ -116,10 +120,10 @@ class NearbyController extends Controller
     private function formatDistance(float $distanceMeters): string
     {
         if ($distanceMeters < 1000) {
-            return round($distanceMeters) . ' m';
+            return round($distanceMeters).' m';
         }
 
-        return round($distanceMeters / 1000, 1) . ' km';
+        return round($distanceMeters / 1000, 1).' km';
     }
 
     private function getCategoryLabel(string $category): string
@@ -174,7 +178,7 @@ class NearbyController extends Controller
             return ($useHttps || request()->isSecure()) ? secure_url($value) : url($value);
         }
 
-        $value = '/' . ltrim($value, '/');
+        $value = '/'.ltrim($value, '/');
 
         return ($useHttps || request()->isSecure()) ? secure_url($value) : url($value);
     }

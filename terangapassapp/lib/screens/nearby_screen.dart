@@ -438,6 +438,8 @@ class _PlaceCard extends StatelessWidget {
     final category = (place['category'] ?? '').toString();
     final distance = (place['distance'] ?? '').toString();
     final address = (place['address'] ?? '').toString();
+    final openingHours = (place['opening_hours'] ?? '').toString().trim();
+    final isOpenNow = place['is_open_now'] as bool?;
     final sponsor = place['is_sponsor'] == true;
     final phoneUri = phoneUriBuilder(place['phone']);
 
@@ -498,6 +500,33 @@ class _PlaceCard extends StatelessWidget {
               if (address.isNotEmpty) ...[
                 const SizedBox(height: 6),
                 Text(address, style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.textPrimary)),
+              ],
+              if (openingHours.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.schedule_rounded,
+                      size: 14,
+                      color: isOpenNow == true
+                          ? Colors.green[700]
+                          : (isOpenNow == false ? Colors.red[700] : AppTheme.textSecondary),
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        '${isOpenNow == true ? "Ouvert" : (isOpenNow == false ? "Fermé" : "Horaires")} · $openingHours',
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          color: isOpenNow == true
+                              ? Colors.green[700]
+                              : (isOpenNow == false ? Colors.red[700] : AppTheme.textSecondary),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ],
           ),

@@ -69,6 +69,8 @@
                         <th>Médias</th>
                         <th>Adresse</th>
                         <th>Téléphone</th>
+                        <th>Horaires</th>
+                        <th>Ouverture</th>
                         <th>Statut</th>
                         <th>Actions</th>
                     </tr>
@@ -137,6 +139,16 @@
                         </td>
                         <td><small>{{ Str::limit($point->address, 40) }}</small></td>
                         <td>{{ $point->phone ?? '-' }}</td>
+                        <td><small>{{ $point->opening_hours ?: '-' }}</small></td>
+                        <td>
+                            @if($point->is_open_now === true)
+                                <span class="badge bg-success">Ouvert</span>
+                            @elseif($point->is_open_now === false)
+                                <span class="badge bg-danger">Fermé</span>
+                            @else
+                                <span class="badge bg-label-secondary">Non renseigné</span>
+                            @endif
+                        </td>
                         <td>
                             @if($point->is_active)
                             <span class="badge bg-success">Actif</span>
@@ -169,7 +181,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="8" class="text-center py-4">Aucun point d'intérêt trouvé</td>
+                        <td colspan="10" class="text-center py-4">Aucun point d'intérêt trouvé</td>
                     </tr>
                     @endforelse
                 </tbody>
