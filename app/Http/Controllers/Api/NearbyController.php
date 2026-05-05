@@ -25,14 +25,16 @@ class NearbyController extends Controller
         $lng = (float) $validated['longitude'];
         $radius = (int) ($validated['radius'] ?? 2000);
 
-        $query = Partner::query()
+        $baseQuery = Partner::query()
             ->where('is_active', true)
             ->whereNotNull('latitude')
             ->whereNotNull('longitude')
             ->when(
                 ! empty($validated['category'] ?? null),
                 fn ($q) => $q->where('category', $validated['category'])
-            )
+            );
+
+        $query = (clone $baseQuery)
             ->whereRaw(
                 '(6371000 * acos(least(1, greatest(-1, '
                 .'cos(radians(?)) * cos(radians(latitude)) * cos(radians(longitude) - radians(?)) '
@@ -42,6 +44,13 @@ class NearbyController extends Controller
             );
 
         $partners = $query->get();
+        $fallbackUsed = false;
+        if ($partners->isEmpty()) {
+            // Fallback UX: si aucun résultat dans le rayon demandé,
+            // on retourne les plus proches hors rayon pour éviter un écran vide.
+            $partners = (clone $baseQuery)->limit(120)->get();
+            $fallbackUsed = true;
+        }
 
         $points = $partners->map(function (Partner $partner) use ($lat, $lng) {
             $distanceMeters = $this->calculateDistanceMeters(
@@ -100,6 +109,7 @@ class NearbyController extends Controller
                 'latitude' => $lat,
                 'longitude' => $lng,
                 'category' => $validated['category'] ?? null,
+                'fallback_out_of_radius' => $fallbackUsed,
             ],
         ]);
     }
