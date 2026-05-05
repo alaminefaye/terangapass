@@ -36,6 +36,12 @@
 		<string>Cette application a besoin d'accéder au micro pour enregistrer un message vocal lors d'un signalement.</string>
 		<key>NSPhotoLibraryUsageDescription</key>
 		<string>Cette application a besoin d'accéder à vos photos pour joindre des images à un signalement.</string>
+		<key>FirebaseAppDelegateProxyEnabled</key>
+		<true/>
+		<key>UIBackgroundModes</key>
+		<array>
+			<string>remote-notification</string>
+		</array>
 		<key>UIApplicationSceneManifest</key>
 		<dict>
 			<key>UIApplicationSupportsMultipleScenes</key>

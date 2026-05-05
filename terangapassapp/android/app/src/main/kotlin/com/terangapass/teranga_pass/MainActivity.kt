@@ -1,4 +1,4 @@
-package com.terangapass.teranga_pass
+package com.terangapass.app
 
 import io.flutter.embedding.android.FlutterActivity
 

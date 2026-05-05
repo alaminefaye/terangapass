@@ -112,11 +112,18 @@ class _NearbyScreenState extends State<NearbyScreen> {
         radiusMeters: _radiusM,
       );
       final allPlaces = allRaw.map((e) => e as Map<String, dynamic>).toList();
-      final counts = _computeCategoryCounts(allPlaces);
+      final inRadiusPlaces = allPlaces.where((p) {
+        final d = _distanceMetersForPlace(p);
+        return d != null && d <= _radiusM;
+      }).toList();
+      final counts = _computeCategoryCounts(inRadiusPlaces);
       final placesForSelection = selectedCat == null
-          ? allPlaces
-          : allPlaces
-                .where((p) => _normalizeCategory(p['category']) == selectedCat)
+          ? inRadiusPlaces
+          : inRadiusPlaces
+                .where((p) {
+                  final key = _normalizeCategory(p['category_key'] ?? p['category']);
+                  return key == selectedCat;
+                })
                 .toList();
 
       if (!mounted) return;
@@ -157,13 +164,17 @@ class _NearbyScreenState extends State<NearbyScreen> {
     return null;
   }
 
+  double? _distanceMetersForPlace(Map<String, dynamic> place) {
+    return _toDouble(place['distance_meters']);
+  }
+
   String _normalizeCategory(Object? value) =>
       value?.toString().trim().toLowerCase() ?? '';
 
   Map<String, int> _computeCategoryCounts(List<Map<String, dynamic>> places) {
     final counts = <String, int>{};
     for (final p in places) {
-      final key = _normalizeCategory(p['category']);
+      final key = _normalizeCategory(p['category_key'] ?? p['category']);
       if (key.isEmpty) continue;
       counts[key] = (counts[key] ?? 0) + 1;
     }

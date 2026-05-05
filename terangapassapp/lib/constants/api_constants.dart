@@ -19,8 +19,7 @@ class ApiConstants {
   static const String _physicalDeviceUrl = 'http://192.168.1.100:8000/api/v1';
 
   // URL de production
-  static const String _productionUrl =
-      'https://terangapass.universaltechnologiesafrica.com/api/v1';
+  static const String _productionUrl = 'https://terangapass.com/api/v1';
 
   // Mode de configuration
   // Options: 'dev', 'android_emulator', 'physical_device', 'production'

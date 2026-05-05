@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:io';
 import 'dart:math' as math;
 import 'constants/app_constants.dart';
 import 'l10n/app_localizations.dart';
@@ -12,9 +15,14 @@ import 'screens/auth/login_screen.dart';
 import 'screens/auth/register_screen.dart';
 import 'screens/notifications_screen.dart';
 import 'screens/sos_screen.dart';
+import 'services/api_service.dart';
 import 'services/notification_service.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp();
+}
 
 Future<void> main() async {
   final stopwatch = Stopwatch()..start();
@@ -29,6 +37,10 @@ Future<void> main() async {
   if (language.isNotEmpty) {
     AppConstants.localeNotifier.value = Locale(language);
   }
+
+  await Firebase.initializeApp();
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
   await NotificationService().initialize(navigatorKey: navigatorKey);
   runApp(const TerangaPassApp());
 
@@ -123,11 +135,35 @@ class _AuthWrapperState extends State<AuthWrapper> {
   /// NOTE: Implémenter quand Firebase Messaging sera configuré
   /// Pour l'instant, cette méthode est vide car Firebase n'est pas encore configuré
   Future<void> _registerDeviceToken() async {
-    // Cette méthode sera implémentée quand Firebase Messaging sera configuré
-    // pour envoyer les push notifications aux utilisateurs
-    debugPrint(
-      'Device token registration: À implémenter avec Firebase Messaging',
-    );
+    try {
+      final messaging = FirebaseMessaging.instance;
+      await messaging.requestPermission(alert: true, badge: true, sound: true);
+
+      final token = await messaging.getToken();
+      if (token != null && token.isNotEmpty) {
+        await ApiService().registerDeviceToken(
+          token: token,
+          platform: _platformName(),
+        );
+      }
+
+      FirebaseMessaging.instance.onTokenRefresh.listen((newToken) async {
+        if (newToken.isNotEmpty) {
+          await ApiService().registerDeviceToken(
+            token: newToken,
+            platform: _platformName(),
+          );
+        }
+      });
+    } catch (e) {
+      debugPrint('Device token registration error: $e');
+    }
+  }
+
+  String _platformName() {
+    if (Platform.isAndroid) return 'android';
+    if (Platform.isIOS) return 'ios';
+    return 'unknown';
   }
 
   @override
@@ -144,10 +180,7 @@ class _GlobalSosOverlay extends StatefulWidget {
   final Widget child;
   final GlobalKey<NavigatorState> navigatorKey;
 
-  const _GlobalSosOverlay({
-    required this.child,
-    required this.navigatorKey,
-  });
+  const _GlobalSosOverlay({required this.child, required this.navigatorKey});
 
   @override
   State<_GlobalSosOverlay> createState() => _GlobalSosOverlayState();
@@ -181,9 +214,9 @@ class _GlobalSosOverlayState extends State<_GlobalSosOverlay>
   void _openSos() {
     final context = widget.navigatorKey.currentContext;
     if (context == null) return;
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const SOSScreen()),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const SOSScreen()));
   }
 
   @override
@@ -233,7 +266,8 @@ class _GlobalSosOverlayState extends State<_GlobalSosOverlay>
                   animation: _pulseController,
                   builder: (context, _) {
                     final t = _pulseController.value;
-                    double waveOpacity(double phase) => (1 - phase).clamp(0, 1) * 0.34;
+                    double waveOpacity(double phase) =>
+                        (1 - phase).clamp(0, 1) * 0.34;
                     double waveScale(double phase) => 1.0 + (phase * 0.85);
                     final phase1 = t;
                     final phase2 = (t + 0.5) % 1.0;
@@ -248,7 +282,9 @@ class _GlobalSosOverlayState extends State<_GlobalSosOverlay>
                             height: btnSize,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: const Color(0xFFC73E1D).withValues(alpha: waveOpacity(phase1)),
+                              color: const Color(
+                                0xFFC73E1D,
+                              ).withValues(alpha: waveOpacity(phase1)),
                             ),
                           ),
                         ),
@@ -259,7 +295,9 @@ class _GlobalSosOverlayState extends State<_GlobalSosOverlay>
                             height: btnSize,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: const Color(0xFFC73E1D).withValues(alpha: waveOpacity(phase2)),
+                              color: const Color(
+                                0xFFC73E1D,
+                              ).withValues(alpha: waveOpacity(phase2)),
                             ),
                           ),
                         ),
@@ -267,12 +305,16 @@ class _GlobalSosOverlayState extends State<_GlobalSosOverlay>
                           width: btnSize,
                           height: btnSize,
                           decoration: BoxDecoration(
-                            color: const Color(0xFFC73E1D).withValues(alpha: blink),
+                            color: const Color(
+                              0xFFC73E1D,
+                            ).withValues(alpha: blink),
                             shape: BoxShape.circle,
                             border: Border.all(color: Colors.white, width: 3),
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFFC73E1D).withValues(alpha: 0.42),
+                                color: const Color(
+                                  0xFFC73E1D,
+                                ).withValues(alpha: 0.42),
                                 blurRadius: 14,
                                 offset: const Offset(0, 5),
                               ),

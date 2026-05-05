@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "315153992279",
+    "project_id": "terangapass-74033",
+    "storage_bucket": "terangapass-74033.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:315153992279:android:7ba0d33e9a80dcaa39f112",
+        "android_client_info": {
+          "package_name": "com.terangapass.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDvSZgmPEotH3-wmW2CVjFN1AZ4wIHuvPI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

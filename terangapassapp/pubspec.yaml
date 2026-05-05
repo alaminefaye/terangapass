@@ -64,6 +64,8 @@ dependencies:
   
   # Notifications
   flutter_local_notifications: ^17.0.0
+  firebase_core: ^3.15.1
+  firebase_messaging: ^15.1.6
   
   # Audio
   audioplayers: ^6.1.0

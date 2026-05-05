@@ -37,6 +37,7 @@ return [
 
     'fcm' => [
         'server_key' => env('FCM_SERVER_KEY'),
+        'service_account_path' => env('FIREBASE_SERVICE_ACCOUNT_PATH'),
     ],
 
     'anthropic' => [
