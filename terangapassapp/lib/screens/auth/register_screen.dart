@@ -17,6 +17,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
+  final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   bool _isLoading = false;
@@ -27,6 +28,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   void dispose() {
     _nameController.dispose();
     _emailController.dispose();
+    _phoneController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
@@ -44,19 +46,30 @@ class _RegisterScreenState extends State<RegisterScreen> {
       final apiService = ApiService();
       final name = _nameController.text.trim();
       final email = _emailController.text.trim();
+      final phone = _phoneController.text.trim();
       final password = _passwordController.text;
 
-      await apiService.register(name, email, password);
+      await apiService.register(name, email, password, phone: phone);
 
       final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('user_name', name);
+      await prefs.setString('user_email', email);
+      await prefs.setString('user_phone', phone);
       var token = prefs.getString('auth_token');
       if (token == null || token.isEmpty) {
-        await apiService.login(email, password);
-        token = prefs.getString('auth_token');
+        try {
+          await apiService.login(email, password);
+          token = prefs.getString('auth_token');
+        } catch (_) {}
       }
 
-      if (token == null || token.isEmpty) {
-        throw Exception(l10n.loginUnknownError);
+      if (phone.isNotEmpty) {
+        try {
+          await apiService.updateUserProfile({
+            'phone': phone,
+            'telephone': phone,
+          });
+        } catch (_) {}
       }
 
       if (mounted) {
@@ -79,10 +92,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              errorMessage,
-              style: GoogleFonts.poppins(),
-            ),
+            content: Text(errorMessage, style: GoogleFonts.poppins()),
             backgroundColor: AppTheme.primaryRed,
             duration: const Duration(seconds: 5),
           ),
@@ -123,9 +133,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           decoration: BoxDecoration(
             color: const Color(0xFFF9FAFB),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: const Color(0xFFE5E7EB),
-            ),
+            border: Border.all(color: const Color(0xFFE5E7EB)),
           ),
           child: TextFormField(
             controller: controller,
@@ -353,6 +361,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               }
                               if (!value.contains('@')) {
                                 return l10n.loginEmailInvalid;
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 14),
+                          _labeledTextField(
+                            label: l10n.profilePhoneLabel,
+                            hintText: 'Ex: 77 123 45 67',
+                            icon: Icons.phone_outlined,
+                            controller: _phoneController,
+                            keyboardType: TextInputType.phone,
+                            validator: (value) {
+                              final v = (value ?? '').trim();
+                              if (v.isEmpty) {
+                                return '${l10n.profilePhoneLabel} requis';
+                              }
+                              if (v.replaceAll(RegExp(r'\\D'), '').length < 7) {
+                                return 'Numéro invalide';
                               }
                               return null;
                             },

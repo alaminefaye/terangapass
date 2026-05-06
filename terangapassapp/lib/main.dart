@@ -112,7 +112,10 @@ class _AuthWrapperState extends State<AuthWrapper> {
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('auth_token');
-      final isAuthenticated = token != null && token.isNotEmpty;
+      final cookie = prefs.getString('auth_cookie');
+      final isAuthenticated =
+          (token != null && token.isNotEmpty) ||
+          (cookie != null && cookie.isNotEmpty);
 
       setState(() {
         _isAuthenticated = isAuthenticated;

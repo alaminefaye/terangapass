@@ -8,6 +8,7 @@ class ApiService {
   static final ApiService _instance = ApiService._internal();
   factory ApiService() => _instance;
   static const bool _enableVerboseDebugLogs = false;
+  static const String _cookiePrefsKey = 'auth_cookie';
 
   // Utilise ApiConstants pour la configuration centralisée
   static String get baseUrl => ApiConstants.baseUrl;
@@ -21,6 +22,7 @@ class ApiService {
   static String get _effectiveBaseUrl => _customBaseUrl ?? ApiConstants.baseUrl;
 
   late Dio _dio;
+  String? _cookieHeader;
 
   void _debugLog(Object? message) {
     assert(() {
@@ -54,6 +56,93 @@ class ApiService {
       }
     }
     throw Exception('Réponse serveur invalide');
+  }
+
+  Future<void> _loadCookie() async {
+    final prefs = await SharedPreferences.getInstance();
+    final value = prefs.getString(_cookiePrefsKey);
+    _cookieHeader = (value == null || value.trim().isEmpty)
+        ? null
+        : value.trim();
+  }
+
+  Future<void> _saveCookie(String cookieHeader) async {
+    final trimmed = cookieHeader.trim();
+    if (trimmed.isEmpty) return;
+    _cookieHeader = trimmed;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_cookiePrefsKey, trimmed);
+  }
+
+  Future<void> _clearCookie() async {
+    _cookieHeader = null;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_cookiePrefsKey);
+  }
+
+  String? _extractCookieHeaderFromResponse(Headers headers) {
+    final setCookies = headers.map['set-cookie'];
+    if (setCookies == null || setCookies.isEmpty) return null;
+
+    final map = <String, String>{};
+
+    if (_cookieHeader != null && _cookieHeader!.isNotEmpty) {
+      for (final part in _cookieHeader!.split(';')) {
+        final p = part.trim();
+        if (p.isEmpty) continue;
+        final idx = p.indexOf('=');
+        if (idx <= 0) continue;
+        map[p.substring(0, idx).trim()] = p.substring(idx + 1).trim();
+      }
+    }
+
+    for (final raw in setCookies) {
+      final first = raw.split(';').first.trim();
+      final idx = first.indexOf('=');
+      if (idx <= 0) continue;
+      map[first.substring(0, idx).trim()] = first.substring(idx + 1).trim();
+    }
+
+    if (map.isEmpty) return null;
+    return map.entries.map((e) => '${e.key}=${e.value}').join('; ');
+  }
+
+  String? _extractTokenFromHeaders(Headers headers) {
+    final auth =
+        headers.value('authorization') ?? headers.value('Authorization');
+    if (auth != null && auth.trim().isNotEmpty) {
+      final parts = auth.trim().split(' ');
+      if (parts.length == 2 && parts.first.toLowerCase() == 'bearer') {
+        return parts[1].trim().isEmpty ? null : parts[1].trim();
+      }
+      return auth.trim();
+    }
+
+    final xAuthToken =
+        headers.value('x-auth-token') ?? headers.value('X-Auth-Token');
+    if (xAuthToken != null && xAuthToken.trim().isNotEmpty) {
+      return xAuthToken.trim();
+    }
+
+    return null;
+  }
+
+  String? _extractTokenFromBody(Map<String, dynamic> body) {
+    final direct = body['token'] ?? body['access_token'];
+    if (direct is String && direct.trim().isNotEmpty) {
+      return direct.trim();
+    }
+
+    final data = body['data'];
+    if (data is Map) {
+      final m = Map<String, dynamic>.from(data);
+      final nested = m['token'] ?? m['access_token'];
+      if (nested is String && nested.trim().isNotEmpty) {
+        return nested.trim();
+      }
+    }
+
+    return null;
   }
 
   ApiService._internal() {
@@ -97,9 +186,15 @@ class ApiService {
     _dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
+          if (_cookieHeader == null) {
+            await _loadCookie();
+          }
           final token = await _getToken();
           if (token != null) {
             options.headers['Authorization'] = 'Bearer $token';
+          }
+          if (_cookieHeader != null && _cookieHeader!.isNotEmpty) {
+            options.headers['Cookie'] = _cookieHeader;
           }
           // Log détaillé de la requête pour debugging
           _debugLog('=== API REQUEST ===');
@@ -110,6 +205,12 @@ class ApiService {
           return handler.next(options);
         },
         onResponse: (response, handler) {
+          final cookieHeader = _extractCookieHeaderFromResponse(
+            response.headers,
+          );
+          if (cookieHeader != null && cookieHeader.isNotEmpty) {
+            _saveCookie(cookieHeader);
+          }
           // Log de la réponse pour debugging
           _debugLog(
             'API Response: ${response.statusCode} ${response.requestOptions.path}',
@@ -189,6 +290,8 @@ class ApiService {
   Future<void> _clearToken() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('auth_token');
+    await prefs.remove(_cookiePrefsKey);
+    _cookieHeader = null;
   }
 
   // ==================== AUTHENTIFICATION ====================
@@ -201,15 +304,35 @@ class ApiService {
         data: {'email': email, 'password': password},
       );
 
-      // Gérer le nouveau format de réponse standardisé (comme chantix)
-      final responseData = _decodeMapResponse(response.data);
+      final data = response.data;
+      if (data == null ||
+          (data is String && data.trim().isEmpty) ||
+          response.statusCode == 204) {
+        final headerToken = _extractTokenFromHeaders(response.headers);
+        if (headerToken != null && headerToken.isNotEmpty) {
+          await _saveToken(headerToken);
+          return {'success': true, 'token': headerToken};
+        }
+        final cookieHeader = _extractCookieHeaderFromResponse(response.headers);
+        if (cookieHeader != null && cookieHeader.isNotEmpty) {
+          await _saveCookie(cookieHeader);
+          return {'success': true};
+        }
+        return {'success': true};
+      }
 
-      if (responseData['success'] == true && responseData['token'] != null) {
-        await _saveToken(responseData['token'] as String);
+      final responseData = _decodeMapResponse(data);
+      final token =
+          _extractTokenFromBody(responseData) ??
+          _extractTokenFromHeaders(response.headers);
+
+      if (responseData['success'] == true && token != null) {
+        await _saveToken(token);
+        responseData['token'] = token;
         return responseData;
-      } else if (responseData['token'] != null) {
-        // Compatibilité avec l'ancien format
-        await _saveToken(responseData['token'] as String);
+      } else if (token != null) {
+        await _saveToken(token);
+        responseData['token'] = token;
         return responseData;
       }
 
@@ -225,25 +348,55 @@ class ApiService {
   Future<Map<String, dynamic>> register(
     String name,
     String email,
-    String password,
-  ) async {
+    String password, {
+    String? phone,
+  }) async {
     try {
       final response = await _dio.post(
         '/auth/register',
-        data: {'name': name, 'email': email, 'password': password},
+        data: {
+          'name': name,
+          'email': email,
+          'password': password,
+          if (phone != null && phone.trim().isNotEmpty) ...{
+            'phone': phone.trim(),
+            'telephone': phone.trim(),
+          },
+        },
       );
 
-      // Gérer le nouveau format de réponse standardisé (comme chantix)
-      final responseData = _decodeMapResponse(response.data);
+      final data = response.data;
+      if (data == null ||
+          (data is String && data.trim().isEmpty) ||
+          response.statusCode == 204) {
+        final headerToken = _extractTokenFromHeaders(response.headers);
+        if (headerToken != null && headerToken.isNotEmpty) {
+          await _saveToken(headerToken);
+          return {'success': true, 'token': headerToken};
+        }
+        final cookieHeader = _extractCookieHeaderFromResponse(response.headers);
+        if (cookieHeader != null && cookieHeader.isNotEmpty) {
+          await _saveCookie(cookieHeader);
+          return {'success': true};
+        }
+        return {'success': true};
+      }
 
-      if (responseData['success'] == true && responseData['token'] != null) {
-        await _saveToken(responseData['token'] as String);
+      // Gérer le nouveau format de réponse standardisé (comme chantix)
+      final responseData = _decodeMapResponse(data);
+      final token =
+          _extractTokenFromBody(responseData) ??
+          _extractTokenFromHeaders(response.headers);
+
+      if (responseData['success'] == true && token != null) {
+        await _saveToken(token);
+        responseData['token'] = token;
         return responseData;
       } else if (responseData['success'] == true) {
         return responseData;
-      } else if (responseData['token'] != null) {
-        // Compatibilité avec l'ancien format
-        await _saveToken(responseData['token'] as String);
+      } else if (token != null) {
+        await _saveToken(token);
+        responseData['token'] = token;
         return responseData;
       }
 
@@ -278,6 +431,7 @@ class ApiService {
       // Même en cas d'erreur, on supprime le token local
     } finally {
       await _clearToken();
+      await _clearCookie();
     }
   }
 
@@ -629,7 +783,20 @@ class ApiService {
   Future<Map<String, dynamic>> getUserProfile() async {
     try {
       final response = await _dio.get('/user/profile');
-      return response.data['data'] ?? {};
+      final raw = response.data;
+      if (raw == null || (raw is String && raw.trim().isEmpty)) {
+        return {};
+      }
+      if (raw is Map) {
+        final map = Map<String, dynamic>.from(raw);
+        final data = map['data'];
+        if (data is Map) return Map<String, dynamic>.from(data);
+        return map;
+      }
+      final map = _decodeMapResponse(raw);
+      final data = map['data'];
+      if (data is Map) return Map<String, dynamic>.from(data);
+      return map;
     } on DioException catch (e) {
       throw _handleError(e);
     }
@@ -641,7 +808,20 @@ class ApiService {
   ) async {
     try {
       final response = await _dio.put('/user/profile', data: data);
-      return response.data['data'] ?? {};
+      final raw = response.data;
+      if (raw == null || (raw is String && raw.trim().isEmpty)) {
+        return {};
+      }
+      if (raw is Map) {
+        final map = Map<String, dynamic>.from(raw);
+        final d = map['data'];
+        if (d is Map) return Map<String, dynamic>.from(d);
+        return map;
+      }
+      final map = _decodeMapResponse(raw);
+      final d = map['data'];
+      if (d is Map) return Map<String, dynamic>.from(d);
+      return map;
     } on DioException catch (e) {
       throw _handleError(e);
     }

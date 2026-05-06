@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../l10n/app_localizations.dart';
 import '../../theme/app_theme.dart';
 import '../../services/api_service.dart';
@@ -35,10 +36,12 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       final apiService = ApiService();
-      await apiService.login(
-        _emailController.text.trim(),
-        _passwordController.text,
-      );
+      final email = _emailController.text.trim();
+      final password = _passwordController.text;
+      await apiService.login(email, password);
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('user_email', email);
 
       if (mounted) {
         isAuthenticatedNotifier.value = true;

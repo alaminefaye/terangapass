@@ -25,6 +25,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
   int _reportsCount = 0;
   String? _errorMessage;
   List<Map<String, dynamic>> _recentActivities = [];
+  String _cachedName = '';
+  String _cachedEmail = '';
+  String _cachedPhone = '';
+
+  static bool _looksLikePlaceholder(String value) {
+    final v = value.trim().toLowerCase();
+    if (v.isEmpty) return true;
+    if (v == 'utilisateur') return true;
+    if (v.contains('example.com')) return true;
+    return false;
+  }
 
   @override
   void initState() {
@@ -39,12 +50,58 @@ class _ProfileScreenState extends State<ProfileScreen> {
     });
 
     try {
+      final prefs = await SharedPreferences.getInstance();
+      _cachedName = (prefs.getString('user_name') ?? '').trim();
+      _cachedEmail = (prefs.getString('user_email') ?? '').trim();
+      _cachedPhone = (prefs.getString('user_phone') ?? '').trim();
+
       final apiService = ApiService();
-      _userProfile = await apiService.getUserProfile();
+      final remoteProfile = await apiService.getUserProfile();
+      final profile = Map<String, dynamic>.from(remoteProfile);
+
+      final name =
+          ((profile['name'] ?? profile['full_name'] ?? profile['fullName']) ??
+                  '')
+              .toString()
+              .trim();
+      final email = ((profile['email'] ?? profile['mail']) ?? '')
+          .toString()
+          .trim();
+      final phone = ((profile['phone'] ?? profile['phone_number']) ?? '')
+          .toString()
+          .trim();
+
+      final effectiveName =
+          _looksLikePlaceholder(name) ? _cachedName : name;
+      final effectiveEmail = _looksLikePlaceholder(email) ? _cachedEmail : email;
+      final effectivePhone = phone.isEmpty ? _cachedPhone : phone;
+
+      if (effectiveName.isNotEmpty) {
+        profile['name'] = effectiveName;
+        await prefs.setString('user_name', effectiveName);
+      }
+      if (effectiveEmail.isNotEmpty) {
+        profile['email'] = effectiveEmail;
+        await prefs.setString('user_email', effectiveEmail);
+      } else if (_looksLikePlaceholder(email)) {
+        profile['email'] = '';
+      }
+      if (effectivePhone.isNotEmpty) {
+        profile['phone'] = effectivePhone;
+        await prefs.setString('user_phone', effectivePhone);
+      }
+
+      _userProfile = profile;
 
       // Charger les statistiques
-      final alerts = await apiService.getAlertsHistory();
-      final reports = await apiService.getIncidentsHistory();
+      List<dynamic> alerts = const [];
+      List<dynamic> reports = const [];
+      try {
+        alerts = await apiService.getAlertsHistory();
+      } catch (_) {}
+      try {
+        reports = await apiService.getIncidentsHistory();
+      } catch (_) {}
 
       if (!mounted) return;
       setState(() {
@@ -54,8 +111,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
       });
     } catch (e) {
       if (!mounted) return;
+      final fallback = <String, dynamic>{
+        'name': _cachedName,
+        'email': _cachedEmail,
+        'phone': _cachedPhone,
+      };
       setState(() {
-        _userProfile = null;
+        _userProfile = fallback;
         _alertsCount = 0;
         _reportsCount = 0;
         _errorMessage = e.toString().replaceAll('Exception: ', '');
@@ -263,7 +325,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       );
     }
 
-    if (_errorMessage != null || _userProfile == null) {
+    if (_userProfile == null) {
       return Scaffold(
         backgroundColor: const Color(0xFFF4F1EA),
         appBar: AppBar(
@@ -455,41 +517,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             const SizedBox(height: 8),
             _buildPersonalInfoBox(
-              identity: (() {
-                final firstName =
-                    ((_userProfile?['first_name'] ??
-                                _userProfile?['firstName'] ??
-                                _userProfile?['prenom']) ??
-                            '')
-                        .toString()
-                        .trim();
-                final lastName =
-                    ((_userProfile?['last_name'] ??
-                                _userProfile?['lastName'] ??
-                                _userProfile?['nom']) ??
-                            '')
-                        .toString()
-                        .trim();
-                final full = '$firstName $lastName'.trim();
-                return full.isEmpty ? '—' : full;
-              })(),
-              language: (() {
-                final lang =
-                    ((_userProfile?['language'] ?? _userProfile?['lang']) ?? '')
-                        .toString()
-                        .trim();
-                return lang.isEmpty ? '—' : lang;
-              })(),
-              userType: (() {
-                final type =
-                    ((_userProfile?['user_type'] ??
-                                _userProfile?['userType'] ??
-                                _userProfile?['type']) ??
-                            '')
-                        .toString()
-                        .trim();
-                return type.isEmpty ? '—' : type;
-              })(),
+              name: displayName.isEmpty ? '—' : displayName,
+              email: displayEmail.isEmpty ? '—' : displayEmail,
+              phone: ((_userProfile?['phone'] ?? _userProfile?['phone_number']) ??
+                      '')
+                  .toString()
+                  .trim()
+                  .isEmpty
+                  ? '—'
+                  : ((_userProfile?['phone'] ??
+                              _userProfile?['phone_number']) ??
+                          '')
+                      .toString()
+                      .trim(),
             ),
             const SizedBox(height: 18),
             Text(
@@ -706,25 +746,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildPersonalInfoBox({
-    required String identity,
-    required String language,
-    required String userType,
+    required String name,
+    required String email,
+    required String phone,
   }) {
+    final l10n = AppLocalizations.of(context)!;
     final items = [
       _PersonalInfoRowData(
         icon: Icons.person_outline_rounded,
-        label: 'Identité',
-        value: identity,
+        label: l10n.profileNameLabel,
+        value: name,
       ),
       _PersonalInfoRowData(
-        icon: Icons.language_rounded,
-        label: 'Langue préférée',
-        value: language,
+        icon: Icons.email_outlined,
+        label: l10n.loginEmailLabel,
+        value: email,
       ),
       _PersonalInfoRowData(
-        icon: Icons.badge_rounded,
-        label: 'Type d\'utilisateur',
-        value: userType,
+        icon: Icons.phone_outlined,
+        label: l10n.profilePhoneLabel,
+        value: phone,
       ),
     ];
 
@@ -878,14 +919,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return 'fr';
     }
 
-    String normalizeUserType(dynamic value) {
-      final v = (value ?? '').toString().toLowerCase().trim();
-      if (v == 'athlete' || v.contains('athl')) return 'athlete';
-      if (v == 'citizen' || v.contains('citoy')) return 'citizen';
-      if (v == 'visitor' || v.contains('visit')) return 'visitor';
-      return 'visitor';
-    }
-
     final nameController = TextEditingController(
       text: profile['name']?.toString() ?? '',
     );
@@ -894,7 +927,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
 
     var language = normalizeLanguage(profile['language']);
-    var userType = normalizeUserType(profile['user_type']);
     var isSaving = false;
 
     await showModalBottomSheet<void>(
@@ -994,37 +1026,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       });
                     },
                   ),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<String>(
-                    initialValue: userType,
-                    decoration: InputDecoration(
-                      labelText: l10n.profileUserTypeLabel,
-                      labelStyle: GoogleFonts.poppins(),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                    ),
-                    items: [
-                      DropdownMenuItem(
-                        value: 'visitor',
-                        child: Text(l10n.profileUserTypeVisitor),
-                      ),
-                      DropdownMenuItem(
-                        value: 'citizen',
-                        child: Text(l10n.profileUserTypeCitizen),
-                      ),
-                      DropdownMenuItem(
-                        value: 'athlete',
-                        child: Text(l10n.profileUserTypeAthlete),
-                      ),
-                    ],
-                    onChanged: (v) {
-                      if (v == null) return;
-                      setModalState(() {
-                        userType = v;
-                      });
-                    },
-                  ),
                   const SizedBox(height: 18),
                   SizedBox(
                     width: double.infinity,
@@ -1063,9 +1064,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                           ? null
                                           : phoneController.text.trim(),
                                       'language': language,
-                                      'user_type': userType,
                                     });
                                 if (!mounted) return;
+                                final prefs =
+                                    await SharedPreferences.getInstance();
+                                await prefs.setString('user_name', name);
+                                await prefs.setString(
+                                  'user_phone',
+                                  phoneController.text.trim(),
+                                );
                                 setState(() {
                                   _userProfile = updated;
                                 });
