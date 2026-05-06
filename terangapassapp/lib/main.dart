@@ -17,6 +17,7 @@ import 'screens/notifications_screen.dart';
 import 'screens/sos_screen.dart';
 import 'services/api_service.dart';
 import 'services/notification_service.dart';
+import 'state/app_state.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -81,6 +82,7 @@ class TerangaPassApp extends StatelessWidget {
           },
           builder: (context, child) => _GlobalSosOverlay(
             navigatorKey: navigatorKey,
+            showSos: isAuthenticatedNotifier.value,
             child: child ?? const SizedBox.shrink(),
           ),
         );
@@ -115,6 +117,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
       setState(() {
         _isAuthenticated = isAuthenticated;
       });
+      isAuthenticatedNotifier.value = isAuthenticated;
 
       // Si l'utilisateur est authentifié, enregistrer le device token
       if (isAuthenticated) {
@@ -124,6 +127,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
       setState(() {
         _isAuthenticated = false;
       });
+      isAuthenticatedNotifier.value = false;
     } finally {
       setState(() {
         _isLoading = false;
@@ -179,8 +183,13 @@ class _AuthWrapperState extends State<AuthWrapper> {
 class _GlobalSosOverlay extends StatefulWidget {
   final Widget child;
   final GlobalKey<NavigatorState> navigatorKey;
+  final bool showSos;
 
-  const _GlobalSosOverlay({required this.child, required this.navigatorKey});
+  const _GlobalSosOverlay({
+    required this.child,
+    required this.navigatorKey,
+    required this.showSos,
+  });
 
   @override
   State<_GlobalSosOverlay> createState() => _GlobalSosOverlayState();
@@ -223,6 +232,10 @@ class _GlobalSosOverlayState extends State<_GlobalSosOverlay>
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
+        if (!widget.showSos) {
+          return widget.child;
+        }
+
         final maxW = constraints.maxWidth;
         final maxH = constraints.maxHeight;
         const btnSize = 60.0;

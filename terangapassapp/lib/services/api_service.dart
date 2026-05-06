@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -29,6 +30,30 @@ class ApiService {
       debugPrint(message?.toString() ?? '');
       return true;
     }());
+  }
+
+  Map<String, dynamic> _decodeMapResponse(dynamic data) {
+    if (data is Map<String, dynamic>) {
+      return data;
+    }
+    if (data is Map) {
+      return Map<String, dynamic>.from(data);
+    }
+    if (data is String) {
+      final trimmed = data.trim();
+      if (trimmed.isEmpty) {
+        throw Exception('Réponse serveur vide');
+      }
+      try {
+        final decoded = jsonDecode(trimmed);
+        if (decoded is Map) {
+          return Map<String, dynamic>.from(decoded);
+        }
+      } on FormatException {
+        throw Exception('Réponse serveur invalide');
+      }
+    }
+    throw Exception('Réponse serveur invalide');
   }
 
   ApiService._internal() {
@@ -177,7 +202,7 @@ class ApiService {
       );
 
       // Gérer le nouveau format de réponse standardisé (comme chantix)
-      final responseData = response.data as Map<String, dynamic>;
+      final responseData = _decodeMapResponse(response.data);
 
       if (responseData['success'] == true && responseData['token'] != null) {
         await _saveToken(responseData['token'] as String);
@@ -209,10 +234,12 @@ class ApiService {
       );
 
       // Gérer le nouveau format de réponse standardisé (comme chantix)
-      final responseData = response.data as Map<String, dynamic>;
+      final responseData = _decodeMapResponse(response.data);
 
       if (responseData['success'] == true && responseData['token'] != null) {
         await _saveToken(responseData['token'] as String);
+        return responseData;
+      } else if (responseData['success'] == true) {
         return responseData;
       } else if (responseData['token'] != null) {
         // Compatibilité avec l'ancien format
@@ -517,7 +544,9 @@ class ApiService {
           data['message'] is String &&
           (data['message'] as String).toLowerCase().contains('route') &&
           (data['message'] as String).toLowerCase().contains('nearby') &&
-          (data['message'] as String).toLowerCase().contains('could not be found');
+          (data['message'] as String).toLowerCase().contains(
+            'could not be found',
+          );
 
       // Fallback compatibilité: certains backends n'exposent pas /nearby
       // mais gardent l'endpoint tourisme plus ancien.
@@ -586,11 +615,7 @@ class ApiService {
     try {
       final response = await _dio.get(
         '/utility/currency/convert',
-        queryParameters: {
-          'amount': amount,
-          'from': from,
-          'to': to,
-        },
+        queryParameters: {'amount': amount, 'from': from, 'to': to},
       );
       return (response.data['data'] as Map<String, dynamic>? ?? {});
     } on DioException catch (e) {
@@ -691,7 +716,16 @@ class ApiService {
     // Erreur avec réponse du serveur
     if (error.response != null) {
       final statusCode = error.response!.statusCode;
-      final data = error.response!.data;
+      final rawData = error.response!.data;
+      final data = rawData is String
+          ? (() {
+              try {
+                return jsonDecode(rawData);
+              } catch (_) {
+                return rawData;
+              }
+            })()
+          : rawData;
 
       // Si le serveur retourne un message d'erreur, l'utiliser
       String message;

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../l10n/app_localizations.dart';
 import '../../theme/app_theme.dart';
 import '../../services/api_service.dart';
+import '../../state/app_state.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -31,6 +33,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Future<void> _register() async {
+    final l10n = AppLocalizations.of(context)!;
     if (!_formKey.currentState!.validate()) return;
 
     setState(() {
@@ -39,24 +42,49 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     try {
       final apiService = ApiService();
-      await apiService.register(
-        _nameController.text.trim(),
-        _emailController.text.trim(),
-        _passwordController.text,
-      );
+      final name = _nameController.text.trim();
+      final email = _emailController.text.trim();
+      final password = _passwordController.text;
+
+      await apiService.register(name, email, password);
+
+      final prefs = await SharedPreferences.getInstance();
+      var token = prefs.getString('auth_token');
+      if (token == null || token.isEmpty) {
+        await apiService.login(email, password);
+        token = prefs.getString('auth_token');
+      }
+
+      if (token == null || token.isEmpty) {
+        throw Exception(l10n.loginUnknownError);
+      }
 
       if (mounted) {
+        isAuthenticatedNotifier.value = true;
         Navigator.of(context).pushReplacementNamed('/home');
       }
     } catch (e) {
       if (mounted) {
+        String errorMessage = l10n.loginUnknownError;
+
+        if (e is Exception) {
+          errorMessage = e.toString().replaceAll('Exception: ', '');
+        } else {
+          errorMessage = e.toString();
+        }
+
+        if (errorMessage.isEmpty || errorMessage == 'Exception') {
+          errorMessage = l10n.loginConnectionError;
+        }
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              e.toString().replaceAll('Exception: ', ''),
+              errorMessage,
               style: GoogleFonts.poppins(),
             ),
             backgroundColor: AppTheme.primaryRed,
+            duration: const Duration(seconds: 5),
           ),
         );
       }
@@ -69,250 +97,378 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
   }
 
+  Widget _labeledTextField({
+    required String label,
+    required String hintText,
+    required IconData icon,
+    required TextEditingController controller,
+    TextInputType? keyboardType,
+    bool obscureText = false,
+    Widget? suffixIcon,
+    String? Function(String?)? validator,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          label,
+          style: GoogleFonts.poppins(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: const Color(0xFF374151),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFFF9FAFB),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: const Color(0xFFE5E7EB),
+            ),
+          ),
+          child: TextFormField(
+            controller: controller,
+            keyboardType: keyboardType,
+            obscureText: obscureText,
+            decoration: InputDecoration(
+              hintText: hintText,
+              prefixIcon: Icon(icon),
+              suffixIcon: suffixIcon,
+              prefixIconColor: const Color(0xFF6B7280),
+              suffixIconColor: const Color(0xFF6B7280),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: 16,
+              ),
+              border: InputBorder.none,
+            ),
+            validator: validator,
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F1EA),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFF4F1EA),
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppTheme.textPrimary),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: Form(
-            key: _formKey,
-            child: Container(
-              padding: const EdgeInsets.all(16),
+      backgroundColor: const Color(0xFFF3FBF6),
+      extendBody: true,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          Positioned.fill(
+            child: DecoratedBox(
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(18),
+                gradient: LinearGradient(
+                  colors: [
+                    AppTheme.primaryYellow.withValues(alpha: 0.12),
+                    const Color(0xFFF3FBF6),
+                    AppTheme.primaryGreen.withValues(alpha: 0.12),
+                    AppTheme.primaryGreen.withValues(alpha: 0.18),
+                  ],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                const SizedBox(height: 20),
-                // Titre
-                Text(
-                  l10n.registerTitle,
-                  style: GoogleFonts.poppins(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFF1A1F2E),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  l10n.registerSubtitle,
-                  style: GoogleFonts.poppins(
-                    fontSize: 16,
-                    color: AppTheme.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'Creer votre compte pour acceder a Teranga Pass',
-                  style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    color: const Color(0xFF3A7CA5),
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 40),
-                // Nom
-                TextFormField(
-                  controller: _nameController,
-                  decoration: InputDecoration(
-                    labelText: l10n.registerFullNameLabel,
-                    hintText: l10n.registerFullNameHint,
-                    prefixIcon: const Icon(Icons.person_outlined),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                        color: Color(0xFF2E8B57),
-                        width: 2,
-                      ),
-                    ),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return l10n.registerFullNameRequired;
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 20),
-                // Email
-                TextFormField(
-                  controller: _emailController,
-                  keyboardType: TextInputType.emailAddress,
-                  decoration: InputDecoration(
-                    labelText: l10n.loginEmailLabel,
-                    hintText: l10n.loginEmailHint,
-                    prefixIcon: const Icon(Icons.email_outlined),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                        color: Color(0xFF2E8B57),
-                        width: 2,
-                      ),
-                    ),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return l10n.loginEmailRequired;
-                    }
-                    if (!value.contains('@')) {
-                      return l10n.loginEmailInvalid;
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 20),
-                // Mot de passe
-                TextFormField(
-                  controller: _passwordController,
-                  obscureText: _obscurePassword,
-                  decoration: InputDecoration(
-                    labelText: l10n.loginPasswordLabel,
-                    hintText: l10n.loginPasswordHint,
-                    prefixIcon: const Icon(Icons.lock_outlined),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscurePassword
-                            ? Icons.visibility_outlined
-                            : Icons.visibility_off_outlined,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          _obscurePassword = !_obscurePassword;
-                        });
-                      },
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                        color: Color(0xFF2E8B57),
-                        width: 2,
-                      ),
-                    ),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return l10n.registerPasswordRequired;
-                    }
-                    if (value.length < 6) {
-                      return l10n.loginPasswordMinLength;
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 20),
-                // Confirmation mot de passe
-                TextFormField(
-                  controller: _confirmPasswordController,
-                  obscureText: _obscureConfirmPassword,
-                  decoration: InputDecoration(
-                    labelText: l10n.registerConfirmPasswordLabel,
-                    hintText: l10n.loginPasswordHint,
-                    prefixIcon: const Icon(Icons.lock_outlined),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscureConfirmPassword
-                            ? Icons.visibility_outlined
-                            : Icons.visibility_off_outlined,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          _obscureConfirmPassword = !_obscureConfirmPassword;
-                        });
-                      },
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                        color: Color(0xFF2E8B57),
-                        width: 2,
-                      ),
-                    ),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return l10n.registerConfirmPasswordRequired;
-                    }
-                    if (value != _passwordController.text) {
-                      return l10n.registerPasswordsNotMatch;
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 30),
-                // Bouton Inscription
-                ElevatedButton(
-                  onPressed: _isLoading ? null : _register,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2E8B57),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 2,
-                  ),
-                  child: _isLoading
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : Text(
-                          l10n.registerSignUp,
-                          style: GoogleFonts.poppins(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                ),
-                const SizedBox(height: 20),
-                // Lien Connexion
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                  child: Text(
-                    l10n.registerHaveAccount,
-                    style: GoogleFonts.poppins(
-                      fontSize: 14,
-                      color: const Color(0xFF2E8B57),
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
-            ),
             ),
           ),
-        ),
+          Positioned.fill(
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Colors.transparent,
+                      AppTheme.primaryGreen.withValues(alpha: 0.14),
+                    ],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: IgnorePointer(
+              child: Container(
+                height: 280,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Colors.transparent,
+                      AppTheme.primaryGreen.withValues(alpha: 0.22),
+                      AppTheme.primaryGreen.withValues(alpha: 0.30),
+                    ],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            top: -90,
+            right: -60,
+            child: Container(
+              height: 220,
+              width: 220,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppTheme.primaryYellow.withValues(alpha: 0.18),
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: -120,
+            left: -70,
+            child: Container(
+              height: 260,
+              width: 260,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppTheme.primaryGreen.withValues(alpha: 0.14),
+              ),
+            ),
+          ),
+          SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: IconButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        icon: const Icon(Icons.arrow_back_rounded),
+                        color: const Color(0xFF111827),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Center(
+                      child: Container(
+                        height: 88,
+                        width: 88,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(26),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.10),
+                              blurRadius: 18,
+                              offset: const Offset(0, 10),
+                            ),
+                          ],
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(26),
+                          child: Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: Image.asset(
+                              'assets/images/app_logo.png',
+                              fit: BoxFit.contain,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    Text(
+                      l10n.registerTitle,
+                      style: GoogleFonts.poppins(
+                        fontSize: 30,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF111827),
+                        height: 1.1,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      l10n.registerSubtitle,
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        color: const Color(0xFF6B7280),
+                        height: 1.3,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      l10n.loginValueProps,
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        color: AppTheme.primaryGreen,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 24),
+                    Container(
+                      padding: const EdgeInsets.fromLTRB(18, 18, 18, 14),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(22),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.06),
+                            blurRadius: 22,
+                            offset: const Offset(0, 12),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          _labeledTextField(
+                            label: l10n.registerFullNameLabel,
+                            hintText: l10n.registerFullNameHint,
+                            icon: Icons.person_outlined,
+                            controller: _nameController,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return l10n.registerFullNameRequired;
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 14),
+                          _labeledTextField(
+                            label: l10n.loginEmailLabel,
+                            hintText: l10n.loginEmailHint,
+                            icon: Icons.email_outlined,
+                            controller: _emailController,
+                            keyboardType: TextInputType.emailAddress,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return l10n.loginEmailRequired;
+                              }
+                              if (!value.contains('@')) {
+                                return l10n.loginEmailInvalid;
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 14),
+                          _labeledTextField(
+                            label: l10n.loginPasswordLabel,
+                            hintText: l10n.loginPasswordHint,
+                            icon: Icons.lock_outlined,
+                            controller: _passwordController,
+                            obscureText: _obscurePassword,
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscurePassword
+                                    ? Icons.visibility_outlined
+                                    : Icons.visibility_off_outlined,
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  _obscurePassword = !_obscurePassword;
+                                });
+                              },
+                            ),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return l10n.registerPasswordRequired;
+                              }
+                              if (value.length < 6) {
+                                return l10n.loginPasswordMinLength;
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 14),
+                          _labeledTextField(
+                            label: l10n.registerConfirmPasswordLabel,
+                            hintText: l10n.loginPasswordHint,
+                            icon: Icons.lock_outlined,
+                            controller: _confirmPasswordController,
+                            obscureText: _obscureConfirmPassword,
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscureConfirmPassword
+                                    ? Icons.visibility_outlined
+                                    : Icons.visibility_off_outlined,
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  _obscureConfirmPassword =
+                                      !_obscureConfirmPassword;
+                                });
+                              },
+                            ),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return l10n.registerConfirmPasswordRequired;
+                              }
+                              if (value != _passwordController.text) {
+                                return l10n.registerPasswordsNotMatch;
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 18),
+                          SizedBox(
+                            height: 52,
+                            child: ElevatedButton(
+                              onPressed: _isLoading ? null : _register,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppTheme.primaryGreen,
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                elevation: 1,
+                              ),
+                              child: _isLoading
+                                  ? const SizedBox(
+                                      height: 20,
+                                      width: 20,
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white,
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : Text(
+                                      l10n.registerSignUp,
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            child: Text(
+                              l10n.registerHaveAccount,
+                              style: GoogleFonts.poppins(
+                                fontSize: 14,
+                                color: AppTheme.primaryGreen,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
