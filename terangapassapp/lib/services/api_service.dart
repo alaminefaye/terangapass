@@ -318,7 +318,9 @@ class ApiService {
           await _saveCookie(cookieHeader);
           return {'success': true};
         }
-        return {'success': true};
+        throw Exception(
+          'Connexion impossible: réponse serveur vide. Vérifiez l’URL API et le serveur.',
+        );
       }
 
       final responseData = _decodeMapResponse(data);
@@ -379,7 +381,9 @@ class ApiService {
           await _saveCookie(cookieHeader);
           return {'success': true};
         }
-        return {'success': true};
+        throw Exception(
+          'Inscription impossible: réponse serveur vide. Vérifiez l’URL API et le serveur.',
+        );
       }
 
       // Gérer le nouveau format de réponse standardisé (comme chantix)
