@@ -13,6 +13,7 @@ Projet Laravel avec intégration complète du template Sneat (Bootstrap 5 HTML A
 - [Checklist sécurité](docs/TerangaPass_Security_Checklist.md)
 - [Process contenu / annuaire](docs/TerangaPass_Process_Contenu_Annuaire.md)
 - [Opérateur — contrôle Pass (staff)](docs/TerangaPass_Operateur_Pass_Controle.md)
+- [Pack hors ligne — étape 7 (manifeste API)](docs/TerangaPass_Etape7_Offline_Pack.md)
 
 ## 🚀 Installation
 

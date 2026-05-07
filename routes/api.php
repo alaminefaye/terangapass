@@ -37,6 +37,9 @@ Route::prefix('v1')->group(function () {
     // Contrôle QR Pass (staff — en-tête X-Teranga-Pass-Control)
     Route::post('/pass/validate', [PassTicketController::class, 'validateScan']);
     Route::get('/pass/revocations', [PassTicketController::class, 'revokedFeed']);
+
+    // Manifeste pack hors ligne (sans auth — comparé au cache app)
+    Route::get('/utility/offline-manifest', [UtilityController::class, 'offlineManifest']);
 });
 
 // Routes protégées (nécessitent une authentification)

@@ -1753,6 +1753,36 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Repères verts : sites de compétition JOJ sur la carte.'**
   String get mapLegendJojSitesHint;
+
+  /// No description provided for @profileOfflinePackTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pack hors ligne'**
+  String get profileOfflinePackTitle;
+
+  /// No description provided for @profileOfflinePackBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'POI et contenus utiles sans réseau (déploiement progressif).'**
+  String get profileOfflinePackBody;
+
+  /// No description provided for @profileOfflinePackCatalogVersion.
+  ///
+  /// In fr, this message translates to:
+  /// **'Catalogue serveur : {version}'**
+  String profileOfflinePackCatalogVersion(String version);
+
+  /// No description provided for @profileOfflinePackCatalogPending.
+  ///
+  /// In fr, this message translates to:
+  /// **'Catalogue : non synchronisé'**
+  String get profileOfflinePackCatalogPending;
+
+  /// No description provided for @profileOfflinePackDialogBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le téléchargement d’un pack local (cartes et annuaire) arrivera dans une prochaine version. Le numéro de catalogue ci-dessous permet déjà de vérifier que l’app dialogue avec le serveur.'**
+  String get profileOfflinePackDialogBody;
 }
 
 class _AppLocalizationsDelegate

@@ -338,5 +338,17 @@
   "mapLegendPlace": "Lieu",
   "mapLegendSponsor": "Partenaire mis en avant",
   "mapLegendCategoriesHint": "Les couleurs des repères sur la carte indiquent le type de lieu (filtres ci-dessus).",
-  "mapLegendJojSitesHint": "Repères verts : sites de compétition JOJ sur la carte."
+  "mapLegendJojSitesHint": "Repères verts : sites de compétition JOJ sur la carte.",
+  "profileOfflinePackTitle": "Pack hors ligne",
+  "profileOfflinePackBody": "POI et contenus utiles sans réseau (déploiement progressif).",
+  "profileOfflinePackCatalogVersion": "Catalogue serveur : {version}",
+  "@profileOfflinePackCatalogVersion": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "profileOfflinePackCatalogPending": "Catalogue : non synchronisé",
+  "profileOfflinePackDialogBody": "Le téléchargement d’un pack local (cartes et annuaire) arrivera dans une prochaine version. Le numéro de catalogue ci-dessous permet déjà de vérifier que l’app dialogue avec le serveur."
 }

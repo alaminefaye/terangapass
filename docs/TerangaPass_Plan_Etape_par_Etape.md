@@ -129,13 +129,15 @@ Constantes partagées côté app : `terangapassapp/lib/constants/map_constants.d
 
 ## Étape 7 — Mode offline « pack Dakar »
 
-| Sous-étape | Livrable |
-|------------|----------|
-| 7.1 | Liste des **données** à embarquer (POI, cartes, annonces d’urgence) |
-| 7.2 | Téléchargement **1 clic** + gestion stockage / mise à jour |
-| 7.3 | Comportement si données **périmées** |
+| Sous-étape | Livrable | Statut (mai 2026) |
+|------------|----------|-------------------|
+| 7.1 | Liste des **données** à embarquer (POI, cartes, annonces d’urgence) | **Partiel** : manifeste `GET /api/v1/utility/offline-manifest` + doc [TerangaPass_Etape7_Offline_Pack.md](TerangaPass_Etape7_Offline_Pack.md) |
+| 7.2 | Téléchargement **1 clic** + gestion stockage / mise à jour | Non — prochaine itération |
+| 7.3 | Comportement si données **périmées** | Non — dépend de 7.2 |
 
 **Terminé quand** : test terrain sans réseau sur parcours défini.
+
+**Documentation** : [TerangaPass_Etape7_Offline_Pack.md](TerangaPass_Etape7_Offline_Pack.md).
 
 ---
 
@@ -205,6 +207,7 @@ Ne démarrer qu’avec des **micro-livrables** :
 | [TerangaPass_QA_Demo_15min.md](TerangaPass_QA_Demo_15min.md) | Démo 15 min / QA étape 1 |
 | [TerangaPass_Security_Checklist.md](TerangaPass_Security_Checklist.md) | Rappel sécurité (HTTPS, secrets, contrôle Pass) |
 | [TerangaPass_Process_Contenu_Annuaire.md](TerangaPass_Process_Contenu_Annuaire.md) | Process contenu / annuaire (étape 3) |
+| [TerangaPass_Etape7_Offline_Pack.md](TerangaPass_Etape7_Offline_Pack.md) | Pack hors ligne — manifeste API & backlog |
 | **Ce fichier** | Par quoi commencer, dans quel ordre, critères de fin |
 
 Entrées README : `README.md` (racine) et `terangapassapp/README.md` pointent vers ce plan, le document d’inspiration et les fiches étapes 4–6.

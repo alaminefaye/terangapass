@@ -80,4 +80,7 @@ class ApiConstants {
   static const String pointsOfInterest = '/tourism/points-of-interest';
 
   static const String userProfile = '/user/profile';
+
+  /// Manifeste pack hors ligne (étape 7), sans auth.
+  static const String offlineManifest = '/utility/offline-manifest';
 }

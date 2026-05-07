@@ -803,6 +803,18 @@ class ApiService {
     }
   }
 
+  /// Manifeste du futur pack hors ligne (version catalogue, bundles, etc.).
+  Future<Map<String, dynamic>> getOfflineManifest() async {
+    try {
+      final response = await _dio.get(ApiConstants.offlineManifest);
+      return Map<String, dynamic>.from(
+        response.data['data'] as Map? ?? {},
+      );
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
   /// Convertit un montant via endpoint backend utilitaire.
   Future<Map<String, dynamic>> convertCurrency({
     required double amount,

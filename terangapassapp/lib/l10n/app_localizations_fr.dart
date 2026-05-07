@@ -882,4 +882,23 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get mapLegendJojSitesHint =>
       'Repères verts : sites de compétition JOJ sur la carte.';
+
+  @override
+  String get profileOfflinePackTitle => 'Pack hors ligne';
+
+  @override
+  String get profileOfflinePackBody =>
+      'POI et contenus utiles sans réseau (déploiement progressif).';
+
+  @override
+  String profileOfflinePackCatalogVersion(String version) {
+    return 'Catalogue serveur : $version';
+  }
+
+  @override
+  String get profileOfflinePackCatalogPending => 'Catalogue : non synchronisé';
+
+  @override
+  String get profileOfflinePackDialogBody =>
+      'Le téléchargement d’un pack local (cartes et annuaire) arrivera dans une prochaine version. Le numéro de catalogue ci-dessous permet déjà de vérifier que l’app dialogue avec le serveur.';
 }

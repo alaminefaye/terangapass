@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -7,6 +9,7 @@ import '../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 import '../constants/api_constants.dart';
 import '../services/api_service.dart';
+import '../services/offline_pack_service.dart';
 import 'sos_screen.dart';
 import 'medical_alert_screen.dart';
 import 'incident_report_screen.dart';
@@ -133,6 +136,8 @@ class _HomeScreenState extends State<HomeScreen>
         _loadUnreadNotificationsCount(),
         _loadJojCountdown(),
       ]);
+      // Manifeste pack hors ligne : sync en arrière-plan (throttle dans [OfflinePackService]).
+      unawaited(OfflinePackService().refreshIfStale(ApiService()));
     });
   }
 
@@ -155,6 +160,7 @@ class _HomeScreenState extends State<HomeScreen>
           _loadUnreadNotificationsCount(),
           _loadJojCountdown(),
         ]);
+        unawaited(OfflinePackService().refreshIfStale(ApiService()));
       });
     }
   }

@@ -4,10 +4,27 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class UtilityController extends Controller
 {
+    /**
+     * Manifeste du pack hors ligne — socle étape 7 (bundles enrichis plus tard).
+     */
+    public function offlineManifest(): JsonResponse
+    {
+        return response()->json([
+            'data' => [
+                'schema_version' => 1,
+                'pack_version' => config('terangapass.offline_catalog_version'),
+                'generated_at' => now()->toIso8601String(),
+                'min_app_semver' => null,
+                'bundles' => [],
+            ],
+        ]);
+    }
+
     public function jojCountdown()
     {
         // Date d'ouverture JOJ Dakar 2026 (référence cahier des charges).
@@ -45,7 +62,7 @@ class UtilityController extends Controller
             'USD' => 600.0,
         ];
 
-        if (!isset($baseRates[$from]) || !isset($baseRates[$to])) {
+        if (! isset($baseRates[$from]) || ! isset($baseRates[$to])) {
             return response()->json([
                 'message' => 'Devise non supportée. Utiliser XOF, EUR ou USD.',
             ], 422);
@@ -73,4 +90,3 @@ class UtilityController extends Controller
         ]);
     }
 }
-

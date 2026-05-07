@@ -872,4 +872,23 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get mapLegendJojSitesHint =>
       'Green markers: JOJ competition sites on the map.';
+
+  @override
+  String get profileOfflinePackTitle => 'Offline pack';
+
+  @override
+  String get profileOfflinePackBody =>
+      'POI and useful content without a network (rolling rollout).';
+
+  @override
+  String profileOfflinePackCatalogVersion(String version) {
+    return 'Server catalog: $version';
+  }
+
+  @override
+  String get profileOfflinePackCatalogPending => 'Catalog: not synced yet';
+
+  @override
+  String get profileOfflinePackDialogBody =>
+      'Downloading a local pack (maps and directory) will ship in a later release. The catalog version below already confirms the app can reach the server.';
 }

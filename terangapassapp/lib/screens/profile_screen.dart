@@ -5,6 +5,7 @@ import '../constants/app_constants.dart';
 import '../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 import '../services/api_service.dart';
+import '../services/offline_pack_service.dart';
 import '../state/app_state.dart';
 import 'auth/login_screen.dart';
 import 'incident_history_screen.dart';
@@ -29,6 +30,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String _cachedName = '';
   String _cachedEmail = '';
   String _cachedPhone = '';
+  String? _offlineCatalogVersion;
 
   static bool _looksLikePlaceholder(String value) {
     final v = value.trim().toLowerCase();
@@ -104,8 +106,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
         reports = await apiService.getIncidentsHistory();
       } catch (_) {}
 
+      String? offlineCatalog;
+      try {
+        await OfflinePackService().refresh(apiService);
+        offlineCatalog = await OfflinePackService().cachedCatalogVersion();
+      } catch (_) {
+        offlineCatalog = await OfflinePackService().cachedCatalogVersion();
+      }
+
       if (!mounted) return;
       setState(() {
+        _offlineCatalogVersion = offlineCatalog;
         _alertsCount = alerts.length;
         _reportsCount = reports.length;
         _recentActivities = _buildRecentActivities(alerts, reports);
@@ -117,12 +128,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
         'email': _cachedEmail,
         'phone': _cachedPhone,
       };
+      final offlineCatalog = await OfflinePackService().cachedCatalogVersion();
       setState(() {
         _userProfile = fallback;
         _alertsCount = 0;
         _reportsCount = 0;
         _errorMessage = e.toString().replaceAll('Exception: ', '');
         _recentActivities = [];
+        _offlineCatalogVersion = offlineCatalog;
       });
     } finally {
       if (mounted) {
@@ -565,6 +578,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
               },
             ),
             _buildSettingTile(
+              l10n.profileOfflinePackTitle,
+              Icons.cloud_download_outlined,
+              false,
+              subtitle: _offlinePackSubtitle(l10n),
+              onTap: () {
+                showDialog<void>(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    title: Text(l10n.profileOfflinePackTitle),
+                    content: Text(l10n.profileOfflinePackDialogBody),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.of(ctx).pop(),
+                        child: Text(l10n.ok),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+            _buildSettingTile(
               l10n.appLanguage,
               Icons.translate_rounded,
               false,
@@ -662,12 +696,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  String _offlinePackSubtitle(AppLocalizations l10n) {
+    final v = _offlineCatalogVersion?.trim();
+    final body = l10n.profileOfflinePackBody;
+    if (v != null && v.isNotEmpty) {
+      return '$body\n${l10n.profileOfflinePackCatalogVersion(v)}';
+    }
+    return '$body\n${l10n.profileOfflinePackCatalogPending}';
+  }
+
   Widget _buildSettingTile(
     String title,
     IconData icon,
     bool hasSwitch, {
     VoidCallback? onTap,
     String? value,
+    String? subtitle,
   }) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
@@ -684,6 +728,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ],
       ),
       child: ListTile(
+        isThreeLine: subtitle != null && subtitle.trim().isNotEmpty,
         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
         onTap: hasSwitch ? null : onTap,
         leading: Container(
@@ -702,6 +747,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
             color: AppTheme.textPrimary,
           ),
         ),
+        subtitle: subtitle != null && subtitle.trim().isNotEmpty
+            ? Text(
+                subtitle.trim(),
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  color: AppTheme.textSecondary,
+                  height: 1.35,
+                ),
+                maxLines: 5,
+              )
+            : null,
         trailing: hasSwitch
             ? Transform.scale(
                 scale: 0.9,
