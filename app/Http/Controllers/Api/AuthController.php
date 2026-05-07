@@ -155,7 +155,7 @@ class AuthController extends Controller
             ], 401);
         }
 
-        if ($user->is_blocked) {
+        if ($user->isBlockedAccount()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Ce compte est suspendu. Contactez le support.',

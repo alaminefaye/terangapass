@@ -68,4 +68,20 @@ class User extends Authenticatable
     {
         return $this->hasMany(DeviceToken::class);
     }
+
+    /**
+     * Indique si le compte est bloqué côté admin (API + app).
+     * Lecture des attributs bruts : reste fiable si la colonne `is_blocked` n’existe pas encore (avant migration).
+     */
+    public function isBlockedAccount(): bool
+    {
+        $attrs = $this->getAttributes();
+        if (! array_key_exists('is_blocked', $attrs)) {
+            return false;
+        }
+        $v = $attrs['is_blocked'];
+
+        return $v === true || $v === 1 || $v === '1'
+            || (is_string($v) && strtolower($v) === 'true');
+    }
 }

@@ -35,7 +35,7 @@ class EnsureApiUserNotBlocked
         }
 
         $user = User::query()->find($userId);
-        if ($user && $user->is_blocked) {
+        if ($user && $user->isBlockedAccount()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Ce compte est suspendu.',

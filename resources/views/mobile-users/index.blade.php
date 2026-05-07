@@ -106,7 +106,7 @@
                             @endif
                         </td>
                         <td>
-                            @if($user->is_blocked ?? false)
+                            @if($user->isBlockedAccount())
                             <span class="badge bg-dark">Bloqué</span>
                             @else
                             <span class="badge bg-label-success">Actif</span>
@@ -121,8 +121,8 @@
                                 <a href="{{ route('admin.mobile-users.edit', $user) }}" class="btn btn-sm btn-outline-primary" title="Modifier"><i class="bx bx-edit"></i></a>
                                 <form action="{{ route('admin.mobile-users.toggle-block', $user) }}" method="POST" class="d-inline">
                                     @csrf
-                                    <button type="submit" class="btn btn-sm btn-{{ ($user->is_blocked ?? false) ? 'outline-success' : 'warning' }} text-nowrap" title="{{ ($user->is_blocked ?? false) ? 'Débloquer' : 'Bloquer' }}">
-                                        <i class="bx bx-{{ ($user->is_blocked ?? false) ? 'check-circle' : 'block' }}"></i>
+                                    <button type="submit" class="btn btn-sm btn-{{ $user->isBlockedAccount() ? 'outline-success' : 'warning' }} text-nowrap" title="{{ $user->isBlockedAccount() ? 'Débloquer' : 'Bloquer' }}">
+                                        <i class="bx bx-{{ $user->isBlockedAccount() ? 'check-circle' : 'block' }}"></i>
                                     </button>
                                 </form>
                                 <form action="{{ route('admin.mobile-users.destroy', $user) }}" method="POST" class="d-inline" onsubmit="return confirm('Supprimer définitivement cet utilisateur et ses données associées ?');">

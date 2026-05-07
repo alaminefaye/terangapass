@@ -79,7 +79,7 @@
                 
                 <ul class="menu-inner py-1">
                     <!-- Accueil -->
-                    <li class="menu-item {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
+                    <li class="menu-item {{ request()->routeIs('admin.dashboard') || request()->is('admin/dashboard') ? 'active' : '' }}">
                         <a href="{{ route('admin.dashboard') }}" class="menu-link">
                             <i class="menu-icon tf-icons bx bx-home-circle"></i>
                             <div data-i18n="Analytics">Accueil</div>

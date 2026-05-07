@@ -36,7 +36,10 @@ Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 // Protected Routes
 Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    // Un seul nom de route : doublon = erreur avec « php artisan route:cache » et comportements imprévisibles
+    Route::get('dashboard', function () {
+        return redirect()->route('admin.dashboard');
+    });
     Route::get('/search', [AdminSearchController::class, 'index'])->name('search.index');
 
     // Notifications

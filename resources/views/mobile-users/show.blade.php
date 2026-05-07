@@ -15,9 +15,9 @@
             </a>
             <form action="{{ route('admin.mobile-users.toggle-block', $user) }}" method="POST" class="d-inline">
                 @csrf
-                <button type="submit" class="btn btn-{{ $user->is_blocked ? 'success' : 'warning' }}">
-                    <i class="bx bx-{{ $user->is_blocked ? 'check-circle' : 'block' }} me-1"></i>
-                    {{ $user->is_blocked ? 'Débloquer' : 'Bloquer' }}
+                <button type="submit" class="btn btn-{{ $user->isBlockedAccount() ? 'success' : 'warning' }}">
+                    <i class="bx bx-{{ $user->isBlockedAccount() ? 'check-circle' : 'block' }} me-1"></i>
+                    {{ $user->isBlockedAccount() ? 'Débloquer' : 'Bloquer' }}
                 </button>
             </form>
             @if(auth()->id() !== $user->id)
@@ -66,7 +66,7 @@
                         <div class="col-md-6">
                             <strong>Compte:</strong>
                             <p>
-                                @if($user->is_blocked ?? false)
+                                @if($user->isBlockedAccount())
                                 <span class="badge bg-dark">Bloqué (app mobile désactivée)</span>
                                 @else
                                 <span class="badge bg-label-success">Actif</span>

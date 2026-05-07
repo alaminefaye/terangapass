@@ -8,6 +8,7 @@ use App\Support\EmailNormalizer;
 use App\Support\PhoneNormalizer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
 
 class MobileUserController extends Controller
@@ -156,14 +157,18 @@ class MobileUserController extends Controller
             return redirect()->back()->with('error', 'Impossible de bloquer un compte administrateur.');
         }
 
-        $user->is_blocked = ! $user->is_blocked;
+        if (! Schema::hasColumn('users', 'is_blocked')) {
+            return redirect()->back()->with('error', 'Migration manquante sur le serveur : exécutez « php artisan migrate » (colonne is_blocked).');
+        }
+
+        $user->is_blocked = ! $user->isBlockedAccount();
         $user->save();
 
-        if ($user->is_blocked) {
+        if ($user->isBlockedAccount()) {
             $user->deviceTokens()->update(['is_active' => false]);
         }
 
-        $msg = $user->is_blocked
+        $msg = $user->isBlockedAccount()
             ? 'Utilisateur bloqué. La connexion et l’API mobile sont désactivées pour ce compte.'
             : 'Utilisateur débloqué.';
 

@@ -20,7 +20,7 @@ class UserController extends Controller
                 'message' => 'Non autorisé. Veuillez vous reconnecter.',
             ], 401);
         }
-        if ($user->is_blocked) {
+        if ($user->isBlockedAccount()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Ce compte est suspendu.',
@@ -39,7 +39,7 @@ class UserController extends Controller
                 'message' => 'Non autorisé. Veuillez vous reconnecter.',
             ], 401);
         }
-        if ($user->is_blocked) {
+        if ($user->isBlockedAccount()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Ce compte est suspendu.',
