@@ -30,29 +30,13 @@ class PassTicketController extends Controller
             ], 403);
         }
 
-        $ticket = PassTicket::query()
-            ->where('user_id', $user->id)
-            ->where('status', 'active')
-            ->whereNull('revoked_at')
-            ->where(function ($q): void {
-                $q->whereNull('valid_until')->orWhere('valid_until', '>', now());
-            })
-            ->orderByDesc('id')
-            ->first();
+        $ticket = PassTicket::findActiveForUser((int) $user->id);
 
         if ($ticket === null) {
-            $hadRevokedPass = PassTicket::query()
-                ->where('user_id', $user->id)
-                ->where(function ($q): void {
-                    $q->where('status', 'revoked')
-                        ->orWhereNotNull('revoked_at');
-                })
-                ->exists();
-
-            if ($hadRevokedPass) {
+            if (PassTicket::userHasRevokedHistory((int) $user->id)) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Votre pass a été désactivé. Contactez le support pour un nouvel accès.',
+                    'message' => $this->passDeactivatedMessage($request),
                 ], 403);
             }
 
@@ -159,6 +143,19 @@ class PassTicketController extends Controller
                 'public_id' => $ticket->public_id,
             ],
         ]);
+    }
+
+    private function passDeactivatedMessage(Request $request): string
+    {
+        $al = strtolower($request->header('Accept-Language', ''));
+        $preferEn = str_starts_with($al, 'en')
+            || str_contains($al, 'en-us')
+            || str_contains($al, 'en-gb')
+            || str_contains($al, 'en,');
+
+        return $preferEn
+            ? 'Your pass has been deactivated. Contact support to regain access.'
+            : 'Votre pass a été désactivé. Contactez le support pour un nouvel accès.';
     }
 
     private function getUserFromToken(Request $request): ?User

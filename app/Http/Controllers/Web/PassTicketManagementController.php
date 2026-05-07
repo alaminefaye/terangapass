@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Models\PassTicket;
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class PassTicketManagementController extends Controller
 {
@@ -55,5 +57,35 @@ class PassTicketManagementController extends Controller
         return redirect()
             ->route('admin.pass-tickets.index')
             ->with('success', 'Billet révoqué. Le QR ne sera plus accepté aux contrôles.');
+    }
+
+    /**
+     * Émet un nouveau pass actif (ex. après révocation), si l’utilisateur n’en a pas déjà un.
+     */
+    public function reissue(User $user)
+    {
+        if ($user->user_type === 'admin') {
+            return redirect()
+                ->route('admin.pass-tickets.index')
+                ->with('warning', 'Les comptes administrateur ne reçoivent pas de pass depuis cette page.');
+        }
+
+        if (PassTicket::queryActiveForUser($user->id)->exists()) {
+            return redirect()
+                ->route('admin.pass-tickets.index')
+                ->with('warning', 'Cet utilisateur a déjà un pass actif.');
+        }
+
+        PassTicket::create([
+            'user_id' => $user->id,
+            'public_id' => (string) Str::ulid(),
+            'type' => 'joj_visitor_pilot',
+            'status' => 'active',
+            'valid_until' => now()->addYear(),
+        ]);
+
+        return redirect()
+            ->route('admin.pass-tickets.index')
+            ->with('success', 'Nouveau pass émis pour '.$user->name.'.');
     }
 }

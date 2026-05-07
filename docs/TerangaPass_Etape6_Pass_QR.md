@@ -40,7 +40,12 @@ Voir `.env.example` : `TERANGA_PASS_QR_SECRET`, `TERANGA_PASS_CONTROL_KEY`.
 ## Administration (Laravel)
 
 - Menu **Pass QR** : `/admin/pass-tickets` — liste, filtres, bouton **Révoquer** (statut + `revoked_at`).
-- Routes : `admin.pass-tickets.index`, `admin.pass-tickets.revoke`.
+- **Redélivrer** : pour une ligne sans pass actif (révoqué ou expiré), émet un **nouveau** billet (`public_id` neuf, validité +1 an pilote). Refus si l’utilisateur a déjà un pass actif ou si c’est un compte `admin`.
+- Routes : `admin.pass-tickets.index`, `admin.pass-tickets.revoke`, `admin.pass-tickets.reissue`.
+
+## API — message pass désactivé
+
+- Si l’utilisateur a un historique révoqué et aucun pass actif, `GET /pass/ticket` renvoie **403** avec un texte **FR ou EN** selon l’en-tête **`Accept-Language`** (préfixe `en` ou variantes `en-us` / `en-gb`).
 
 ## Suite possible
 

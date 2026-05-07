@@ -81,6 +81,7 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     // Pass QR (billetterie pilote)
     Route::get('pass-tickets', [PassTicketManagementController::class, 'index'])->name('pass-tickets.index');
     Route::post('pass-tickets/{passTicket}/revoke', [PassTicketManagementController::class, 'revoke'])->name('pass-tickets.revoke');
+    Route::post('pass-tickets/reissue/{user}', [PassTicketManagementController::class, 'reissue'])->name('pass-tickets.reissue');
 
     // Sites de Compétition
     Route::resource('competition-sites', CompetitionSiteManagementController::class);

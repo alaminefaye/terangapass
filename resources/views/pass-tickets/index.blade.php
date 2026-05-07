@@ -88,6 +88,11 @@
                                         @csrf
                                         <button type="submit" class="btn btn-sm btn-outline-danger">Révoquer</button>
                                     </form>
+                                @elseif($ticket->user && !\App\Models\PassTicket::queryActiveForUser($ticket->user_id)->exists())
+                                    <form action="{{ route('admin.pass-tickets.reissue', $ticket->user) }}" method="POST" class="d-inline" onsubmit="return confirm('Émettre un nouveau pass pour cet utilisateur ?');">
+                                        @csrf
+                                        <button type="submit" class="btn btn-sm btn-outline-success">Redélivrer</button>
+                                    </form>
                                 @else
                                     <span class="text-muted small">—</span>
                                 @endif

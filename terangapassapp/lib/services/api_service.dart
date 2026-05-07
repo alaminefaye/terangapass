@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../constants/api_constants.dart';
+import '../constants/app_constants.dart';
 import 'api_error_messages.dart';
 
 class ApiService {
@@ -197,6 +198,12 @@ class ApiService {
           if (_cookieHeader != null && _cookieHeader!.isNotEmpty) {
             options.headers['Cookie'] = _cookieHeader;
           }
+          final lang =
+              AppConstants.localeNotifier.value?.languageCode ??
+              AppConstants.defaultLanguage;
+          options.headers['Accept-Language'] = lang == 'en'
+              ? 'en-US,en;q=0.9,fr-FR;q=0.8,fr;q=0.7'
+              : 'fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7';
           // Log détaillé de la requête pour debugging
           _debugLog('=== API REQUEST ===');
           _debugLog('URL: ${options.method} ${options.baseUrl}${options.path}');
