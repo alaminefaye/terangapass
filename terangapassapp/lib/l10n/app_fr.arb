@@ -350,7 +350,26 @@
     }
   },
   "profileOfflinePackCatalogPending": "Catalogue : non synchronisé",
-  "profileOfflinePackDialogBody": "Le téléchargement d’un pack local (cartes et annuaire) arrivera dans une prochaine version. Le numéro de catalogue ci-dessous permet déjà de vérifier que l’app dialogue avec le serveur.",
+  "profileOfflinePackDialogBody": "Téléchargez POI, sites JOJ, ambassades, calendrier et annonces pour les consulter sans réseau. En cas de coupure, le téléchargement reprend : les fichiers déjà corrects sont ignorés.",
+  "profileOfflinePackDownload": "Télécharger / mettre à jour",
+  "profileOfflinePackProgressDetail": "{current} / {total} · {bundleId}",
+  "@profileOfflinePackProgressDetail": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      },
+      "bundleId": {
+        "type": "String"
+      }
+    }
+  },
+  "profileOfflinePackDownloadSuccess": "Pack enregistré sur l’appareil.",
+  "profileOfflinePackDownloadPartial": "Téléchargement incomplet. Réessayez avec le réseau.",
+  "profileOfflinePackAlreadyCurrent": "Vous avez déjà la dernière version en local.",
+  "profileOfflinePackDownloadError": "Impossible de récupérer le manifeste. Vérifiez le réseau.",
   "offlineUsingCache": "Affichage hors ligne : données en cache.",
   "offlinePackUpdated": "Pack {version} enregistré sur l’appareil.",
   "@offlinePackUpdated": {

@@ -900,7 +900,35 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get profileOfflinePackDialogBody =>
-      'Le téléchargement d’un pack local (cartes et annuaire) arrivera dans une prochaine version. Le numéro de catalogue ci-dessous permet déjà de vérifier que l’app dialogue avec le serveur.';
+      'Téléchargez POI, sites JOJ, ambassades, calendrier et annonces pour les consulter sans réseau. En cas de coupure, le téléchargement reprend : les fichiers déjà corrects sont ignorés.';
+
+  @override
+  String get profileOfflinePackDownload => 'Télécharger / mettre à jour';
+
+  @override
+  String profileOfflinePackProgressDetail(
+    int current,
+    int total,
+    String bundleId,
+  ) {
+    return '$current / $total · $bundleId';
+  }
+
+  @override
+  String get profileOfflinePackDownloadSuccess =>
+      'Pack enregistré sur l’appareil.';
+
+  @override
+  String get profileOfflinePackDownloadPartial =>
+      'Téléchargement incomplet. Réessayez avec le réseau.';
+
+  @override
+  String get profileOfflinePackAlreadyCurrent =>
+      'Vous avez déjà la dernière version en local.';
+
+  @override
+  String get profileOfflinePackDownloadError =>
+      'Impossible de récupérer le manifeste. Vérifiez le réseau.';
 
   @override
   String get offlineUsingCache => 'Affichage hors ligne : données en cache.';

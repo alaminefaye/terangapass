@@ -589,20 +589,49 @@ class _ProfileScreenState extends State<ProfileScreen> {
               Icons.cloud_download_outlined,
               false,
               subtitle: _offlinePackSubtitle(l10n),
-              onTap: () {
-                showDialog<void>(
+              onTap: () async {
+                final r = await showDialog<OfflinePackSyncResult?>(
                   context: context,
-                  builder: (ctx) => AlertDialog(
-                    title: Text(l10n.profileOfflinePackTitle),
-                    content: Text(l10n.profileOfflinePackDialogBody),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.of(ctx).pop(),
-                        child: Text(l10n.ok),
-                      ),
-                    ],
-                  ),
+                  builder: (ctx) => _OfflinePackDialog(l10n: l10n),
                 );
+                if (!mounted || r == null) return;
+                await _reloadOfflineVersions();
+                if (!mounted || !context.mounted) return;
+                final messenger = ScaffoldMessenger.of(context);
+                switch (r) {
+                  case OfflinePackSyncResult.success:
+                    messenger.showSnackBar(
+                      SnackBar(
+                        content: Text(l10n.profileOfflinePackDownloadSuccess),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                    break;
+                  case OfflinePackSyncResult.upToDate:
+                    messenger.showSnackBar(
+                      SnackBar(
+                        content: Text(l10n.profileOfflinePackAlreadyCurrent),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                    break;
+                  case OfflinePackSyncResult.partialFailure:
+                    messenger.showSnackBar(
+                      SnackBar(
+                        content: Text(l10n.profileOfflinePackDownloadPartial),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                    break;
+                  case OfflinePackSyncResult.error:
+                    messenger.showSnackBar(
+                      SnackBar(
+                        content: Text(l10n.profileOfflinePackDownloadError),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                    break;
+                }
               },
             ),
             _buildSettingTile(
@@ -701,6 +730,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _reloadOfflineVersions() async {
+    final cat = await OfflinePackService().cachedCatalogVersion();
+    final dl = await OfflinePackService().downloadedPackVersion();
+    if (!mounted) return;
+    setState(() {
+      _offlineCatalogVersion = cat;
+      _offlineDownloadedVersion = dl;
+    });
   }
 
   String _offlinePackSubtitle(AppLocalizations l10n) {
@@ -1288,6 +1327,113 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _OfflinePackDialog extends StatefulWidget {
+  const _OfflinePackDialog({required this.l10n});
+
+  final AppLocalizations l10n;
+
+  @override
+  State<_OfflinePackDialog> createState() => _OfflinePackDialogState();
+}
+
+class _OfflinePackDialogState extends State<_OfflinePackDialog> {
+  bool _busy = false;
+  OfflinePackDownloadProgress? _progress;
+  String? _errorText;
+
+  Future<void> _run() async {
+    setState(() {
+      _busy = true;
+      _errorText = null;
+      _progress = null;
+    });
+    try {
+      final r = await OfflinePackService().downloadPackNow(
+        ApiService(),
+        onProgress: (p) {
+          if (mounted) {
+            setState(() => _progress = p);
+          }
+        },
+      );
+      if (!mounted) return;
+      Navigator.of(context).pop(r);
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _busy = false;
+          _errorText = e.toString().replaceAll('Exception: ', '');
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = widget.l10n;
+    final indeterminate = _progress == null ||
+        _progress!.totalBytes == null ||
+        _progress!.totalBytes! <= 0;
+    return PopScope(
+      canPop: !_busy,
+      child: AlertDialog(
+        title: Text(l10n.profileOfflinePackTitle),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                l10n.profileOfflinePackDialogBody,
+                style: GoogleFonts.poppins(fontSize: 14, height: 1.35),
+              ),
+              if (_errorText != null) ...[
+                const SizedBox(height: 10),
+                Text(
+                  _errorText!,
+                  style: GoogleFonts.poppins(
+                    fontSize: 13,
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                ),
+              ],
+              if (_busy) ...[
+                const SizedBox(height: 16),
+                if (_progress != null)
+                  Text(
+                    l10n.profileOfflinePackProgressDetail(
+                      _progress!.bundleIndex + 1,
+                      _progress!.bundleTotal,
+                      _progress!.bundleId,
+                    ),
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      color: AppTheme.textSecondary,
+                    ),
+                  ),
+                const SizedBox(height: 8),
+                LinearProgressIndicator(
+                  value: indeterminate ? null : _progress!.overallFraction,
+                ),
+              ],
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: _busy ? null : () => Navigator.of(context).pop(),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton(
+            onPressed: _busy ? null : _run,
+            child: Text(l10n.profileOfflinePackDownload),
+          ),
+        ],
       ),
     );
   }

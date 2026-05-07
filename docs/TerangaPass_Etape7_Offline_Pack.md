@@ -9,22 +9,31 @@
   - `pack_version` : chaîne configurable via `TERANGA_OFFLINE_CATALOG_VERSION` (défaut dans `config/terangapass.php`).
   - `generated_at` : horodatage ISO génération côté serveur.
   - `min_app_semver` : réservé pour exiger une version minimale de l’app (nullable).
-  - **`bundles`** : entrées `poi` et `competition_sites` avec `url` absolue, `sha256`, `byte_size` (calculés côté serveur à chaque requête manifeste).
+  - **`bundles`** : une entrée par lot avec `url` absolue, `sha256`, `byte_size` (calculés côté serveur à chaque requête manifeste). Identifiants : `poi`, `competition_sites`, `embassies`, `competition_calendar`, `audio_announcements`.
 
-- **Téléchargement public** (même contenu que les routes tourisme / sites, sans auth) :
+- **Téléchargement public** (même contenu que les routes métier, sans auth) :
   - `GET /api/v1/utility/offline-bundle/poi`
   - `GET /api/v1/utility/offline-bundle/competition-sites`
+  - `GET /api/v1/utility/offline-bundle/embassies`
+  - `GET /api/v1/utility/offline-bundle/competition-calendar`
+  - `GET /api/v1/utility/offline-bundle/audio-announcements`
 
-- **App** : `OfflinePackService` enregistre le manifeste puis **télécharge les JSON** vers `Documents/offline_packs/` lorsque `pack_version` change (vérification **SHA-256**). L’**accueil** lance `refreshIfStale` (max 1 / 6 h) ; le **profil** force une sync à l’ouverture. Rubrique « Pack hors ligne » affiche la **version de catalogue** (ou « non synchronisé »).
+- **App** : `OfflinePackService` enregistre le manifeste puis **télécharge les JSON** vers `Documents/offline_packs/` lorsque `pack_version` change (vérification **SHA-256**). L’**accueil** lance `refreshIfStale` (max 1 / 6 h) ; le **profil** force une sync à l’ouverture. Rubrique « Pack hors ligne » affiche la **version de catalogue**, la **version des fichiers locaux** si elle diffère, et un **message** si les fichiers sont plus anciens que le catalogue (invitation à se reconnecter pour terminer la mise à jour).
+
+- **Téléchargement manuel** : dans le dialogue du pack hors ligne, **Télécharger / mettre à jour** lance `downloadPackNow` (barre de progression, lot en cours). Les opérations sont **sérialisées** ; une **reprise** est possible : chaque fichier local dont le **SHA-256** correspond au manifeste est **sauté** (pas de re-téléchargement).
+
+- **Après téléchargement automatique** (hors dialogue) : un snackbar sur l’accueil indique que le pack « X » a été enregistré (`maybeShowPackUpdatedToast`). Un téléchargement depuis le profil affiche un retour dans le **dialogue** / snackbar dédiés, sans dupliquer ce toast sur l’accueil.
 
 > **Note déploiement** : les URLs des bundles utilisent `APP_URL`. L’appareil doit pouvoir joindre ce même hôte que dans `ApiConstants` (dev : IP locale / émulateur).
 
+## Lecture hors ligne (UX)
+
+- **Accueil** (annonce officielle), **embassades**, **annonces audio**, **INFOS JOJ** (calendrier) : repli sur les fichiers `offline_packs/*.json` si l’API échoue, avec snackbar « données en cache » quand c’est le cas.
+
 ## Suite (backlog)
 
-1. **Autres bundles** : annonces audio, ambassades, etc.
-2. **UX téléchargement** : barre de progression, reprise après coupure, indicateur « X Mo » dans le profil.
-3. **Lecture hors ligne** : ✅ accueil JOJ, carte interactive, tourisme, « À deux pas », INFOS JOJ **rechargent depuis** `offline_packs/*.json` si l’API échoue (snackbar « données en cache »).
-4. **Périmé** : invitation explicite à mettre à jour le pack si le manifeste change.
+1. **UX téléchargement** : indicateur **volume total (Mo)** dans le profil, reprise réseau plus fine (chunk / retry par bundle) si besoin terrain.
+2. **Paiements** : hors périmètre étape 7 (étape 5).
 
 ## Variables
 

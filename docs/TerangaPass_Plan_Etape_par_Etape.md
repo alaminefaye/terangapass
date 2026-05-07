@@ -131,9 +131,9 @@ Constantes partagées côté app : `terangapassapp/lib/constants/map_constants.d
 
 | Sous-étape | Livrable | Statut (mai 2026) |
 |------------|----------|-------------------|
-| 7.1 | Liste des **données** à embarquer (POI, cartes, annonces d’urgence) | **Partiel** : POI + sites JOJ dans `bundles` ; autres types (audio, etc.) à ajouter |
-| 7.2 | Téléchargement **1 clic** + gestion stockage / mise à jour | **Partiel** : téléchargement auto si `pack_version` change → `Documents/offline_packs/*.json` ; pas encore bouton « Télécharger » ni reprise après coupure |
-| 7.3 | Comportement si données **périmées** | **Partiel** : repli hors ligne si API KO (cache fichiers) ; invite explicite « mise à jour du pack » si version manifeste > locale — à peaufiner |
+| 7.1 | Liste des **données** à embarquer (POI, cartes, annonces d’urgence) | **Partiel** : `bundles` = POI, sites JOJ, ambassades, calendrier compétition, annonces audio (manifeste + endpoints `utility/offline-bundle/*`) ; extensions futures au besoin |
+| 7.2 | Téléchargement **1 clic** + gestion stockage / mise à jour | **Partiel** : auto + bouton **Télécharger / mettre à jour** (profil), barre de progression, reprise par fichier (SHA) ; pas encore estimation « X Mo » ni retry HTTP détaillé |
+| 7.3 | Comportement si données **périmées** | **Partiel** : repli hors ligne + snackbar cache ; profil compare catalogue / fichiers locaux ; snackbar après enregistrement du pack ; aller en ligne pour finir si fichiers obsolètes |
 
 **Terminé quand** : test terrain sans réseau sur parcours défini.
 

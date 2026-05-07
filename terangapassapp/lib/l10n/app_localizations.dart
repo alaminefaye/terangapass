@@ -1781,8 +1781,48 @@ abstract class AppLocalizations {
   /// No description provided for @profileOfflinePackDialogBody.
   ///
   /// In fr, this message translates to:
-  /// **'Le téléchargement d’un pack local (cartes et annuaire) arrivera dans une prochaine version. Le numéro de catalogue ci-dessous permet déjà de vérifier que l’app dialogue avec le serveur.'**
+  /// **'Téléchargez POI, sites JOJ, ambassades, calendrier et annonces pour les consulter sans réseau. En cas de coupure, le téléchargement reprend : les fichiers déjà corrects sont ignorés.'**
   String get profileOfflinePackDialogBody;
+
+  /// No description provided for @profileOfflinePackDownload.
+  ///
+  /// In fr, this message translates to:
+  /// **'Télécharger / mettre à jour'**
+  String get profileOfflinePackDownload;
+
+  /// No description provided for @profileOfflinePackProgressDetail.
+  ///
+  /// In fr, this message translates to:
+  /// **'{current} / {total} · {bundleId}'**
+  String profileOfflinePackProgressDetail(
+    int current,
+    int total,
+    String bundleId,
+  );
+
+  /// No description provided for @profileOfflinePackDownloadSuccess.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pack enregistré sur l’appareil.'**
+  String get profileOfflinePackDownloadSuccess;
+
+  /// No description provided for @profileOfflinePackDownloadPartial.
+  ///
+  /// In fr, this message translates to:
+  /// **'Téléchargement incomplet. Réessayez avec le réseau.'**
+  String get profileOfflinePackDownloadPartial;
+
+  /// No description provided for @profileOfflinePackAlreadyCurrent.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous avez déjà la dernière version en local.'**
+  String get profileOfflinePackAlreadyCurrent;
+
+  /// No description provided for @profileOfflinePackDownloadError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de récupérer le manifeste. Vérifiez le réseau.'**
+  String get profileOfflinePackDownloadError;
 
   /// No description provided for @offlineUsingCache.
   ///

@@ -350,7 +350,26 @@
     }
   },
   "profileOfflinePackCatalogPending": "Catalog: not synced yet",
-  "profileOfflinePackDialogBody": "Downloading a local pack (maps and directory) will ship in a later release. The catalog version below already confirms the app can reach the server.",
+  "profileOfflinePackDialogBody": "Download POI, JOJ sites, embassies, calendar, and announcements for offline use. If the connection drops, the download resumes—files that are already correct are skipped.",
+  "profileOfflinePackDownload": "Download / update",
+  "profileOfflinePackProgressDetail": "{current} / {total} · {bundleId}",
+  "@profileOfflinePackProgressDetail": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      },
+      "bundleId": {
+        "type": "String"
+      }
+    }
+  },
+  "profileOfflinePackDownloadSuccess": "Pack saved on this device.",
+  "profileOfflinePackDownloadPartial": "Download incomplete. Retry when online.",
+  "profileOfflinePackAlreadyCurrent": "You already have the latest version locally.",
+  "profileOfflinePackDownloadError": "Could not fetch the manifest. Check your connection.",
   "offlineUsingCache": "Offline view: using cached data.",
   "offlinePackUpdated": "Pack {version} saved on this device.",
   "@offlinePackUpdated": {

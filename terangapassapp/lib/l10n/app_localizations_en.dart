@@ -890,7 +890,34 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get profileOfflinePackDialogBody =>
-      'Downloading a local pack (maps and directory) will ship in a later release. The catalog version below already confirms the app can reach the server.';
+      'Download POI, JOJ sites, embassies, calendar, and announcements for offline use. If the connection drops, the download resumes—files that are already correct are skipped.';
+
+  @override
+  String get profileOfflinePackDownload => 'Download / update';
+
+  @override
+  String profileOfflinePackProgressDetail(
+    int current,
+    int total,
+    String bundleId,
+  ) {
+    return '$current / $total · $bundleId';
+  }
+
+  @override
+  String get profileOfflinePackDownloadSuccess => 'Pack saved on this device.';
+
+  @override
+  String get profileOfflinePackDownloadPartial =>
+      'Download incomplete. Retry when online.';
+
+  @override
+  String get profileOfflinePackAlreadyCurrent =>
+      'You already have the latest version locally.';
+
+  @override
+  String get profileOfflinePackDownloadError =>
+      'Could not fetch the manifest. Check your connection.';
 
   @override
   String get offlineUsingCache => 'Offline view: using cached data.';
