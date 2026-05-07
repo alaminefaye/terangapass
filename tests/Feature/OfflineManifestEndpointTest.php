@@ -17,16 +17,23 @@ class OfflineManifestEndpointTest extends TestCase
 
         $response->assertOk()
             ->assertJsonPath('data.schema_version', 1)
-            ->assertJsonPath('data.pack_version', 'test-9.9.9')
-            ->assertJsonPath('data.bundles', [])
-            ->assertJsonStructure([
-                'data' => [
-                    'schema_version',
-                    'pack_version',
-                    'generated_at',
-                    'min_app_semver',
-                    'bundles',
+            ->assertJsonPath('data.pack_version', 'test-9.9.9');
+        $bundles = $response->json('data.bundles');
+        $this->assertIsArray($bundles);
+        $this->assertGreaterThanOrEqual(2, count($bundles));
+        $this->assertSame('poi', $bundles[0]['id'] ?? null);
+        $this->assertSame('competition_sites', $bundles[1]['id'] ?? null);
+
+        $response->assertJsonStructure([
+            'data' => [
+                'schema_version',
+                'pack_version',
+                'generated_at',
+                'min_app_semver',
+                'bundles' => [
+                    '*' => ['id', 'kind', 'url', 'sha256', 'byte_size'],
                 ],
-            ]);
+            ],
+        ]);
     }
 }

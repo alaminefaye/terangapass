@@ -2,24 +2,29 @@
 
 **Référence plan** : [TerangaPass_Plan_Etape_par_Etape.md](TerangaPass_Plan_Etape_par_Etape.md) — section « Étape 7 ».
 
-## Socle livré (v1)
+## Socle livré
 
 - **API** : `GET /api/v1/utility/offline-manifest` (sans authentification) renvoie un manifeste JSON :
   - `schema_version` : version du format (entier, actuellement `1`).
   - `pack_version` : chaîne configurable via `TERANGA_OFFLINE_CATALOG_VERSION` (défaut dans `config/terangapass.php`).
   - `generated_at` : horodatage ISO génération côté serveur.
   - `min_app_semver` : réservé pour exiger une version minimale de l’app (nullable).
-  - `bundles` : liste des artefacts à télécharger (vide au départ ; futurs ZIP / JSON signés).
+  - **`bundles`** : entrées `poi` et `competition_sites` avec `url` absolue, `sha256`, `byte_size` (calculés côté serveur à chaque requête manifeste).
 
-- **App** : depuis le **profil**, rubrique « Pack hors ligne » affiche le texte produit et la **version de catalogue** après synchronisation réussie avec l’API ; sinon mention « non synchronisé ».
-- **Sync** : `OfflinePackService` met en cache le manifeste JSON (`SharedPreferences`) ; l’**accueil** déclenche une sync en arrière-plan au plus une fois toutes les **6 h** (`refreshIfStale`) ; le **profil** force une `refresh` à l’ouverture pour un numéro de catalogue à jour.
+- **Téléchargement public** (même contenu que les routes tourisme / sites, sans auth) :
+  - `GET /api/v1/utility/offline-bundle/poi`
+  - `GET /api/v1/utility/offline-bundle/competition-sites`
+
+- **App** : `OfflinePackService` enregistre le manifeste puis **télécharge les JSON** vers `Documents/offline_packs/` lorsque `pack_version` change (vérification **SHA-256**). L’**accueil** lance `refreshIfStale` (max 1 / 6 h) ; le **profil** force une sync à l’ouverture. Rubrique « Pack hors ligne » affiche la **version de catalogue** (ou « non synchronisé »).
+
+> **Note déploiement** : les URLs des bundles utilisent `APP_URL`. L’appareil doit pouvoir joindre ce même hôte que dans `ApiConstants` (dev : IP locale / émulateur).
 
 ## Suite (backlog)
 
-1. **Remplir `bundles`** : `{ "id", "url", "sha256", "byte_size", "kind" }` par type (POI, sites JOJ, annonces audio, etc.).
-2. **Téléchargement** : stockage local (`path_provider` / fichier sécurisé), barre de progression, reprise après coupure.
-3. **Lecture hors ligne** : adapters des écrans carte / liste pour lire le cache quand l’API est injoignable.
-4. **Périmé** : si `pack_version` ou checksum local ≠ manifeste → inviter à mettre à jour le pack.
+1. **Autres bundles** : annonces audio, ambassades, etc.
+2. **UX téléchargement** : barre de progression, reprise après coupure, indicateur « X Mo » dans le profil.
+3. **Lecture hors ligne** : carte / listes lisent `offline_packs/*.json` si l’API est injoignable.
+4. **Périmé** : invitation explicite à mettre à jour le pack si le manifeste change.
 
 ## Variables
 

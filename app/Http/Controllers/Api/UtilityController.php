@@ -10,17 +10,41 @@ use Illuminate\Http\Request;
 class UtilityController extends Controller
 {
     /**
-     * Manifeste du pack hors ligne — socle étape 7 (bundles enrichis plus tard).
+     * Manifeste du pack hors ligne — bundles POI + sites JOJ (étape 7).
      */
     public function offlineManifest(): JsonResponse
     {
+        $poiRequest = Request::create('/api/v1/tourism/points-of-interest', 'GET');
+        $poiResponse = app(TourismController::class)->pointsOfInterest($poiRequest);
+        $poiRaw = $poiResponse->getContent();
+
+        $sitesResponse = app(CompetitionSiteController::class)->index();
+        $sitesRaw = $sitesResponse->getContent();
+
+        $bundles = [
+            [
+                'id' => 'poi',
+                'kind' => 'json',
+                'url' => url('api/v1/utility/offline-bundle/poi'),
+                'sha256' => hash('sha256', $poiRaw),
+                'byte_size' => strlen($poiRaw),
+            ],
+            [
+                'id' => 'competition_sites',
+                'kind' => 'json',
+                'url' => url('api/v1/utility/offline-bundle/competition-sites'),
+                'sha256' => hash('sha256', $sitesRaw),
+                'byte_size' => strlen($sitesRaw),
+            ],
+        ];
+
         return response()->json([
             'data' => [
                 'schema_version' => 1,
                 'pack_version' => config('terangapass.offline_catalog_version'),
                 'generated_at' => now()->toIso8601String(),
                 'min_app_semver' => null,
-                'bundles' => [],
+                'bundles' => $bundles,
             ],
         ]);
     }

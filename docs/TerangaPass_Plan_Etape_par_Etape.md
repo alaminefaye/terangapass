@@ -131,8 +131,8 @@ Constantes partagées côté app : `terangapassapp/lib/constants/map_constants.d
 
 | Sous-étape | Livrable | Statut (mai 2026) |
 |------------|----------|-------------------|
-| 7.1 | Liste des **données** à embarquer (POI, cartes, annonces d’urgence) | **Partiel** : manifeste `GET /api/v1/utility/offline-manifest` + doc [TerangaPass_Etape7_Offline_Pack.md](TerangaPass_Etape7_Offline_Pack.md) |
-| 7.2 | Téléchargement **1 clic** + gestion stockage / mise à jour | Non — prochaine itération |
+| 7.1 | Liste des **données** à embarquer (POI, cartes, annonces d’urgence) | **Partiel** : POI + sites JOJ dans `bundles` ; autres types (audio, etc.) à ajouter |
+| 7.2 | Téléchargement **1 clic** + gestion stockage / mise à jour | **Partiel** : téléchargement auto si `pack_version` change → `Documents/offline_packs/*.json` ; pas encore bouton « Télécharger » ni reprise après coupure |
 | 7.3 | Comportement si données **périmées** | Non — dépend de 7.2 |
 
 **Terminé quand** : test terrain sans réseau sur parcours défini.

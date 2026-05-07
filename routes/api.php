@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\DeviceTokenController;
 use App\Http\Controllers\Api\IncidentController;
 use App\Http\Controllers\Api\NearbyController;
 use App\Http\Controllers\Api\NotificationController;
+use App\Http\Controllers\Api\OfflinePackController;
 use App\Http\Controllers\Api\PassTicketController;
 use App\Http\Controllers\Api\TourismController;
 use App\Http\Controllers\Api\TransportController;
@@ -40,6 +41,8 @@ Route::prefix('v1')->group(function () {
 
     // Manifeste pack hors ligne (sans auth — comparé au cache app)
     Route::get('/utility/offline-manifest', [UtilityController::class, 'offlineManifest']);
+    Route::get('/utility/offline-bundle/poi', [OfflinePackController::class, 'poiBundle']);
+    Route::get('/utility/offline-bundle/competition-sites', [OfflinePackController::class, 'competitionSitesBundle']);
 });
 
 // Routes protégées (nécessitent une authentification)
