@@ -40,10 +40,17 @@ class _LoginScreenState extends State<LoginScreen> {
       final apiService = ApiService();
       final email = normalizeEmailForAuth(_emailController.text);
       final password = _passwordController.text;
-      await apiService.login(email, password);
+      final loginResult = await apiService.login(email, password);
 
       final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('auth_token');
+      var token = prefs.getString('auth_token');
+      if (token == null || token.isEmpty) {
+        final rt = loginResult['token'];
+        if (rt is String && rt.trim().isNotEmpty) {
+          token = rt.trim();
+          await prefs.setString('auth_token', token);
+        }
+      }
       if (token == null || token.isEmpty) {
         await apiService.clearLocalAuth();
         throw Exception(ApiErrorMessages.loginIncompleteNoToken);

@@ -1,5 +1,16 @@
+import org.gradle.api.JavaVersion
+import org.gradle.api.tasks.compile.JavaCompile
+
 plugins {
     id("com.google.gms.google-services") version "4.4.2" apply false
+}
+
+// Plugins Flutter tiers : sans cela, javac reste en -source 8 → warnings « obsolete » (JDK 21+).
+subprojects {
+    tasks.withType<JavaCompile>().configureEach {
+        sourceCompatibility = JavaVersion.VERSION_17.toString()
+        targetCompatibility = JavaVersion.VERSION_17.toString()
+    }
 }
 
 allprojects {

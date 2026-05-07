@@ -935,4 +935,9 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get profileOfflinePackStaleFiles =>
       'Some files are older than the catalog: go online to finish updating.';
+
+  @override
+  String profileOfflinePackLocalSize(String size) {
+    return 'Local storage: $size';
+  }
 }

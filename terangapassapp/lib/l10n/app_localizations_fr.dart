@@ -946,4 +946,9 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get profileOfflinePackStaleFiles =>
       'Des fichiers sont plus anciens que le catalogue : reconnectez-vous au réseau pour terminer la mise à jour.';
+
+  @override
+  String profileOfflinePackLocalSize(String size) {
+    return 'Stockage local : $size';
+  }
 }

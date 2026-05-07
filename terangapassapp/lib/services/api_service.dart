@@ -129,18 +129,40 @@ class ApiService {
     return null;
   }
 
+  String? _coerceTokenValue(Object? raw) {
+    if (raw == null) return null;
+    if (raw is String) {
+      final t = raw.trim();
+      return t.isEmpty ? null : t;
+    }
+    if (raw is num) {
+      return raw.toString();
+    }
+    return null;
+  }
+
+  /// Clés fréquentes : Laravel custom, Sanctum (`plainTextToken`).
   String? _extractTokenFromBody(Map<String, dynamic> body) {
-    final direct = body['token'] ?? body['access_token'];
-    if (direct is String && direct.trim().isNotEmpty) {
-      return direct.trim();
+    const topKeys = [
+      'token',
+      'access_token',
+      'plainTextToken',
+      'accessToken',
+      'auth_token',
+    ];
+    for (final k in topKeys) {
+      final v = _coerceTokenValue(body[k]);
+      if (v != null) return v;
     }
 
     final data = body['data'];
     if (data is Map) {
-      final m = Map<String, dynamic>.from(data);
-      final nested = m['token'] ?? m['access_token'];
-      if (nested is String && nested.trim().isNotEmpty) {
-        return nested.trim();
+      final m = Map<String, dynamic>.from(
+        data.map((k, v) => MapEntry(k.toString(), v)),
+      );
+      for (final k in topKeys) {
+        final v = _coerceTokenValue(m[k]);
+        if (v != null) return v;
       }
     }
 
@@ -177,9 +199,9 @@ class ApiService {
           'Referer': '$baseUrlForHeaders/',
         },
         validateStatus: (status) {
-          // Laisser Dio gérer les erreurs (codes >= 400 sont considérés comme erreurs)
-          // On les capture dans le catch et on les gère dans _handleError
-          return status != null && status < 400;
+          // Exclure les 3xx : sinon une redirection / page HTML peut être traitée comme succès.
+          // Les erreurs 4xx/5xx passent par DioException et [_handleError].
+          return status != null && status >= 200 && status < 300;
         },
       ),
     );
@@ -356,28 +378,34 @@ class ApiService {
         final cookieHeader = _extractCookieHeaderFromResponse(response.headers);
         if (cookieHeader != null && cookieHeader.isNotEmpty) {
           await _saveCookie(cookieHeader);
-          return {'success': true};
         }
+        // Un cookie seul ne remplace pas un Bearer : l’API doit renvoyer un jeton (JSON ou en-tête).
         throw Exception(ApiErrorMessages.loginEmptyOrNoToken);
       }
 
       final responseData = _decodeMapResponse(data);
-      final token =
+      var token =
           _extractTokenFromBody(responseData) ??
           _extractTokenFromHeaders(response.headers);
 
-      if (responseData['success'] == true && token != null) {
-        await _saveToken(token);
-        responseData['token'] = token;
-        return responseData;
-      } else if (token != null) {
+      final successFlag = responseData['success'];
+      final success =
+          successFlag == true ||
+          successFlag == 'true' ||
+          successFlag == 1;
+
+      if (token != null && token.isNotEmpty) {
         await _saveToken(token);
         responseData['token'] = token;
         return responseData;
       }
 
+      if (success) {
+        throw Exception(ApiErrorMessages.loginIncompleteNoToken);
+      }
+
       throw Exception(
-        responseData['message'] ?? ApiErrorMessages.loginFailed,
+        responseData['message']?.toString() ?? ApiErrorMessages.loginFailed,
       );
     } on DioException catch (e) {
       throw _handleError(e);

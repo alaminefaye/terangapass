@@ -387,5 +387,13 @@
       }
     }
   },
-  "profileOfflinePackStaleFiles": "Some files are older than the catalog: go online to finish updating."
+  "profileOfflinePackStaleFiles": "Some files are older than the catalog: go online to finish updating.",
+  "profileOfflinePackLocalSize": "Local storage: {size}",
+  "@profileOfflinePackLocalSize": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  }
 }

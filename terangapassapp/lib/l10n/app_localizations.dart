@@ -1847,6 +1847,12 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Des fichiers sont plus anciens que le catalogue : reconnectez-vous au réseau pour terminer la mise à jour.'**
   String get profileOfflinePackStaleFiles;
+
+  /// No description provided for @profileOfflinePackLocalSize.
+  ///
+  /// In fr, this message translates to:
+  /// **'Stockage local : {size}'**
+  String profileOfflinePackLocalSize(String size);
 }
 
 class _AppLocalizationsDelegate

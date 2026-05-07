@@ -387,5 +387,13 @@
       }
     }
   },
-  "profileOfflinePackStaleFiles": "Des fichiers sont plus anciens que le catalogue : reconnectez-vous au réseau pour terminer la mise à jour."
+  "profileOfflinePackStaleFiles": "Des fichiers sont plus anciens que le catalogue : reconnectez-vous au réseau pour terminer la mise à jour.",
+  "profileOfflinePackLocalSize": "Stockage local : {size}",
+  "@profileOfflinePackLocalSize": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  }
 }

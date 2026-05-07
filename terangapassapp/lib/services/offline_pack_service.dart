@@ -80,6 +80,95 @@ class OfflinePackService {
 
   static const String packDirName = 'offline_packs';
 
+  /// Nouvelles tentatives HTTP pour erreurs réseau / serveur transitoires (par bundle).
+  static const int _kMaxBundleDownloadAttempts = 3;
+
+  static const Duration _kBundleRetryBaseDelay = Duration(milliseconds: 500);
+
+  bool _isRetriableDownloadError(Object e) {
+    if (e is SocketException) return true;
+    if (e is DioException) {
+      if (e.error is SocketException) return true;
+      switch (e.type) {
+        case DioExceptionType.connectionTimeout:
+        case DioExceptionType.sendTimeout:
+        case DioExceptionType.receiveTimeout:
+        case DioExceptionType.connectionError:
+          return true;
+        case DioExceptionType.badResponse:
+          final c = e.response?.statusCode ?? 0;
+          return c >= 500 || c == 408 || c == 429;
+        default:
+          return false;
+      }
+    }
+    return false;
+  }
+
+  /// Télécharge un bundle avec reprises ; échec SHA = pas de retry (contenu incohérent).
+  Future<bool> _downloadBundleWithRetries({
+    required Dio dio,
+    required _BundleSpec spec,
+    required String path,
+    required int bundleIndex,
+    required int bundleTotal,
+    void Function(OfflinePackDownloadProgress)? onProgress,
+  }) async {
+    Object? lastError;
+    StackTrace? lastSt;
+    for (var attempt = 1; attempt <= _kMaxBundleDownloadAttempts; attempt++) {
+      try {
+        final res = await dio.get<String>(
+          spec.url,
+          onReceiveProgress: (rcv, tot) {
+            onProgress?.call(
+              OfflinePackDownloadProgress(
+                bundleIndex: bundleIndex,
+                bundleTotal: bundleTotal,
+                bundleId: spec.id,
+                receivedBytes: rcv,
+                totalBytes: tot > 0 ? tot : null,
+              ),
+            );
+          },
+        );
+
+        final body = res.data ?? '';
+        if (spec.expectedSha.isNotEmpty) {
+          final digest = sha256.convert(utf8.encode(body));
+          if (digest.toString() != spec.expectedSha) {
+            debugPrint(
+              '[OfflinePack] sha256 mismatch for ${spec.id} — no retry.',
+            );
+            return false;
+          }
+        }
+
+        await File(path).writeAsString(body, flush: true);
+        return true;
+      } catch (e, st) {
+        lastError = e;
+        lastSt = st;
+        final canRetry = attempt < _kMaxBundleDownloadAttempts &&
+            _isRetriableDownloadError(e);
+        debugPrint(
+          '[OfflinePack] bundle ${spec.id} attempt $attempt/'
+          '$_kMaxBundleDownloadAttempts failed: $e',
+        );
+        if (!canRetry) {
+          debugPrint('$st');
+          return false;
+        }
+        final delay = _kBundleRetryBaseDelay * attempt;
+        await Future<void>.delayed(delay);
+      }
+    }
+    debugPrint(
+      '[OfflinePack] bundle ${spec.id} exhausted retries: $lastError\n$lastSt',
+    );
+    return false;
+  }
+
   Future<void> _persistManifest(
     Map<String, dynamic> manifest,
     SharedPreferences prefs,
@@ -281,50 +370,29 @@ class OfflinePackService {
         continue;
       }
 
-      try {
-        onProgress?.call(
-          OfflinePackDownloadProgress(
-            bundleIndex: i,
-            bundleTotal: n,
-            bundleId: spec.id,
-            receivedBytes: 0,
-            totalBytes: null,
-          ),
-        );
+      onProgress?.call(
+        OfflinePackDownloadProgress(
+          bundleIndex: i,
+          bundleTotal: n,
+          bundleId: spec.id,
+          receivedBytes: 0,
+          totalBytes: null,
+        ),
+      );
 
-        final res = await dio.get<String>(
-          spec.url,
-          onReceiveProgress: (rcv, tot) {
-            onProgress?.call(
-              OfflinePackDownloadProgress(
-                bundleIndex: i,
-                bundleTotal: n,
-                bundleId: spec.id,
-                receivedBytes: rcv,
-                totalBytes: tot > 0 ? tot : null,
-              ),
-            );
-          },
-        );
-
-        final body = res.data ?? '';
-        if (spec.expectedSha.isNotEmpty) {
-          final digest = sha256.convert(utf8.encode(body));
-          if (digest.toString() != spec.expectedSha) {
-            debugPrint(
-              '[OfflinePack] sha256 mismatch for ${spec.id} — skip write.',
-            );
-            anyFailure = true;
-            continue;
-          }
-        }
-
-        await File(path).writeAsString(body, flush: true);
-        didWrite = true;
-      } catch (e, st) {
-        debugPrint('[OfflinePack] bundle ${spec.id}: $e\n$st');
+      final ok = await _downloadBundleWithRetries(
+        dio: dio,
+        spec: spec,
+        path: path,
+        bundleIndex: i,
+        bundleTotal: n,
+        onProgress: onProgress,
+      );
+      if (!ok) {
         anyFailure = true;
+        continue;
       }
+      didWrite = true;
     }
 
     if (anyFailure) {
@@ -360,6 +428,26 @@ class OfflinePackService {
 
   Future<List<Map<String, dynamic>>> readOfflineAudioAnnouncementsList() async =>
       await _readBundleDataList('audio_announcements') ?? [];
+
+  /// Octets cumulés des fichiers `offline_packs/*.json` (présents sur disque).
+  Future<int> localPackTotalBytes() async {
+    try {
+      final baseDir = await getApplicationDocumentsDirectory();
+      final dir = Directory('${baseDir.path}/$packDirName');
+      if (!await dir.exists()) return 0;
+      var total = 0;
+      await for (final entity in dir.list(followLinks: false)) {
+        if (entity is! File) continue;
+        final lower = entity.path.toLowerCase();
+        if (!lower.endsWith('.json')) continue;
+        total += await entity.length();
+      }
+      return total;
+    } catch (e, st) {
+      debugPrint('[OfflinePack] localPackTotalBytes: $e\n$st');
+      return 0;
+    }
+  }
 
   /// Après téléchargement réussi des bundles, affiche un toast une fois (accueil).
   Future<void> maybeShowPackUpdatedToast(BuildContext context) async {

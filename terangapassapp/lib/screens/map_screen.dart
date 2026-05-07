@@ -72,23 +72,66 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
-  String? _categoryForFilter(_MapFilter filter) {
-    switch (filter) {
-      case _MapFilter.all:
-        return null;
-      case _MapFilter.help:
-        return null;
-      case _MapFilter.sites:
-        return null;
-      case _MapFilter.hotels:
-        return 'Hôtels';
-      case _MapFilter.restaurants:
-        return 'Restaurants';
-      case _MapFilter.pharmacies:
-        return 'Pharmacies';
-      case _MapFilter.hospitals:
-        return 'Hôpitaux';
+  String _embassyDisplayCategory(Map<String, dynamic> e) {
+    final mt = (e['mission_type'] ?? '').toString().toLowerCase();
+    if (mt.contains('consul')) return 'Consulats';
+    return 'Ambassades';
+  }
+
+  Map<String, dynamic> _mapEmbassyToPoint(Map<String, dynamic> raw) {
+    final id = raw['id'] ?? raw.hashCode;
+    final lat = _toDouble(raw['latitude']);
+    final lng = _toDouble(raw['longitude']);
+    double? distM;
+    var distance = 'N/A';
+    if (_currentLat != null &&
+        _currentLng != null &&
+        lat != null &&
+        lng != null) {
+      distM = LocationService().calculateDistance(
+        _currentLat!,
+        _currentLng!,
+        lat,
+        lng,
+      );
+      distance = distM < 1000
+          ? '${distM.round()} m'
+          : '${(distM / 1000).toStringAsFixed(1)} km';
     }
+    return {
+      'id': 'embassy_$id',
+      'name': raw['name'],
+      'category': _embassyDisplayCategory(raw),
+      'distance': distance,
+      'distance_meters': distM,
+      'latitude': lat,
+      'longitude': lng,
+      'address': raw['address'],
+      'phone': raw['phone'],
+    };
+  }
+
+  double _sortDistanceMeters(Map<String, dynamic> point) {
+    final v = point['distance_meters'];
+    if (v is num) return v.toDouble();
+    final d = _toDouble(v);
+    if (d != null) return d;
+    final lat = _toDouble(point['latitude'] ?? point['lat']);
+    final lng = _toDouble(
+      point['longitude'] ?? point['lng'] ?? point['lon'],
+    );
+    if (_currentLat != null &&
+        _currentLng != null &&
+        lat != null &&
+        lng != null) {
+      return LocationService().calculateDistance(
+        _currentLat!,
+        _currentLng!,
+        lat,
+        lng,
+      );
+    }
+    return double.infinity;
   }
 
   Future<void> _loadPointsOfInterest() async {
@@ -99,34 +142,80 @@ class _MapScreenState extends State<MapScreen> {
 
     try {
       final apiService = ApiService();
-      final futures = await Future.wait([
-        apiService.getPointsOfInterest(
-          category: _categoryForFilter(_selectedFilter),
-          latitude: _currentLat,
-          longitude: _currentLng,
-        ),
-        apiService.getCompetitionSites(),
-      ]);
-      final points = futures[0];
-      final sites = futures[1];
+      final lat = _currentLat;
+      final lng = _currentLng;
+
+      final points = await apiService.getPointsOfInterest(
+        category: null,
+        latitude: lat,
+        longitude: lng,
+      );
+
+      List<dynamic> sites = const [];
+      try {
+        sites = await apiService.getCompetitionSites();
+      } catch (e, st) {
+        debugPrint('[Map] competition sites: $e\n$st');
+      }
+
+      List<dynamic> embassies = const [];
+      try {
+        embassies = await apiService.getEmbassies();
+      } catch (e, st) {
+        debugPrint('[Map] embassies: $e\n$st');
+      }
+
       final sitePoints = sites
           .whereType<Map<String, dynamic>>()
-          .map(
-            (s) => <String, dynamic>{
-              'id': 'site_${s['id']}',
-              'name': s['name'],
+          .map((s) {
+            final m = Map<String, dynamic>.from(
+              s.map((k, v) => MapEntry(k.toString(), v)),
+            );
+            final pLat = _toDouble(m['latitude']);
+            final pLng = _toDouble(m['longitude']);
+            double? dm;
+            if (lat != null &&
+                lng != null &&
+                pLat != null &&
+                pLng != null) {
+              dm = LocationService().calculateDistance(
+                lat,
+                lng,
+                pLat,
+                pLng,
+              );
+            }
+            return <String, dynamic>{
+              'id': 'site_${m['id']}',
+              'name': m['name'],
               'category': 'Sites JOJ',
-              'distance': s['location'] ?? '',
-              'latitude': s['latitude'],
-              'longitude': s['longitude'],
-              'address': s['address'] ?? s['location'],
-            },
+              'distance': m['location'] ?? '',
+              'distance_meters': dm,
+              'latitude': m['latitude'],
+              'longitude': m['longitude'],
+              'address': m['address'] ?? m['location'],
+            };
+          })
+          .toList();
+
+      final embassyPoints = embassies
+          .whereType<Map<String, dynamic>>()
+          .map(
+            (e) => _mapEmbassyToPoint(
+              Map<String, dynamic>.from(
+                e.map((k, v) => MapEntry(k.toString(), v)),
+              ),
+            ),
           )
           .toList();
+
       final merged = [
         ...points.whereType<Map<String, dynamic>>(),
         ...sitePoints,
-      ];
+        ...embassyPoints,
+      ]..sort(
+          (a, b) => _sortDistanceMeters(a).compareTo(_sortDistanceMeters(b)),
+        );
 
       final filtered = merged.where(_matchesCurrentFilter).toList();
       if (!mounted) return;
@@ -140,24 +229,54 @@ class _MapScreenState extends State<MapScreen> {
       final offlinePoi = await OfflinePackService().readOfflinePoiList();
       final offlineSites =
           await OfflinePackService().readOfflineCompetitionSitesList();
-      if (offlinePoi.isNotEmpty || offlineSites.isNotEmpty) {
-        final sitePoints = offlineSites
+      final offlineEmb =
+          await OfflinePackService().readOfflineEmbassiesList();
+      if (offlinePoi.isNotEmpty ||
+          offlineSites.isNotEmpty ||
+          offlineEmb.isNotEmpty) {
+        final lat = _currentLat;
+        final lng = _currentLng;
+        final sitePoints = offlineSites.map((s) {
+          final m = Map<String, dynamic>.from(
+            s.map((k, v) => MapEntry(k.toString(), v)),
+          );
+          final pLat = _toDouble(m['latitude']);
+          final pLng = _toDouble(m['longitude']);
+          double? dm;
+          if (lat != null &&
+              lng != null &&
+              pLat != null &&
+              pLng != null) {
+            dm = LocationService().calculateDistance(lat, lng, pLat, pLng);
+          }
+          return <String, dynamic>{
+            'id': 'site_${m['id']}',
+            'name': m['name'],
+            'category': 'Sites JOJ',
+            'distance': m['location'] ?? '',
+            'distance_meters': dm,
+            'latitude': m['latitude'],
+            'longitude': m['longitude'],
+            'address': m['address'] ?? m['location'],
+          };
+        }).toList();
+        final embassyPoints = offlineEmb
             .map(
-              (s) => <String, dynamic>{
-                'id': 'site_${s['id']}',
-                'name': s['name'],
-                'category': 'Sites JOJ',
-                'distance': s['location'] ?? '',
-                'latitude': s['latitude'],
-                'longitude': s['longitude'],
-                'address': s['address'] ?? s['location'],
-              },
+              (e) => _mapEmbassyToPoint(
+                Map<String, dynamic>.from(
+                  e.map((k, v) => MapEntry(k.toString(), v)),
+                ),
+              ),
             )
             .toList();
         final merged = [
           ...offlinePoi,
           ...sitePoints,
-        ];
+          ...embassyPoints,
+        ]..sort(
+            (a, b) =>
+                _sortDistanceMeters(a).compareTo(_sortDistanceMeters(b)),
+          );
         final filtered = merged.where(_matchesCurrentFilter).toList();
         setState(() {
           _allPoints = merged;
@@ -203,7 +322,8 @@ class _MapScreenState extends State<MapScreen> {
         return category.contains('hôpital') ||
             category.contains('hopital') ||
             category.contains('pharm') ||
-            category.contains('ambass');
+            category.contains('ambass') ||
+            category.contains('consul');
       case _MapFilter.sites:
         return category.contains('site') || category.contains('joj');
       case _MapFilter.hotels:
@@ -273,6 +393,9 @@ class _MapScreenState extends State<MapScreen> {
 
   IconData _iconForCategory(String category) {
     final c = category.toLowerCase();
+    if (c.contains('ambass') || c.contains('consul')) {
+      return Icons.account_balance_rounded;
+    }
     if (c.contains('secours') || c.contains('urgence')) {
       return Icons.emergency_rounded;
     }
@@ -290,6 +413,9 @@ class _MapScreenState extends State<MapScreen> {
 
   Color _colorForCategory(String category) {
     final c = category.toLowerCase();
+    if (c.contains('ambass') || c.contains('consul')) {
+      return Colors.indigo;
+    }
     if (c.contains('secours') || c.contains('urgence')) {
       return AppTheme.primaryRed;
     }
@@ -769,43 +895,59 @@ class _MapScreenState extends State<MapScreen> {
         : l10n.jojDefaultLocation;
     final encodedQuery = Uri.encodeComponent(resolvedQuery);
 
-    final candidates = <Uri>[
-      if (latitude != null && longitude != null)
-        Uri.parse('comgooglemaps://?q=$latitude,$longitude')
-      else
-        Uri.parse('comgooglemaps://?q=$encodedQuery'),
-      if (latitude != null && longitude != null)
-        Uri.parse('geo:$latitude,$longitude?q=$latitude,$longitude')
-      else
-        Uri.parse('geo:0,0?q=$encodedQuery'),
-      if (latitude != null && longitude != null)
-        Uri.parse('https://www.openstreetmap.org/?mlat=$latitude&mlon=$longitude#map=15/$latitude/$longitude')
-      else
+    final universalHttps = <Uri>[
+      if (latitude != null && longitude != null) ...[
+        Uri.parse(
+          'https://www.google.com/maps/search/?api=1&query=$latitude,$longitude',
+        ),
+        Uri.parse('https://maps.apple.com/?ll=$latitude,$longitude&q=$encodedQuery'),
+        Uri.parse(
+          'https://www.openstreetmap.org/?mlat=$latitude&mlon=$longitude#map=15/$latitude/$longitude',
+        ),
+      ] else ...[
+        Uri.parse(
+          'https://www.google.com/maps/search/?api=1&query=$encodedQuery',
+        ),
         Uri.parse('https://www.openstreetmap.org/search?query=$encodedQuery'),
-      if (latitude != null && longitude != null)
-        Uri.parse('https://www.google.com/maps/search/?api=1&query=$latitude,$longitude')
-      else
-        Uri.parse('https://www.google.com/maps/search/?api=1&query=$encodedQuery'),
+      ],
+    ];
+
+    for (final uri in universalHttps) {
+      try {
+        final ok = await launchUrl(
+          uri,
+          mode: LaunchMode.externalApplication,
+        );
+        if (ok) return;
+      } catch (_) {}
+    }
+
+    final candidates = <Uri>[
+      if (latitude != null && longitude != null) ...[
+        Uri.parse('comgooglemaps://?q=$latitude,$longitude'),
+        Uri.parse('geo:$latitude,$longitude?q=$latitude,$longitude'),
+      ] else ...[
+        Uri.parse('comgooglemaps://?q=$encodedQuery'),
+        Uri.parse('geo:0,0?q=$encodedQuery'),
+      ],
     ];
 
     for (final uri in candidates) {
       try {
         if (await canLaunchUrl(uri)) {
-          final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+          final ok = await launchUrl(
+            uri,
+            mode: LaunchMode.externalApplication,
+          );
           if (ok) return;
         }
-      } catch (_) {
-        // keep trying next provider
-      }
+      } catch (_) {}
     }
 
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          'Impossible d ouvrir une application de carte',
-          style: GoogleFonts.poppins(),
-        ),
+        content: Text(l10n.openMapError, style: GoogleFonts.poppins()),
         backgroundColor: AppTheme.primaryRed,
       ),
     );

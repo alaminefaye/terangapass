@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../constants/app_constants.dart';
 import '../l10n/app_localizations.dart';
@@ -32,6 +33,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String _cachedPhone = '';
   String? _offlineCatalogVersion;
   String? _offlineDownloadedVersion;
+  int _offlinePackBytes = 0;
 
   static bool _looksLikePlaceholder(String value) {
     final v = value.trim().toLowerCase();
@@ -109,19 +111,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       String? offlineCatalog;
       String? offlineDl;
+      var offlineBytes = 0;
       try {
         await OfflinePackService().refresh(apiService);
         offlineCatalog = await OfflinePackService().cachedCatalogVersion();
         offlineDl = await OfflinePackService().downloadedPackVersion();
+        offlineBytes = await OfflinePackService().localPackTotalBytes();
       } catch (_) {
         offlineCatalog = await OfflinePackService().cachedCatalogVersion();
         offlineDl = await OfflinePackService().downloadedPackVersion();
+        offlineBytes = await OfflinePackService().localPackTotalBytes();
       }
 
       if (!mounted) return;
       setState(() {
         _offlineCatalogVersion = offlineCatalog;
         _offlineDownloadedVersion = offlineDl;
+        _offlinePackBytes = offlineBytes;
         _alertsCount = alerts.length;
         _reportsCount = reports.length;
         _recentActivities = _buildRecentActivities(alerts, reports);
@@ -135,6 +141,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       };
       final offlineCatalog = await OfflinePackService().cachedCatalogVersion();
       final offlineDl = await OfflinePackService().downloadedPackVersion();
+      final offlineBytes = await OfflinePackService().localPackTotalBytes();
       setState(() {
         _userProfile = fallback;
         _alertsCount = 0;
@@ -143,6 +150,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _recentActivities = [];
         _offlineCatalogVersion = offlineCatalog;
         _offlineDownloadedVersion = offlineDl;
+        _offlinePackBytes = offlineBytes;
       });
     } finally {
       if (mounted) {
@@ -588,7 +596,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
               l10n.profileOfflinePackTitle,
               Icons.cloud_download_outlined,
               false,
-              subtitle: _offlinePackSubtitle(l10n),
+              subtitle: _offlinePackSubtitle(
+                l10n,
+                Localizations.localeOf(context),
+                _offlinePackBytes,
+              ),
               onTap: () async {
                 final r = await showDialog<OfflinePackSyncResult?>(
                   context: context,
@@ -735,14 +747,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _reloadOfflineVersions() async {
     final cat = await OfflinePackService().cachedCatalogVersion();
     final dl = await OfflinePackService().downloadedPackVersion();
+    final bytes = await OfflinePackService().localPackTotalBytes();
     if (!mounted) return;
     setState(() {
       _offlineCatalogVersion = cat;
       _offlineDownloadedVersion = dl;
+      _offlinePackBytes = bytes;
     });
   }
 
-  String _offlinePackSubtitle(AppLocalizations l10n) {
+  String _offlinePackSubtitle(
+    AppLocalizations l10n,
+    Locale locale,
+    int packBytes,
+  ) {
     final body = l10n.profileOfflinePackBody;
     final cat = _offlineCatalogVersion?.trim();
     final dl = _offlineDownloadedVersion?.trim();
@@ -754,6 +772,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
     if (dl != null && dl.isNotEmpty) {
       lines.add(l10n.profileOfflinePackFilesVersion(dl));
+    }
+    if (packBytes > 0) {
+      final mb = packBytes / (1024 * 1024);
+      final nf = NumberFormat('#0.0', locale.toString());
+      final formatted = nf.format(mb);
+      final unit = locale.languageCode == 'fr' ? 'Mo' : 'MB';
+      lines.add(l10n.profileOfflinePackLocalSize('$formatted $unit'));
     }
     if (cat != null &&
         cat.isNotEmpty &&

@@ -22,6 +22,10 @@
 
 - **Téléchargement manuel** : dans le dialogue du pack hors ligne, **Télécharger / mettre à jour** lance `downloadPackNow` (barre de progression, lot en cours). Les opérations sont **sérialisées** ; une **reprise** est possible : chaque fichier local dont le **SHA-256** correspond au manifeste est **sauté** (pas de re-téléchargement).
 
+- **Stockage** : le profil affiche une ligne **Stockage local** (somme des `offline_packs/*.json`, en Mo / MB selon la langue).
+
+- **Retry (HTTP)** : chaque lot est retéléchargé au plus **3 fois** si l’échec est considéré comme transitoire (timeouts, coupure, **5xx**, **408**, **429**). Échec de **SHA-256** : pas de retry (données incorrectes).
+
 - **Après téléchargement automatique** (hors dialogue) : un snackbar sur l’accueil indique que le pack « X » a été enregistré (`maybeShowPackUpdatedToast`). Un téléchargement depuis le profil affiche un retour dans le **dialogue** / snackbar dédiés, sans dupliquer ce toast sur l’accueil.
 
 > **Note déploiement** : les URLs des bundles utilisent `APP_URL`. L’appareil doit pouvoir joindre ce même hôte que dans `ApiConstants` (dev : IP locale / émulateur).
@@ -32,8 +36,7 @@
 
 ## Suite (backlog)
 
-1. **UX téléchargement** : indicateur **volume total (Mo)** dans le profil, reprise réseau plus fine (chunk / retry par bundle) si besoin terrain.
-2. **Paiements** : hors périmètre étape 7 (étape 5).
+1. **Paiements** : hors périmètre étape 7 (étape 5).
 
 ## Variables
 
