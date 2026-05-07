@@ -126,7 +126,7 @@ class _IncidentTrackingScreenState extends State<IncidentTrackingScreen> {
       backgroundColor: const Color(0xFFFAF7F0),
       body: SafeArea(
         child: _isLoading
-            ? const CardListLoadingSkeleton()
+            ? const TerangaBrandedLoading()
             : _error != null
             ? Center(
                 child: Padding(

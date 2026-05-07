@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../l10n/app_localizations.dart';
 import '../../theme/app_theme.dart';
+import '../../services/api_error_messages.dart';
 import '../../services/api_service.dart';
 import '../../state/app_state.dart';
 import '../../utils/email_normalize.dart';
@@ -64,10 +65,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       if (token == null || token.isEmpty) {
         await apiService.clearLocalAuth();
-        throw Exception(
-          'Compte non confirmé par le serveur (pas de jeton). '
-          'Vérifiez que l’URL API est bien …/api/v1 et que le serveur répond en JSON.',
-        );
+        throw Exception(ApiErrorMessages.registerAccountNotConfirmed);
       }
 
       if (phone.isNotEmpty) {

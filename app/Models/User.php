@@ -69,6 +69,11 @@ class User extends Authenticatable
         return $this->hasMany(DeviceToken::class);
     }
 
+    public function passTickets()
+    {
+        return $this->hasMany(PassTicket::class);
+    }
+
     /**
      * Indique si le compte est bloqué côté admin (API + app).
      * Lecture des attributs bruts : reste fiable si la colonne `is_blocked` n’existe pas encore (avant migration).

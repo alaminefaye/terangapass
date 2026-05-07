@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../l10n/app_localizations.dart';
 import '../../theme/app_theme.dart';
+import '../../services/api_error_messages.dart';
 import '../../services/api_service.dart';
 import '../../state/app_state.dart';
 import '../../utils/email_normalize.dart';
@@ -45,10 +46,7 @@ class _LoginScreenState extends State<LoginScreen> {
       final token = prefs.getString('auth_token');
       if (token == null || token.isEmpty) {
         await apiService.clearLocalAuth();
-        throw Exception(
-          'Connexion incomplète : aucun jeton reçu depuis l’API. '
-          'Vérifiez l’URL de l’API (…/api/v1).',
-        );
+        throw Exception(ApiErrorMessages.loginIncompleteNoToken);
       }
 
       await prefs.setString('user_email', email);

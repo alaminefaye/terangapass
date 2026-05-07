@@ -409,7 +409,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           // Liste des notifications
           Expanded(
             child: _isLoading
-                ? const CardListLoadingSkeleton()
+                ? const TerangaBrandedLoading()
                 : _errorMessage != null
                 ? Center(
                     child: Padding(

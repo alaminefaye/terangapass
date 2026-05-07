@@ -5,6 +5,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
+import '../widgets/teranga_osm_tile_layer.dart';
 import '../services/location_service.dart';
 import '../services/api_service.dart';
 import '../widgets/loading_placeholders.dart';
@@ -312,22 +313,24 @@ class _MapScreenState extends State<MapScreen> {
           children: [
             // Carte OSM réelle style maquette
             Positioned.fill(
-              child: FlutterMap(
-                mapController: _mapController,
-                options: MapOptions(
-                  initialCenter: LatLng(
-                    _currentLat ?? 14.7167,
-                    _currentLng ?? -17.4677,
+              child: RepaintBoundary(
+                child: FlutterMap(
+                  mapController: _mapController,
+                  options: MapOptions(
+                    initialCenter: LatLng(
+                      _currentLat ?? 14.7167,
+                      _currentLng ?? -17.4677,
+                    ),
+                    initialZoom: 12,
                   ),
-                  initialZoom: 12,
+                  children: [
+                    TerangaOsmTileLayer(
+                      onTileLoadFailure: () =>
+                          showTerangaMapTilesIssueSnackBar(context),
+                    ),
+                    MarkerLayer(markers: _buildMarkers()),
+                  ],
                 ),
-                children: [
-                  TileLayer(
-                    urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                    userAgentPackageName: 'com.terangapass.teranga_pass',
-                  ),
-                  MarkerLayer(markers: _buildMarkers()),
-                ],
               ),
             ),
             Positioned(
@@ -473,7 +476,10 @@ class _MapScreenState extends State<MapScreen> {
                       const SizedBox(height: 8),
                       Expanded(
                         child: _isLoadingPoints
-                            ? const CardListLoadingSkeleton(itemCount: 5)
+                            ? const TerangaBrandedLoading(
+                                dense: true,
+                                skeletonItemCount: 5,
+                              )
                             : _pointsErrorMessage != null
                             ? Center(
                                 child: Text(

@@ -1,20 +1,20 @@
 <?php
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Api\AuthController;
-use App\Http\Controllers\Api\AlertController;
-use App\Http\Controllers\Api\IncidentController;
-use App\Http\Controllers\Api\NotificationController;
-use App\Http\Controllers\Api\AudioAnnouncementController;
-use App\Http\Controllers\Api\CompetitionSiteController;
-use App\Http\Controllers\Api\TransportController;
-use App\Http\Controllers\Api\TourismController;
-use App\Http\Controllers\Api\NearbyController;
-use App\Http\Controllers\Api\UserController;
-use App\Http\Controllers\Api\DeviceTokenController;
 use App\Http\Controllers\Api\AIChatController;
+use App\Http\Controllers\Api\AlertController;
+use App\Http\Controllers\Api\AudioAnnouncementController;
+use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\CompetitionSiteController;
+use App\Http\Controllers\Api\DeviceTokenController;
+use App\Http\Controllers\Api\IncidentController;
+use App\Http\Controllers\Api\NearbyController;
+use App\Http\Controllers\Api\NotificationController;
+use App\Http\Controllers\Api\PassTicketController;
+use App\Http\Controllers\Api\TourismController;
+use App\Http\Controllers\Api\TransportController;
+use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\UtilityController;
+use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
@@ -33,6 +33,9 @@ Route::prefix('v1')->group(function () {
     Route::post('/auth/login', [AuthController::class, 'login']);
     Route::post('/auth/register', [AuthController::class, 'register']);
     Route::post('/auth/logout', [AuthController::class, 'logout']);
+
+    // Contrôle QR Pass (staff — en-tête X-Teranga-Pass-Control)
+    Route::post('/pass/validate', [PassTicketController::class, 'validateScan']);
 });
 
 // Routes protégées (nécessitent une authentification)
@@ -80,4 +83,7 @@ Route::middleware(['api.user.active'])->prefix('v1')->group(function () {
     // Utilitaires
     Route::get('/joj/countdown', [UtilityController::class, 'jojCountdown']);
     Route::get('/utility/currency/convert', [UtilityController::class, 'convertCurrency']);
+
+    // Pass / billetterie pilote (QR signé)
+    Route::get('/pass/ticket', [PassTicketController::class, 'my']);
 });

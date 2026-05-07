@@ -80,10 +80,15 @@ class TerangaPassApp extends StatelessWidget {
             '/login': (context) => const LoginScreen(),
             '/register': (context) => const RegisterScreen(),
           },
-          builder: (context, child) => _GlobalSosOverlay(
-            navigatorKey: navigatorKey,
-            showSos: isAuthenticatedNotifier.value,
-            child: child ?? const SizedBox.shrink(),
+          builder: (context, child) => ValueListenableBuilder<bool>(
+            valueListenable: isAuthenticatedNotifier,
+            builder: (context, authed, _) {
+              return _GlobalSosOverlay(
+                navigatorKey: navigatorKey,
+                showSos: authed,
+                child: child ?? const SizedBox.shrink(),
+              );
+            },
           ),
         );
       },
@@ -111,8 +116,13 @@ class _AuthWrapperState extends State<AuthWrapper> {
   Future<void> _checkAuth() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('auth_token');
+      var token = prefs.getString('auth_token');
       // Un cookie HTTP seul ne prouve pas un compte API Teranga Pass (sessions hébergés / WAF).
+      if (token != null && token.isNotEmpty) {
+        await ApiService().validateStoredSession();
+        final prefsAfter = await SharedPreferences.getInstance();
+        token = prefsAfter.getString('auth_token');
+      }
       final isAuthenticated = token != null && token.isNotEmpty;
 
       setState(() {

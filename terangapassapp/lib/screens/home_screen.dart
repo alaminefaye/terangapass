@@ -14,6 +14,7 @@ import 'incident_history_screen.dart';
 import 'profile_screen.dart';
 import 'audio_announcements_screen.dart';
 import 'joj_info_screen.dart';
+import 'pass_qr_screen.dart';
 import 'transport_screen.dart';
 import 'tourism_screen.dart';
 import 'map_screen.dart';
@@ -22,6 +23,7 @@ import 'ai_assistant_screen.dart';
 import 'embassies_screen.dart';
 import 'currency_converter_screen.dart';
 import '../widgets/loading_placeholders.dart';
+import '../widgets/teranga_osm_tile_layer.dart';
 
 enum _HomeFeatureId {
   audioAnnouncements,
@@ -122,10 +124,15 @@ class _HomeScreenState extends State<HomeScreen>
     );
     _aiPulseController.repeat(reverse: true);
     _bindOfficialPlayerListeners();
-    _loadOfficialAnnouncement();
-    _loadCompetitionSites();
-    _loadUnreadNotificationsCount();
-    _loadJojCountdown();
+    // Parallèle : moins d’attente au premier affichage de l’accueil.
+    Future.microtask(() async {
+      await Future.wait<void>([
+        _loadOfficialAnnouncement(),
+        _loadCompetitionSites(),
+        _loadUnreadNotificationsCount(),
+        _loadJojCountdown(),
+      ]);
+    });
   }
 
   @override
@@ -140,10 +147,14 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      _loadOfficialAnnouncement();
-      _loadCompetitionSites();
-      _loadUnreadNotificationsCount();
-      _loadJojCountdown();
+      Future.microtask(() async {
+        await Future.wait<void>([
+          _loadOfficialAnnouncement(),
+          _loadCompetitionSites(),
+          _loadUnreadNotificationsCount(),
+          _loadJojCountdown(),
+        ]);
+      });
     }
   }
 
@@ -1466,6 +1477,31 @@ class _HomeScreenState extends State<HomeScreen>
                 ),
               ],
             ),
+            const SizedBox(height: 10),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute<void>(
+                      builder: (context) => const PassQrScreen(),
+                    ),
+                  );
+                },
+                icon: const Icon(
+                  Icons.qr_code_2_rounded,
+                  color: AppTheme.primaryGreen,
+                ),
+                label: Text(
+                  l10n.passQrEntry,
+                  style: const TextStyle(
+                    color: AppTheme.primaryGreen,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
             const SizedBox(height: 16),
             Container(
               height: 200,
@@ -1479,7 +1515,7 @@ class _HomeScreenState extends State<HomeScreen>
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(12),
                 child: _isLoadingCompetitionSites
-                    ? const CompactRowSkeleton()
+                    ? const CompactMapPreviewLoading()
                     : _competitionSitesError != null
                     ? Center(
                         child: Padding(
@@ -1512,21 +1548,21 @@ class _HomeScreenState extends State<HomeScreen>
                         ),
                       )
                     : hasCoords
-                    ? FlutterMap(
-                        mapController: _jojMapController,
-                        options: MapOptions(
-                          initialCenter: markers.first.point,
-                          initialZoom: 12,
-                        ),
-                        children: [
-                          TileLayer(
-                            urlTemplate:
-                                'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                            userAgentPackageName:
-                                'com.terangapass.teranga_pass',
+                    ? RepaintBoundary(
+                        child: FlutterMap(
+                          mapController: _jojMapController,
+                          options: MapOptions(
+                            initialCenter: markers.first.point,
+                            initialZoom: 12,
                           ),
-                          MarkerLayer(markers: markers),
-                        ],
+                          children: [
+                            TerangaOsmTileLayer(
+                              onTileLoadFailure: () =>
+                                  showTerangaMapTilesIssueSnackBar(context),
+                            ),
+                            MarkerLayer(markers: markers),
+                          ],
+                        ),
                       )
                     : Center(
                         child: Padding(

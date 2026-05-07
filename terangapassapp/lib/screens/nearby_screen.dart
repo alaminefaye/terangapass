@@ -8,6 +8,7 @@ import '../services/api_service.dart';
 import '../services/location_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/loading_placeholders.dart';
+import '../widgets/teranga_osm_tile_layer.dart';
 
 class NearbyScreen extends StatefulWidget {
   const NearbyScreen({super.key});
@@ -81,9 +82,11 @@ class _NearbyScreenState extends State<NearbyScreen> {
       double? lng;
       String? locErr;
       try {
-        final pos = await LocationService().getCurrentPosition();
-        lat = pos.latitude;
-        lng = pos.longitude;
+        final pos = await LocationService().getPositionForListings();
+        if (pos != null) {
+          lat = pos.latitude;
+          lng = pos.longitude;
+        }
       } catch (e) {
         locErr = e.toString().replaceAll('Exception: ', '').trim();
         debugPrint('[Nearby] location error: $locErr');
@@ -310,7 +313,7 @@ class _NearbyScreenState extends State<NearbyScreen> {
           ),
           Expanded(
             child: _loading
-                ? const CardListLoadingSkeleton()
+                ? const TerangaBrandedLoading()
                 : _buildBody(l10n),
           ),
         ],
@@ -378,43 +381,45 @@ class _NearbyScreenState extends State<NearbyScreen> {
             borderRadius: BorderRadius.circular(16),
             child: SizedBox(
               height: 200,
-              child: FlutterMap(
-                mapController: _mapController,
-                options: MapOptions(
-                  initialCenter: LatLng(_userLat!, _userLng!),
-                  initialZoom: 13,
+              child: RepaintBoundary(
+                child: FlutterMap(
+                  mapController: _mapController,
+                  options: MapOptions(
+                    initialCenter: LatLng(_userLat!, _userLng!),
+                    initialZoom: 13,
+                  ),
+                  children: [
+                    TerangaOsmTileLayer(
+                      onTileLoadFailure: () =>
+                          showTerangaMapTilesIssueSnackBar(context),
+                    ),
+                    MarkerLayer(
+                      markers: [
+                        Marker(
+                          point: LatLng(_userLat!, _userLng!),
+                          width: 36,
+                          height: 36,
+                          child: const Icon(Icons.person_pin_circle, color: Color(0xFF1565C0), size: 36),
+                        ),
+                        ..._places.map((p) {
+                          final lat = _toDouble(p['latitude']);
+                          final lng = _toDouble(p['longitude']);
+                          if (lat == null || lng == null) return null;
+                          return Marker(
+                            point: LatLng(lat, lng),
+                            width: 32,
+                            height: 32,
+                            child: Icon(
+                              Icons.place_rounded,
+                              color: (p['is_sponsor'] == true) ? Colors.amber[800] : AppTheme.primaryGreen,
+                              size: 32,
+                            ),
+                          );
+                        }).whereType<Marker>(),
+                      ],
+                    ),
+                  ],
                 ),
-                children: [
-                  TileLayer(
-                    urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                    userAgentPackageName: 'com.terangapass.app',
-                  ),
-                  MarkerLayer(
-                    markers: [
-                      Marker(
-                        point: LatLng(_userLat!, _userLng!),
-                        width: 36,
-                        height: 36,
-                        child: const Icon(Icons.person_pin_circle, color: Color(0xFF1565C0), size: 36),
-                      ),
-                      ..._places.map((p) {
-                        final lat = _toDouble(p['latitude']);
-                        final lng = _toDouble(p['longitude']);
-                        if (lat == null || lng == null) return null;
-                        return Marker(
-                          point: LatLng(lat, lng),
-                          width: 32,
-                          height: 32,
-                          child: Icon(
-                            Icons.place_rounded,
-                            color: (p['is_sponsor'] == true) ? Colors.amber[800] : AppTheme.primaryGreen,
-                            size: 32,
-                          ),
-                        );
-                      }).whereType<Marker>(),
-                    ],
-                  ),
-                ],
               ),
             ),
           ),

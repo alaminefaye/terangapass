@@ -2,10 +2,11 @@
 
 namespace App\Providers;
 
-use Illuminate\Support\ServiceProvider;
-use Illuminate\Support\Facades\View;
-use Illuminate\Pagination\Paginator;
 use App\Models\Incident;
+use App\Services\TerangaPassQrSigner;
+use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Facades\View;
+use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -14,7 +15,14 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton(TerangaPassQrSigner::class, function (): TerangaPassQrSigner {
+            $secret = config('services.teranga_pass.qr_secret');
+            if ($secret === null || $secret === '') {
+                $secret = hash('sha256', (string) config('app.key'), true);
+            }
+
+            return new TerangaPassQrSigner($secret);
+        });
     }
 
     /**

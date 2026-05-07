@@ -65,9 +65,11 @@ class _TourismScreenState extends State<TourismScreen>
       double? latitude;
       double? longitude;
       try {
-        final position = await LocationService().getCurrentPosition();
-        latitude = position.latitude;
-        longitude = position.longitude;
+        final position = await LocationService().getPositionForListings();
+        if (position != null) {
+          latitude = position.latitude;
+          longitude = position.longitude;
+        }
       } catch (e) {
         latitude = null;
         longitude = null;
@@ -520,7 +522,7 @@ class _TourismScreenState extends State<TourismScreen>
           ),
           Expanded(
             child: _isLoading
-                ? const CardListLoadingSkeleton()
+                ? const TerangaBrandedLoading()
                 : _errorMessage != null
                 ? Center(
                     child: Padding(

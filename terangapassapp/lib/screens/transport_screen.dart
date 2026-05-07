@@ -71,7 +71,7 @@ class _TransportScreenState extends State<TransportScreen> {
           Padding(
             padding: const EdgeInsets.only(top: 132),
             child: _isLoading
-                ? const CardListLoadingSkeleton()
+                ? const TerangaBrandedLoading()
                 : _errorMessage != null
                 ? Center(
                     child: Padding(

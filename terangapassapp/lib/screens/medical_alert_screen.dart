@@ -535,7 +535,7 @@ class _MedicalAlertScreenState extends State<MedicalAlertScreen> {
                                       ),
                                       child: const Icon(
                                         Icons.location_on,
-                                        color: const Color(0xFFC73E1D),
+                                        color: Color(0xFFC73E1D),
                                         size: 24,
                                       ),
                                     ),

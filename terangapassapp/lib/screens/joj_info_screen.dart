@@ -166,7 +166,7 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
     return Scaffold(
       backgroundColor: const Color(0xFFF4F1EA),
       body: _isLoading
-            ? const CardListLoadingSkeleton()
+            ? const TerangaBrandedLoading()
             : _errorMessage != null
             ? Center(
                 child: Padding(

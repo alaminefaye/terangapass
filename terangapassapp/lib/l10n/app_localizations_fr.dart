@@ -318,6 +318,19 @@ class AppLocalizationsFr extends AppLocalizations {
   String get homeOfficialAnnouncementDefaultTitle => 'Annonce officielle';
 
   @override
+  String get passQrTitle => 'Mon Pass Teranga';
+
+  @override
+  String get passQrEntry => 'Afficher mon Pass (QR)';
+
+  @override
+  String get passQrSubtitle =>
+      'Présentez ce code aux contrôles d’accès (pilote JOJ).';
+
+  @override
+  String get passQrRetry => 'Réessayer';
+
+  @override
   String get homeJojInfoTitle => 'INFOS JOJ: Sites Compétitions';
 
   @override
@@ -617,6 +630,10 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get mapOpenGoogleMapsError => 'Impossible d’ouvrir Google Maps';
+
+  @override
+  String get mapTilesLoadIssue =>
+      'La carte peut être incomplète. Vérifiez votre connexion.';
 
   @override
   String get mapFilterAll => 'Tous';

@@ -312,6 +312,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeOfficialAnnouncementDefaultTitle => 'Official announcement';
 
   @override
+  String get passQrTitle => 'My Teranga Pass';
+
+  @override
+  String get passQrEntry => 'Show my Pass (QR)';
+
+  @override
+  String get passQrSubtitle =>
+      'Show this code at access checkpoints (JOJ pilot).';
+
+  @override
+  String get passQrRetry => 'Retry';
+
+  @override
   String get homeJojInfoTitle => 'JOJ INFO: Competition sites';
 
   @override
@@ -608,6 +621,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get mapOpenGoogleMapsError => 'Unable to open Google Maps';
+
+  @override
+  String get mapTilesLoadIssue =>
+      'Map data may be incomplete. Check your connection.';
 
   @override
   String get mapFilterAll => 'All';

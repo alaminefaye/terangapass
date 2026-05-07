@@ -105,7 +105,7 @@ class _IncidentHistoryScreenState extends State<IncidentHistoryScreen> {
             ),
             Expanded(
               child: _isLoading
-                  ? const CardListLoadingSkeleton()
+                  ? const TerangaBrandedLoading()
                   : _error != null
                   ? Center(
                       child: Padding(

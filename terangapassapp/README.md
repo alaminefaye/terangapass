@@ -2,13 +2,19 @@
 
 Application mobile de sécurité, d'assistance et de tourisme pour les Jeux Olympiques de la Jeunesse (JOJ) Dakar 2026.
 
+**Stratégie & vision produit** (super-app, partenaires, cartographie, pitch) : [TerangaPass_Inspirations_Strategie.md](../docs/TerangaPass_Inspirations_Strategie.md).  
+**Plan étape par étape** (ordre des chantiers) : [TerangaPass_Plan_Etape_par_Etape.md](../docs/TerangaPass_Plan_Etape_par_Etape.md).  
+**Carte in-app (étape 4)** : [TerangaPass_Etape4_Carte_Choix.md](../docs/TerangaPass_Etape4_Carte_Choix.md).  
+**Paiements — prérequis (étape 5)** : [TerangaPass_Etape5_Paiements_Prerequis.md](../docs/TerangaPass_Etape5_Paiements_Prerequis.md).  
+**Pass QR / billetterie pilote (étape 6)** : [TerangaPass_Etape6_Pass_QR.md](../docs/TerangaPass_Etape6_Pass_QR.md).
+
 ## 🚀 Technologies
 
 - **Framework**: Flutter
 - **Backend**: Laravel (API REST)
 - **State Management**: Provider
 - **Navigation**: Go Router
-- **Maps**: Google Maps Flutter
+- **Cartes**: `flutter_map` + tuiles **OpenStreetMap** (voir `lib/constants/map_constants.dart`)
 - **Location**: Geolocator
 
 ## 📋 Prérequis

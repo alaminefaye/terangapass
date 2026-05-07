@@ -49,12 +49,66 @@ class LocationService {
         return null;
       }
 
+      // Dernière position connue récente : évite d’attendre le fix GPS (carte, ambassades…).
+      try {
+        final last = await Geolocator.getLastKnownPosition();
+        if (last != null &&
+            DateTime.now().difference(last.timestamp) <=
+                const Duration(minutes: 12)) {
+          return last;
+        }
+      } catch (_) {}
+
       return await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.medium,
-        timeLimit: const Duration(seconds: 10),
+        timeLimit: const Duration(seconds: 8),
       );
     } catch (_) {
-      return null;
+      try {
+        return await Geolocator.getLastKnownPosition();
+      } catch (_) {
+        return null;
+      }
+    }
+  }
+
+  /// Pour listes (tourisme, proximité) : **rapide** — dernière position pas trop vieille, sinon GPS medium court.
+  /// Ne lève pas d’exception (retourne `null` si rien n’est disponible).
+  Future<Position?> getPositionForListings({
+    Duration maxKnownAge = const Duration(minutes: 25),
+    Duration gpsTimeout = const Duration(seconds: 7),
+  }) async {
+    Position? last;
+    try {
+      last = await Geolocator.getLastKnownPosition();
+    } catch (_) {}
+
+    if (last != null &&
+        DateTime.now().difference(last.timestamp) <= maxKnownAge) {
+      return last;
+    }
+
+    try {
+      await checkAndRequestPermissions();
+    } catch (_) {
+      try {
+        return await Geolocator.getLastKnownPosition() ?? last;
+      } catch (_) {
+        return last;
+      }
+    }
+
+    try {
+      return await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.medium,
+        timeLimit: gpsTimeout,
+      );
+    } catch (_) {
+      try {
+        return await Geolocator.getLastKnownPosition() ?? last;
+      } catch (_) {
+        return last;
+      }
     }
   }
 

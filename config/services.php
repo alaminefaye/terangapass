@@ -45,4 +45,14 @@ return [
         'model' => env('ANTHROPIC_MODEL', 'claude-sonnet-4-6'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Teranga Pass — QR billet (étape 6)
+    |--------------------------------------------------------------------------
+    */
+    'teranga_pass' => [
+        'qr_secret' => env('TERANGA_PASS_QR_SECRET'),
+        'control_key' => env('TERANGA_PASS_CONTROL_KEY'),
+    ],
+
 ];

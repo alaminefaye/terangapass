@@ -318,7 +318,7 @@ class _AudioAnnouncementsScreenState extends State<AudioAnnouncementsScreen>
           Padding(
             padding: const EdgeInsets.only(top: 140),
             child: _isLoading
-                ? const CardListLoadingSkeleton()
+                ? const TerangaBrandedLoading()
                 : _errorMessage != null
                 ? Center(
                     child: Padding(

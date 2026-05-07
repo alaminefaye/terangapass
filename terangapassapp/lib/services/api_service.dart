@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../constants/api_constants.dart';
+import 'api_error_messages.dart';
 
 class ApiService {
   static final ApiService _instance = ApiService._internal();
@@ -44,7 +45,7 @@ class ApiService {
     if (data is String) {
       final trimmed = data.trim();
       if (trimmed.isEmpty) {
-        throw Exception('Réponse serveur vide');
+        throw Exception(ApiErrorMessages.serverEmpty);
       }
       try {
         final decoded = jsonDecode(trimmed);
@@ -52,10 +53,10 @@ class ApiService {
           return Map<String, dynamic>.from(decoded);
         }
       } on FormatException {
-        throw Exception('Réponse serveur invalide');
+        throw Exception(ApiErrorMessages.serverInvalid);
       }
     }
-    throw Exception('Réponse serveur invalide');
+    throw Exception(ApiErrorMessages.serverInvalid);
   }
 
   Future<void> _loadCookie() async {
@@ -263,9 +264,9 @@ class ApiService {
           }
           _debugLog('Stack Trace: ${error.stackTrace}');
           _debugLog('==================');
-          // Gestion des erreurs
-          if (error.response?.statusCode == 401) {
-            // Token expiré ou invalide
+          // Gestion des erreurs — session invalide ou compte refusé (ex. suspendu)
+          final errCode = error.response?.statusCode;
+          if (errCode == 401 || errCode == 403) {
             _clearToken();
           }
           return handler.next(error);
@@ -299,6 +300,33 @@ class ApiService {
     await _clearToken();
   }
 
+  /// Vérifie que le jeton stocké est encore accepté par l’API (profil).
+  /// En cas de **401** ou **403** (refus / compte suspendu), efface le stockage local.
+  /// Les erreurs réseau ou 5xx ne suppriment pas le jeton (évite déconnexion fortuite).
+  /// Timeouts connect / envoi / réponse abrégés pour cette requête uniquement (puis restauration).
+  Future<void> validateStoredSession() async {
+    final token = await _getToken();
+    if (token == null || token.isEmpty) return;
+    final previousConnect = _dio.options.connectTimeout;
+    _dio.options.connectTimeout = const Duration(seconds: 10);
+    try {
+      await _dio.get(
+        '/user/profile',
+        options: Options(
+          receiveTimeout: const Duration(seconds: 10),
+          sendTimeout: const Duration(seconds: 10),
+        ),
+      );
+    } on DioException catch (e) {
+      final code = e.response?.statusCode;
+      if (code == 401 || code == 403) {
+        await clearLocalAuth();
+      }
+    } finally {
+      _dio.options.connectTimeout = previousConnect;
+    }
+  }
+
   // ==================== AUTHENTIFICATION ====================
 
   /// Connexion
@@ -323,9 +351,7 @@ class ApiService {
           await _saveCookie(cookieHeader);
           return {'success': true};
         }
-        throw Exception(
-          'Connexion impossible: réponse serveur vide. Vérifiez l’URL API et le serveur.',
-        );
+        throw Exception(ApiErrorMessages.loginEmptyOrNoToken);
       }
 
       final responseData = _decodeMapResponse(data);
@@ -343,7 +369,9 @@ class ApiService {
         return responseData;
       }
 
-      throw Exception(responseData['message'] ?? 'Échec de la connexion');
+      throw Exception(
+        responseData['message'] ?? ApiErrorMessages.loginFailed,
+      );
     } on DioException catch (e) {
       throw _handleError(e);
     } catch (e) {
@@ -378,10 +406,7 @@ class ApiService {
           response.statusCode == 204) {
         // Ne pas accepter cookie / en-têtes seuls : souvent une page HTML ou une redirection
         // → l’app affichait « connecté » sans compte créé côté Laravel.
-        throw Exception(
-          'Inscription impossible: réponse API vide ou non JSON. '
-          'L’URL doit finir par /api/v1 (ex. https://votredomaine.com/api/v1).',
-        );
+        throw Exception(ApiErrorMessages.registerEmptyOrHtml);
       }
 
       // Gérer le nouveau format de réponse standardisé (comme chantix)
@@ -399,8 +424,7 @@ class ApiService {
       if (responseData['success'] == true &&
           (token == null || token.isEmpty)) {
         throw Exception(
-          responseData['message'] ??
-              'Inscription incomplète : aucun jeton reçu. Réessayez ou connectez-vous.',
+          responseData['message'] ?? ApiErrorMessages.registerIncompleteToken,
         );
       }
       if (token != null && token.isNotEmpty) {
@@ -410,7 +434,9 @@ class ApiService {
         return responseData;
       }
 
-      throw Exception(responseData['message'] ?? 'Échec de l\'inscription');
+      throw Exception(
+        responseData['message'] ?? ApiErrorMessages.registerFailed,
+      );
     } on DioException catch (e) {
       throw _handleError(e);
     } catch (e) {
@@ -837,6 +863,26 @@ class ApiService {
     }
   }
 
+  /// Billet Pass Teranga — QR signé (pilote, sans paiement in-app).
+  Future<Map<String, dynamic>> getPassTicket() async {
+    try {
+      final response = await _dio.get('/pass/ticket');
+      final raw = response.data;
+      if (raw is Map) {
+        final map = Map<String, dynamic>.from(raw);
+        final data = map['data'];
+        if (data is Map) return Map<String, dynamic>.from(data);
+        return map;
+      }
+      final map = _decodeMapResponse(raw);
+      final data = map['data'];
+      if (data is Map) return Map<String, dynamic>.from(data);
+      return map;
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
   // ==================== DEVICE TOKENS (PUSH NOTIFICATIONS) ====================
 
   /// Enregistre le token de device pour les push notifications
@@ -894,7 +940,7 @@ class ApiService {
       if (data is Map<String, dynamic>) {
         return data;
       }
-      throw Exception('Réponse IA invalide');
+      throw Exception(ApiErrorMessages.aiInvalidResponse);
     } on DioException catch (e) {
       throw _handleError(e);
     }
@@ -927,77 +973,16 @@ class ApiService {
       } else if (data is Map && data.containsKey('error')) {
         message = data['error'] as String;
       } else {
-        switch (statusCode) {
-          case 400:
-            message = 'Requête invalide';
-            break;
-          case 401:
-            message = 'Non autorisé. Veuillez vous reconnecter.';
-            break;
-          case 403:
-            message = 'Accès refusé';
-            break;
-          case 404:
-            message = 'Ressource non trouvée';
-            break;
-          case 422:
-            message = 'Données invalides';
-            break;
-          case 500:
-            message = 'Erreur serveur. Veuillez réessayer plus tard.';
-            break;
-          case 502:
-            message =
-                'Bad Gateway. Le serveur est temporairement indisponible.';
-            break;
-          case 503:
-            message =
-                'Service temporairement indisponible. Veuillez réessayer dans quelques instants.';
-            break;
-          case 504:
-            message =
-                'Gateway Timeout. Le serveur prend trop de temps à répondre.';
-            break;
-          default:
-            message = 'Une erreur est survenue ($statusCode)';
-        }
+        message = ApiErrorMessages.httpStatusFallback(statusCode ?? 500);
       }
       return Exception(message);
     }
     // Erreurs de connexion sans réponse
     else {
-      String message;
-      switch (error.type) {
-        case DioExceptionType.connectionTimeout:
-          message =
-              'Délai de connexion dépassé. Vérifiez votre connexion internet.';
-          break;
-        case DioExceptionType.sendTimeout:
-          message =
-              'Délai d\'envoi dépassé. Vérifiez votre connexion internet.';
-          break;
-        case DioExceptionType.receiveTimeout:
-          message =
-              'Délai de réception dépassé. Le serveur prend trop de temps à répondre.';
-          break;
-        case DioExceptionType.connectionError:
-          message =
-              'Erreur de connexion. Vérifiez votre connexion internet et réessayez.';
-          break;
-        case DioExceptionType.badCertificate:
-          message =
-              'Erreur de certificat SSL. Vérifiez la configuration du serveur.';
-          break;
-        case DioExceptionType.badResponse:
-          message = 'Réponse invalide du serveur.';
-          break;
-        case DioExceptionType.cancel:
-          message = 'Requête annulée.';
-          break;
-        default:
-          message =
-              'Une erreur est survenue: ${error.message ?? "Erreur inconnue"}';
-      }
+      final message = ApiErrorMessages.dioTypeMessage(
+        error.type,
+        rawMessage: error.message,
+      );
       return Exception(message);
     }
   }

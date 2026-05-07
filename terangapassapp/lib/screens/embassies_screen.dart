@@ -257,7 +257,7 @@ class _EmbassiesScreenState extends State<EmbassiesScreen> {
       backgroundColor: const Color(0xFFF4F1EA),
       body: SafeArea(
         child: _isLoading
-            ? const CardListLoadingSkeleton()
+            ? const TerangaBrandedLoading()
             : _error != null
             ? Center(
                 child: Padding(

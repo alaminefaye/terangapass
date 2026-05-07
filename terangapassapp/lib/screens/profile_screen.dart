@@ -5,6 +5,7 @@ import '../constants/app_constants.dart';
 import '../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 import '../services/api_service.dart';
+import '../state/app_state.dart';
 import 'auth/login_screen.dart';
 import 'incident_history_screen.dart';
 import 'incident_tracking_screen.dart';
@@ -229,6 +230,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     try {
       final apiService = ApiService();
       await apiService.logout();
+      isAuthenticatedNotifier.value = false;
 
       if (mounted) {
         Navigator.of(context).pushAndRemoveUntil(
@@ -237,7 +239,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         );
       }
     } catch (e) {
-      // Même en cas d'erreur, on déconnecte localement
+      isAuthenticatedNotifier.value = false;
       if (mounted) {
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (context) => const LoginScreen()),

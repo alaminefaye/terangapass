@@ -680,6 +680,30 @@ abstract class AppLocalizations {
   /// **'Annonce officielle'**
   String get homeOfficialAnnouncementDefaultTitle;
 
+  /// No description provided for @passQrTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mon Pass Teranga'**
+  String get passQrTitle;
+
+  /// No description provided for @passQrEntry.
+  ///
+  /// In fr, this message translates to:
+  /// **'Afficher mon Pass (QR)'**
+  String get passQrEntry;
+
+  /// No description provided for @passQrSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Présentez ce code aux contrôles d’accès (pilote JOJ).'**
+  String get passQrSubtitle;
+
+  /// No description provided for @passQrRetry.
+  ///
+  /// In fr, this message translates to:
+  /// **'Réessayer'**
+  String get passQrRetry;
+
   /// No description provided for @homeJojInfoTitle.
   ///
   /// In fr, this message translates to:
@@ -1243,6 +1267,12 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Impossible d’ouvrir Google Maps'**
   String get mapOpenGoogleMapsError;
+
+  /// No description provided for @mapTilesLoadIssue.
+  ///
+  /// In fr, this message translates to:
+  /// **'La carte peut être incomplète. Vérifiez votre connexion.'**
+  String get mapTilesLoadIssue;
 
   /// No description provided for @mapFilterAll.
   ///
