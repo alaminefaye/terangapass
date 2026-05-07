@@ -1,28 +1,30 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Auth\LoginController;
-use App\Http\Controllers\Web\NotificationManagementController;
-use App\Http\Controllers\Web\AudioAnnouncementManagementController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Web\AdminSearchController;
 use App\Http\Controllers\Web\AlertManagementController;
-use App\Http\Controllers\Web\IncidentManagementController;
-use App\Http\Controllers\Web\PartnerManagementController;
-use App\Http\Controllers\Web\TourismManagementController;
-use App\Http\Controllers\Web\MobileUserController;
+use App\Http\Controllers\Web\AudioAnnouncementManagementController;
 use App\Http\Controllers\Web\CompetitionSiteManagementController;
-use App\Http\Controllers\Web\TransportManagementController;
-use App\Http\Controllers\Web\StatisticsController;
 use App\Http\Controllers\Web\ContactController;
+use App\Http\Controllers\Web\IncidentManagementController;
+use App\Http\Controllers\Web\MobileUserController;
+use App\Http\Controllers\Web\NotificationManagementController;
+use App\Http\Controllers\Web\PartnerManagementController;
+use App\Http\Controllers\Web\PassTicketManagementController;
 use App\Http\Controllers\Web\ProfileController;
 use App\Http\Controllers\Web\SettingsController;
-use App\Http\Controllers\Web\AdminSearchController;
+use App\Http\Controllers\Web\StatisticsController;
+use App\Http\Controllers\Web\TourismManagementController;
+use App\Http\Controllers\Web\TransportManagementController;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Route;
 
 // Authentication Routes
 Route::get('/brand/terangpass-logo', function () {
     $logoPath = base_path('terangpass.png');
     abort_unless(File::exists($logoPath), 404);
+
     return response()->file($logoPath, [
         'Content-Type' => 'image/png',
         'Cache-Control' => 'public, max-age=3600',
@@ -75,6 +77,10 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     Route::post('mobile-users/{user}/toggle-block', [MobileUserController::class, 'toggleBlock'])->name('mobile-users.toggle-block');
     Route::delete('mobile-users/{user}', [MobileUserController::class, 'destroy'])->name('mobile-users.destroy');
     Route::get('mobile-users/{user}', [MobileUserController::class, 'show'])->name('mobile-users.show');
+
+    // Pass QR (billetterie pilote)
+    Route::get('pass-tickets', [PassTicketManagementController::class, 'index'])->name('pass-tickets.index');
+    Route::post('pass-tickets/{passTicket}/revoke', [PassTicketManagementController::class, 'revoke'])->name('pass-tickets.revoke');
 
     // Sites de Compétition
     Route::resource('competition-sites', CompetitionSiteManagementController::class);

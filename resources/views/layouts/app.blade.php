@@ -137,6 +137,14 @@
                         </a>
                     </li>
                     
+                    <!-- Pass QR -->
+                    <li class="menu-item {{ request()->routeIs('admin.pass-tickets.*') ? 'active' : '' }}">
+                        <a href="{{ route('admin.pass-tickets.index') }}" class="menu-link">
+                            <i class="menu-icon tf-icons bx bx-qr-scan"></i>
+                            <div data-i18n="Pass QR">Pass QR</div>
+                        </a>
+                    </li>
+                    
                     <!-- Partenaires -->
                     <li class="menu-item {{ request()->routeIs('admin.partners.*') ? 'active' : '' }}">
                         <a href="{{ route('admin.partners.index') }}" class="menu-link">

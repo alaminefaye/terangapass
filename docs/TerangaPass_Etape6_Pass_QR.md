@@ -5,7 +5,8 @@
 
 ## Périmètre livré (MVP)
 
-- **Sans paiement in-app** (étape 5 reportée) : billet pilote `joj_visitor_pilot`, délivré automatiquement au premier appel API pour l’utilisateur connecté.
+- **Sans paiement in-app** (étape 5 reportée) : billet pilote `joj_visitor_pilot`, délivré automatiquement au **premier** appel API si l’utilisateur n’a **aucun** billet passé ou si ses anciens billets sont **uniquement expirés** (sans révocation).
+- **Révocation admin** : si l’utilisateur a au moins une ligne `pass_tickets` révoquée, `GET /pass/ticket` renvoie **403** et **ne recrée pas** de billet (évite de contourner une désactivation).
 - **QR signé** : préfixe `TPASS1.` + payload JSON + signature **HMAC-SHA256** (`TERANGA_PASS_QR_SECRET` ou repli sur dérivation `APP_KEY` en dev via `AppServiceProvider`).
 - **Révocation / expiration** : champs `status`, `revoked_at`, `valid_until` sur `pass_tickets` ; le contrôle serveur refuse si billet inactif ou utilisateur suspendu.
 
@@ -36,7 +37,11 @@ Si `TERANGA_PASS_CONTROL_KEY` est vide : **503** sur `validate` (refus explicite
 
 Voir `.env.example` : `TERANGA_PASS_QR_SECRET`, `TERANGA_PASS_CONTROL_KEY`.
 
+## Administration (Laravel)
+
+- Menu **Pass QR** : `/admin/pass-tickets` — liste, filtres, bouton **Révoquer** (statut + `revoked_at`).
+- Routes : `admin.pass-tickets.index`, `admin.pass-tickets.revoke`.
+
 ## Suite possible
 
-- Admin : révoquer un billet, liste des `pass_tickets`.
 - Passage en **offline** contrôle : export clés publiques / règles (hors scope MVP).

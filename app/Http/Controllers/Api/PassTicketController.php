@@ -41,6 +41,21 @@ class PassTicketController extends Controller
             ->first();
 
         if ($ticket === null) {
+            $hadRevokedPass = PassTicket::query()
+                ->where('user_id', $user->id)
+                ->where(function ($q): void {
+                    $q->where('status', 'revoked')
+                        ->orWhereNotNull('revoked_at');
+                })
+                ->exists();
+
+            if ($hadRevokedPass) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Votre pass a été désactivé. Contactez le support pour un nouvel accès.',
+                ], 403);
+            }
+
             $ticket = new PassTicket([
                 'user_id' => $user->id,
                 'public_id' => (string) Str::ulid(),
