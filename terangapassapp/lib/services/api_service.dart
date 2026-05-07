@@ -169,9 +169,21 @@ class ApiService {
     return null;
   }
 
+  /// Dio assemble base + chemin comme [Uri.resolve] : un chemin commençant par
+  /// `/` repart de la racine du domaine (on perd `/api/v1`). Sans slash final
+  /// sur la base, `…/api/v1` + `auth/login` devient `…/api/auth/login`.
+  static String _normalizedDioBaseUrl(String url) {
+    final t = url.trim();
+    if (t.isEmpty) return t;
+    return t.endsWith('/') ? t : '$t/';
+  }
+
   ApiService._internal() {
-    // Calcul de l'URL de base pour les headers
-    final baseUrlForHeaders = _effectiveBaseUrl.replaceAll('/api/v1', '');
+    // Calcul de l'URL du site (sans `/api/v1`) pour Origin / Referer
+    final baseUrlForHeaders = _effectiveBaseUrl.replaceFirst(
+      RegExp(r'/api/v1/?$'),
+      '',
+    );
 
     // Log de l'URL de base utilisée
     _debugLog('=== API SERVICE INITIALIZATION ===');
@@ -182,11 +194,15 @@ class ApiService {
     );
     _debugLog('==================================');
 
+    debugPrint('[API] baseUrl effectif = ${_normalizedDioBaseUrl(_effectiveBaseUrl)}');
+
     _dio = Dio(
       BaseOptions(
-        baseUrl: _effectiveBaseUrl,
+        baseUrl: _normalizedDioBaseUrl(_effectiveBaseUrl),
         connectTimeout: const Duration(seconds: 30),
         receiveTimeout: const Duration(seconds: 30),
+        followRedirects: true,
+        maxRedirects: 5,
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
@@ -302,6 +318,103 @@ class ApiService {
         },
       ),
     );
+
+    // Hébergeurs (nginx, o2switch, Cloudflare) renvoient parfois 301/307 sans que l’adapter suive
+    // le POST ; on retente une fois vers `Location` (ex. apex → www).
+    _dio.interceptors.add(
+      InterceptorsWrapper(
+        onError: (DioException err, ErrorInterceptorHandler handler) async {
+          await _retryOnceAfterHttpRedirect(err, handler);
+        },
+      ),
+    );
+  }
+
+  static const String _kRedirectRetryExtra = '_teranga_redirect_retry_done';
+
+  static Uri _absoluteRedirectUri(Uri requestUri, String locationHeader) {
+    final t = locationHeader.trim();
+    if (t.isEmpty) {
+      return requestUri;
+    }
+    if (t.startsWith('http://') || t.startsWith('https://')) {
+      return Uri.parse(t);
+    }
+    return requestUri.resolve(t);
+  }
+
+  Future<void> _retryOnceAfterHttpRedirect(
+    DioException err,
+    ErrorInterceptorHandler handler,
+  ) async {
+    if (err.requestOptions.extra[_kRedirectRetryExtra] == true) {
+      handler.next(err);
+      return;
+    }
+    if (err.type != DioExceptionType.badResponse) {
+      handler.next(err);
+      return;
+    }
+    final code = err.response?.statusCode;
+    if (code != 301 &&
+        code != 302 &&
+        code != 303 &&
+        code != 307 &&
+        code != 308) {
+      handler.next(err);
+      return;
+    }
+    final loc = err.response?.headers.value('location') ??
+        err.response?.headers.value('Location');
+    if (loc == null || loc.trim().isEmpty) {
+      debugPrint('[API] 307/redirect sans Location header — abandon');
+      handler.next(err);
+      return;
+    }
+    // Tiger Protect (o2switch WAF) : renvoie un 307 vers la MÊME URL avec un
+    // cookie de challenge. Il faut extraire ce cookie et le renvoyer dans le
+    // retry pour que le WAF laisse passer la requête.
+    final redirectCookie = _extractCookieHeaderFromResponse(err.response!.headers);
+    if (redirectCookie != null && redirectCookie.isNotEmpty) {
+      _cookieHeader = redirectCookie;
+      await _saveCookie(redirectCookie);
+      debugPrint('[API] cookie WAF extrait du 307 : $redirectCookie');
+    }
+
+    try {
+      final target = _absoluteRedirectUri(err.requestOptions.uri, loc);
+      debugPrint('[API] retry redirection: ${err.requestOptions.uri} → $target');
+
+      // Construire les en-têtes avec le cookie WAF inclus
+      final retryHeaders = Map<String, dynamic>.from(err.requestOptions.headers);
+      if (_cookieHeader != null && _cookieHeader!.isNotEmpty) {
+        retryHeaders['Cookie'] = _cookieHeader;
+      }
+
+      final next = err.requestOptions.copyWith(
+        baseUrl: '${target.scheme}://${target.host}',
+        path: target.hasQuery
+            ? '${target.path}?${target.query}'
+            : target.path,
+        queryParameters: null,
+        headers: retryHeaders,
+        extra: <String, dynamic>{
+          ...err.requestOptions.extra,
+          _kRedirectRetryExtra: true,
+        },
+      );
+      final response = await _dio.fetch(next);
+      handler.resolve(response);
+    } catch (e, st) {
+      debugPrint('[API] redirection HTTP suivie sans succès: $e\n$st');
+      // Propager l'erreur RÉELLE du retry (ex: 422 validation Laravel),
+      // pas l'erreur 307 d'origine qui n'a plus de sens pour l'appelant.
+      if (e is DioException) {
+        handler.next(e);
+      } else {
+        handler.next(err);
+      }
+    }
   }
 
   /// Récupère le token d'authentification depuis le stockage local
@@ -340,7 +453,7 @@ class ApiService {
     _dio.options.connectTimeout = const Duration(seconds: 10);
     try {
       await _dio.get(
-        '/user/profile',
+        'user/profile',
         options: Options(
           receiveTimeout: const Duration(seconds: 10),
           sendTimeout: const Duration(seconds: 10),
@@ -362,7 +475,7 @@ class ApiService {
   Future<Map<String, dynamic>> login(String email, String password) async {
     try {
       final response = await _dio.post(
-        '/auth/login',
+        'auth/login',
         data: {'email': email, 'password': password},
       );
 
@@ -423,7 +536,7 @@ class ApiService {
   }) async {
     try {
       final response = await _dio.post(
-        '/auth/register',
+        'auth/register',
         data: {
           'name': name,
           'email': email,
@@ -497,7 +610,7 @@ class ApiService {
       await prefs.remove(_aiChatPrefsKeyForToken(token));
     }
     try {
-      await _dio.post('/auth/logout');
+      await _dio.post('auth/logout');
     } catch (e) {
       // Même en cas d'erreur, on supprime le token local
     } finally {
@@ -517,7 +630,7 @@ class ApiService {
   }) async {
     try {
       final response = await _dio.post(
-        '/sos/alert',
+        'sos/alert',
         data: {
           'latitude': latitude,
           'longitude': longitude,
@@ -542,7 +655,7 @@ class ApiService {
   }) async {
     try {
       final response = await _dio.post(
-        '/medical/alert',
+        'medical/alert',
         data: {
           'latitude': latitude,
           'longitude': longitude,
@@ -561,7 +674,7 @@ class ApiService {
   /// Récupère l'historique des alertes
   Future<List<dynamic>> getAlertsHistory() async {
     try {
-      final response = await _dio.get('/alerts/history');
+      final response = await _dio.get('alerts/history');
       return response.data['data'] ?? [];
     } on DioException catch (e) {
       throw _handleError(e);
@@ -624,7 +737,7 @@ class ApiService {
         }
       }
 
-      final response = await _dio.post('/incidents/report', data: formData);
+      final response = await _dio.post('incidents/report', data: formData);
 
       return response.data;
     } on DioException catch (e) {
@@ -635,7 +748,7 @@ class ApiService {
   /// Récupère l'historique des signalements
   Future<List<dynamic>> getIncidentsHistory() async {
     try {
-      final response = await _dio.get('/incidents/history');
+      final response = await _dio.get('incidents/history');
       return response.data['data'] ?? [];
     } on DioException catch (e) {
       throw _handleError(e);
@@ -645,7 +758,7 @@ class ApiService {
   /// Récupère le suivi détaillé d'un incident.
   Future<Map<String, dynamic>> getIncidentTracking(int incidentId) async {
     try {
-      final response = await _dio.get('/incidents/$incidentId/tracking');
+      final response = await _dio.get('incidents/$incidentId/tracking');
       return response.data['data'] ?? {};
     } on DioException catch (e) {
       throw _handleError(e);
@@ -658,7 +771,7 @@ class ApiService {
   Future<List<dynamic>> getNotifications({String? zone}) async {
     try {
       final response = await _dio.get(
-        '/notifications',
+        'notifications',
         queryParameters: zone != null ? {'zone': zone} : null,
       );
       return response.data['data'] ?? [];
@@ -670,7 +783,7 @@ class ApiService {
   /// Marque une notification comme lue
   Future<void> markNotificationAsRead(int notificationId) async {
     try {
-      await _dio.put('/notifications/$notificationId/read');
+      await _dio.put('notifications/$notificationId/read');
     } on DioException catch (e) {
       throw _handleError(e);
     }
@@ -681,7 +794,7 @@ class ApiService {
   /// Récupère les annonces audio
   Future<List<dynamic>> getAudioAnnouncements() async {
     try {
-      final response = await _dio.get('/announcements/audio');
+      final response = await _dio.get('announcements/audio');
       return response.data['data'] ?? [];
     } on DioException catch (e) {
       throw _handleError(e);
@@ -693,7 +806,7 @@ class ApiService {
   /// Récupère les sites de compétition
   Future<List<dynamic>> getCompetitionSites() async {
     try {
-      final response = await _dio.get('/sites/competitions');
+      final response = await _dio.get('sites/competitions');
       return response.data['data'] ?? [];
     } on DioException catch (e) {
       throw _handleError(e);
@@ -703,7 +816,7 @@ class ApiService {
   /// Récupère le calendrier des compétitions
   Future<List<dynamic>> getCompetitionCalendar() async {
     try {
-      final response = await _dio.get('/sites/calendar');
+      final response = await _dio.get('sites/calendar');
       return response.data['data'] ?? [];
     } on DioException catch (e) {
       throw _handleError(e);
@@ -715,7 +828,7 @@ class ApiService {
   /// Récupère les horaires des navettes
   Future<List<dynamic>> getShuttleSchedules() async {
     try {
-      final response = await _dio.get('/transport/shuttles');
+      final response = await _dio.get('transport/shuttles');
 
       // Log pour debugging
       _debugLog('=== SHUTTLES RESPONSE ===');
@@ -759,7 +872,7 @@ class ApiService {
     };
 
     try {
-      final response = await _dio.get('/nearby', queryParameters: params);
+      final response = await _dio.get('nearby', queryParameters: params);
       return response.data['data'] ?? [];
     } on DioException catch (e) {
       final status = e.response?.statusCode;
@@ -778,7 +891,7 @@ class ApiService {
       if (status == 404 || routeMissing) {
         try {
           final fallback = await _dio.get(
-            '/tourism/points-of-interest',
+            'tourism/points-of-interest',
             queryParameters: params,
           );
           return fallback.data['data'] ?? [];
@@ -798,7 +911,7 @@ class ApiService {
   }) async {
     try {
       final response = await _dio.get(
-        '/tourism/points-of-interest',
+        'tourism/points-of-interest',
         queryParameters: {
           if (category != null) 'category': category,
           if (latitude != null) 'latitude': latitude,
@@ -814,7 +927,7 @@ class ApiService {
   /// Récupère la liste des ambassades (catégorie dédiée).
   Future<List<dynamic>> getEmbassies() async {
     try {
-      final response = await _dio.get('/tourism/embassies');
+      final response = await _dio.get('tourism/embassies');
       return response.data['data'] ?? [];
     } on DioException catch (e) {
       throw _handleError(e);
@@ -824,7 +937,7 @@ class ApiService {
   /// Récupère le compteur officiel JOJ.
   Future<Map<String, dynamic>> getJojCountdown() async {
     try {
-      final response = await _dio.get('/joj/countdown');
+      final response = await _dio.get('joj/countdown');
       return (response.data['data'] as Map<String, dynamic>? ?? {});
     } on DioException catch (e) {
       throw _handleError(e);
@@ -851,7 +964,7 @@ class ApiService {
   }) async {
     try {
       final response = await _dio.get(
-        '/utility/currency/convert',
+        'utility/currency/convert',
         queryParameters: {'amount': amount, 'from': from, 'to': to},
       );
       return (response.data['data'] as Map<String, dynamic>? ?? {});
@@ -865,7 +978,7 @@ class ApiService {
   /// Récupère les informations du profil utilisateur
   Future<Map<String, dynamic>> getUserProfile() async {
     try {
-      final response = await _dio.get('/user/profile');
+      final response = await _dio.get('user/profile');
       final raw = response.data;
       if (raw == null || (raw is String && raw.trim().isEmpty)) {
         return {};
@@ -890,7 +1003,7 @@ class ApiService {
     Map<String, dynamic> data,
   ) async {
     try {
-      final response = await _dio.put('/user/profile', data: data);
+      final response = await _dio.put('user/profile', data: data);
       final raw = response.data;
       if (raw == null || (raw is String && raw.trim().isEmpty)) {
         return {};
@@ -913,7 +1026,7 @@ class ApiService {
   /// Billet Pass Teranga — QR signé (pilote, sans paiement in-app).
   Future<Map<String, dynamic>> getPassTicket() async {
     try {
-      final response = await _dio.get('/pass/ticket');
+      final response = await _dio.get('pass/ticket');
       final raw = response.data;
       if (raw is Map) {
         final map = Map<String, dynamic>.from(raw);
@@ -939,7 +1052,7 @@ class ApiService {
   }) async {
     try {
       await _dio.post(
-        '/device-tokens/register',
+        'device-tokens/register',
         data: {'token': token, 'platform': platform},
       );
     } on DioException catch (e) {
@@ -952,7 +1065,7 @@ class ApiService {
   /// Désenregistre le token de device
   Future<void> unregisterDeviceToken(String token) async {
     try {
-      await _dio.post('/device-tokens/unregister', data: {'token': token});
+      await _dio.post('device-tokens/unregister', data: {'token': token});
     } on DioException catch (e) {
       // Erreur silencieuse (non bloquante)
       _debugLog('Erreur désenregistrement token: ${_handleError(e)}');
@@ -982,7 +1095,7 @@ class ApiService {
           payload['accuracy'] = accuracyMeters;
         }
       }
-      final response = await _dio.post('/ai/chat', data: payload);
+      final response = await _dio.post('ai/chat', data: payload);
       final data = response.data;
       if (data is Map<String, dynamic>) {
         return data;

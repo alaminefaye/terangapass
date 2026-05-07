@@ -25,8 +25,10 @@ class ApiConstants {
   // URL pour appareil physique (remplacez par votre IP locale)
   static const String _physicalDeviceUrl = 'http://192.168.1.100:8000/api/v1';
 
-  /// API Laravel : toujours le schéma + domaine + **`/api/v1`** (sans slash final).
-  static const String _productionUrl = 'https://terangapass.com/api/v1';
+  /// API Laravel : schéma + domaine + **`/api/v1`** (sans slash final dans la constante ;
+  /// [ApiService] ajoute le `/` requis pour que Dio résolve correctement les chemins).
+  /// Utiliser l’hôte **canonique** pour limiter les 307/308 hébergeur.
+  static const String _productionUrl = 'https://www.terangapass.com/api/v1';
 
   // Mode de configuration
   // Options: 'dev', 'android_emulator', 'physical_device', 'production'
@@ -56,31 +58,32 @@ class ApiConstants {
   }
 
   // Endpoints
-  static const String login = '/auth/login';
-  static const String register = '/auth/register';
-  static const String logout = '/auth/logout';
+  // Suffixes chemin relatifs à `baseUrl` (sans `/` initial — concaténation Dio / Uri.resolve).
+  static const String login = 'auth/login';
+  static const String register = 'auth/register';
+  static const String logout = 'auth/logout';
 
-  static const String sosAlert = '/sos/alert';
-  static const String medicalAlert = '/medical/alert';
-  static const String alertsHistory = '/alerts/history';
+  static const String sosAlert = 'sos/alert';
+  static const String medicalAlert = 'medical/alert';
+  static const String alertsHistory = 'alerts/history';
 
-  static const String reportIncident = '/incidents/report';
-  static const String incidentsHistory = '/incidents/history';
+  static const String reportIncident = 'incidents/report';
+  static const String incidentsHistory = 'incidents/history';
 
-  static const String notifications = '/notifications';
-  static const String markNotificationRead = '/notifications';
+  static const String notifications = 'notifications';
+  static const String markNotificationRead = 'notifications';
 
-  static const String audioAnnouncements = '/announcements/audio';
+  static const String audioAnnouncements = 'announcements/audio';
 
-  static const String competitionSites = '/sites/competitions';
-  static const String competitionCalendar = '/sites/calendar';
+  static const String competitionSites = 'sites/competitions';
+  static const String competitionCalendar = 'sites/calendar';
 
-  static const String shuttleSchedules = '/transport/shuttles';
+  static const String shuttleSchedules = 'transport/shuttles';
 
-  static const String pointsOfInterest = '/tourism/points-of-interest';
+  static const String pointsOfInterest = 'tourism/points-of-interest';
 
-  static const String userProfile = '/user/profile';
+  static const String userProfile = 'user/profile';
 
   /// Manifeste pack hors ligne (étape 7), sans auth.
-  static const String offlineManifest = '/utility/offline-manifest';
+  static const String offlineManifest = 'utility/offline-manifest';
 }

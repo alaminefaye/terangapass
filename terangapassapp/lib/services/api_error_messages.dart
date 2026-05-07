@@ -73,6 +73,14 @@ class ApiErrorMessages {
         );
       case 403:
         return _p('Accès refusé', 'Access denied');
+      case 307:
+      case 308:
+        return _p(
+          'Redirection serveur (HTTP $statusCode). '
+              'Utilisez l’URL finale de l’API (ex. avec www) dans l’application.',
+          'Server redirect (HTTP $statusCode). '
+              'Use the final API base URL (e.g. with www) in the app.',
+        );
       case 404:
         return _p('Ressource non trouvée', 'Resource not found');
       case 422:
