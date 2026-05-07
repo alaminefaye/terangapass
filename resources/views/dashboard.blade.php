@@ -170,6 +170,7 @@
                         {{ $country->country }}: {{ number_format($country->count) }}@if(!$loop->last), @endif
                         @endforeach
                     </div>
+                    <a href="{{ route('admin.mobile-users.index') }}" class="btn btn-sm btn-outline-primary mt-2">Liste des comptes mobiles</a>
                 </div>
             </div>
         </div>

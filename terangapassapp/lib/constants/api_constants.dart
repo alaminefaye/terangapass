@@ -3,11 +3,18 @@ import 'dart:io';
 class ApiConstants {
   // Configuration de l'URL de base selon l'environnement
   //
-  // IMPORTANT : Changez ces valeurs selon votre configuration :
-  // - Pour Android Emulator : utilisez 'http://10.0.2.2:8000/api/v1'
-  // - Pour iOS Simulator : utilisez 'http://localhost:8000/api/v1'
-  // - Pour appareil physique : utilisez l'IP de votre machine (ex: 'http://192.168.1.100:8000/api/v1')
-  // - Pour production : utilisez votre URL de production avec /api/v1 (ex: 'https://terangapass.universaltechnologiesafrica.com/api/v1')
+  // Quelle URL est vraiment utilisée ?
+  // - Si [_mode] vaut 'production' → seule [_productionUrl] compte (lignes du dessous ignorées).
+  // - Si [_mode] vaut 'android_emulator' / 'physical_device' → la constante du même nom.
+  // - Si [_mode] vaut 'dev' ou autre → [_devUrl] ou émulateur selon la plateforme (voir [baseUrl]).
+  //
+  // Le back-office (dashboard) doit parler à la MÊME base Laravel que cette URL API
+  // (sinon les inscriptions n’apparaîtront pas dans l’admin).
+  //
+  // Exemples d’URL locale (uniquement pour _mode != 'production') :
+  // - Android Emulator : http://10.0.2.2:8000/api/v1
+  // - iOS Simulator : http://localhost:8000/api/v1
+  // - Appareil physique : http://<IP-de-ton-PC>:8000/api/v1
 
   // URL de développement local
   static const String _devUrl = 'http://localhost:8000/api/v1';
@@ -18,7 +25,7 @@ class ApiConstants {
   // URL pour appareil physique (remplacez par votre IP locale)
   static const String _physicalDeviceUrl = 'http://192.168.1.100:8000/api/v1';
 
-  // URL de production
+  /// API Laravel : toujours le schéma + domaine + **`/api/v1`** (sans slash final).
   static const String _productionUrl = 'https://terangapass.com/api/v1';
 
   // Mode de configuration

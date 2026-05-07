@@ -4,28 +4,49 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Support\EmailNormalizer;
+use App\Support\PhoneNormalizer;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 
 class AuthController extends Controller
 {
     public function register(Request $request)
     {
-        $email = strtolower(trim((string) $request->input('email', '')));
+        $email = EmailNormalizer::normalize((string) $request->input('email', ''));
         $rawPhone = $request->input('phone') ?? $request->input('telephone');
-        $phone = $rawPhone === null ? null : preg_replace('/[^\d\+]/', '', trim((string) $rawPhone));
+        $countryRaw = trim((string) $request->input('country', 'SN'));
+        $country = strtoupper($countryRaw === '' ? 'SN' : $countryRaw);
+        $phone = PhoneNormalizer::normalize(
+            $rawPhone === null ? null : (string) $rawPhone,
+            $country,
+        );
 
         $request->merge([
             'email' => $email,
             'phone' => $phone,
+            'country' => $country,
         ]);
 
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users,email',
+            'email' => [
+                'required',
+                'string',
+                'email',
+                'max:255',
+                Rule::unique('users', 'email'),
+            ],
             'password' => 'required|string|min:6',
-            'phone' => 'nullable|string|max:30|unique:users,phone',
+            'phone' => [
+                'required',
+                'string',
+                'max:30',
+                Rule::unique('users', 'phone'),
+            ],
             'user_type' => 'sometimes|in:athlete,visitor,citizen',
             'country' => 'sometimes|string|size:2',
             'language' => 'sometimes|in:fr,en,es',
@@ -57,7 +78,7 @@ class AuthController extends Controller
                 'password' => Hash::make($request->password),
                 'phone' => $phone,
                 'user_type' => $request->user_type ?? 'visitor',
-                'country' => $request->country ?? 'SN',
+                'country' => $country,
                 'language' => $request->language ?? 'fr',
             ]);
 
@@ -77,6 +98,24 @@ class AuthController extends Controller
                     'country' => $user->country,
                 ],
             ], 201);
+        } catch (QueryException $e) {
+            $sqlState = $e->errorInfo[0] ?? '';
+            if ($sqlState === '23000' || str_contains(strtolower($e->getMessage()), 'duplicate')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Cet email ou ce numéro est déjà utilisé.',
+                    'errors' => [
+                        'email' => ['Cet email est peut-être déjà utilisé.'],
+                        'phone' => ['Ce numéro est peut-être déjà utilisé.'],
+                    ],
+                ], 422);
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Une erreur est survenue lors de la création du compte.',
+                'error' => config('app.debug') ? $e->getMessage() : 'Erreur serveur',
+            ], 500);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -88,7 +127,7 @@ class AuthController extends Controller
 
     public function login(Request $request)
     {
-        $email = strtolower(trim((string) $request->input('email', '')));
+        $email = EmailNormalizer::normalize((string) $request->input('email', ''));
         $request->merge(['email' => $email]);
 
         $validator = Validator::make($request->all(), [
@@ -114,6 +153,16 @@ class AuthController extends Controller
                     'email' => ['The provided credentials are incorrect.'],
                 ],
             ], 401);
+        }
+
+        if ($user->is_blocked) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ce compte est suspendu. Contactez le support.',
+                'errors' => [
+                    'email' => ['Ce compte est suspendu.'],
+                ],
+            ], 403);
         }
 
         // Token simple (à remplacer par Sanctum plus tard)

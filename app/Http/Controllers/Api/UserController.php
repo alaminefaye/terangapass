@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Support\PhoneNormalizer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -13,7 +14,20 @@ class UserController extends Controller
     public function profile(Request $request)
     {
         $user = $this->getUserFromToken($request);
-        return response()->json(['data' => $user ?? ['name' => 'Utilisateur', 'email' => 'user@example.com']]);
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Non autorisé. Veuillez vous reconnecter.',
+            ], 401);
+        }
+        if ($user->is_blocked) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ce compte est suspendu.',
+            ], 403);
+        }
+
+        return response()->json(['data' => $user]);
     }
 
     public function updateProfile(Request $request)
@@ -25,9 +39,20 @@ class UserController extends Controller
                 'message' => 'Non autorisé. Veuillez vous reconnecter.',
             ], 401);
         }
+        if ($user->is_blocked) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ce compte est suspendu.',
+            ], 403);
+        }
 
         $rawPhone = $request->input('phone') ?? $request->input('telephone');
-        $phone = $rawPhone === null ? null : preg_replace('/[^\d\+]/', '', trim((string) $rawPhone));
+        $country = trim((string) $request->input('country', $user->country ?? 'SN'));
+        $country = strtoupper($country === '' ? 'SN' : $country);
+        $phone = PhoneNormalizer::normalize(
+            $rawPhone === null ? null : (string) $rawPhone,
+            $country,
+        );
         $request->merge(['phone' => $phone]);
 
         $validator = Validator::make($request->all(), [

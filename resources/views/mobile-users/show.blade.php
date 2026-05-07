@@ -4,13 +4,34 @@
 
 @section('content')
 <div class="container-xxl flex-grow-1 container-p-y">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h4 class="fw-bold py-3 mb-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+        <h4 class="fw-bold py-3 mb-4 mb-md-0">
             <span class="text-muted fw-light">Gestion / Utilisateurs /</span> Détails
         </h4>
-        <a href="{{ route('admin.mobile-users.index') }}" class="btn btn-outline-secondary">
-            <i class="bx bx-arrow-back me-2"></i> Retour
-        </a>
+        <div class="d-flex flex-wrap gap-2">
+            @if($user->user_type !== 'admin')
+            <a href="{{ route('admin.mobile-users.edit', $user) }}" class="btn btn-primary">
+                <i class="bx bx-edit me-1"></i> Modifier
+            </a>
+            <form action="{{ route('admin.mobile-users.toggle-block', $user) }}" method="POST" class="d-inline">
+                @csrf
+                <button type="submit" class="btn btn-{{ $user->is_blocked ? 'success' : 'warning' }}">
+                    <i class="bx bx-{{ $user->is_blocked ? 'check-circle' : 'block' }} me-1"></i>
+                    {{ $user->is_blocked ? 'Débloquer' : 'Bloquer' }}
+                </button>
+            </form>
+            @if(auth()->id() !== $user->id)
+            <form action="{{ route('admin.mobile-users.destroy', $user) }}" method="POST" class="d-inline" onsubmit="return confirm('Supprimer définitivement cet utilisateur et ses données associées ?');">
+                @csrf
+                @method('DELETE')
+                <button type="submit" class="btn btn-outline-danger"><i class="bx bx-trash me-1"></i> Supprimer</button>
+            </form>
+            @endif
+            @endif
+            <a href="{{ route('admin.mobile-users.index') }}" class="btn btn-outline-secondary">
+                <i class="bx bx-arrow-back me-2"></i> Retour liste
+            </a>
+        </div>
     </div>
 
     <div class="row">
@@ -43,6 +64,16 @@
                     </div>
                     <div class="row mb-3">
                         <div class="col-md-6">
+                            <strong>Compte:</strong>
+                            <p>
+                                @if($user->is_blocked ?? false)
+                                <span class="badge bg-dark">Bloqué (app mobile désactivée)</span>
+                                @else
+                                <span class="badge bg-label-success">Actif</span>
+                                @endif
+                            </p>
+                        </div>
+                        <div class="col-md-6">
                             <strong>Type d'utilisateur:</strong>
                             <p>
                                 @if($user->user_type == 'athlete')
@@ -56,6 +87,8 @@
                                 @endif
                             </p>
                         </div>
+                    </div>
+                    <div class="row mb-3">
                         <div class="col-md-6">
                             <strong>Langue:</strong>
                             <p>{{ strtoupper($user->language ?? 'FR') }}</p>

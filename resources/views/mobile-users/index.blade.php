@@ -80,9 +80,10 @@
                         <th>Téléphone</th>
                         <th>Pays</th>
                         <th>Type</th>
+                        <th>Statut</th>
                         <th>Alertes</th>
                         <th>Signalements</th>
-                        <th>Actions</th>
+                        <th class="text-nowrap">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="table-border-bottom-0">
@@ -104,17 +105,38 @@
                             <span class="badge bg-secondary">-</span>
                             @endif
                         </td>
+                        <td>
+                            @if($user->is_blocked ?? false)
+                            <span class="badge bg-dark">Bloqué</span>
+                            @else
+                            <span class="badge bg-label-success">Actif</span>
+                            @endif
+                        </td>
                         <td><span class="badge bg-danger">{{ $user->alerts_count }}</span></td>
                         <td><span class="badge bg-warning">{{ $user->incidents_count }}</span></td>
                         <td>
-                            <a href="{{ route('admin.mobile-users.show', $user) }}" class="btn btn-sm btn-primary">
-                                <i class="bx bx-show"></i> Voir
-                            </a>
+                            <div class="d-flex flex-wrap gap-1">
+                                <a href="{{ route('admin.mobile-users.show', $user) }}" class="btn btn-sm btn-primary" title="Voir"><i class="bx bx-show"></i></a>
+                                @if($user->user_type !== 'admin')
+                                <a href="{{ route('admin.mobile-users.edit', $user) }}" class="btn btn-sm btn-outline-primary" title="Modifier"><i class="bx bx-edit"></i></a>
+                                <form action="{{ route('admin.mobile-users.toggle-block', $user) }}" method="POST" class="d-inline">
+                                    @csrf
+                                    <button type="submit" class="btn btn-sm btn-{{ ($user->is_blocked ?? false) ? 'outline-success' : 'warning' }} text-nowrap" title="{{ ($user->is_blocked ?? false) ? 'Débloquer' : 'Bloquer' }}">
+                                        <i class="bx bx-{{ ($user->is_blocked ?? false) ? 'check-circle' : 'block' }}"></i>
+                                    </button>
+                                </form>
+                                <form action="{{ route('admin.mobile-users.destroy', $user) }}" method="POST" class="d-inline" onsubmit="return confirm('Supprimer définitivement cet utilisateur et ses données associées ?');">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Supprimer"><i class="bx bx-trash"></i></button>
+                                </form>
+                                @endif
+                            </div>
                         </td>
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="9" class="text-center py-4">Aucun utilisateur trouvé</td>
+                        <td colspan="10" class="text-center py-4">Aucun utilisateur trouvé</td>
                     </tr>
                     @endforelse
                 </tbody>

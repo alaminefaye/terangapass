@@ -26,6 +26,7 @@ class User extends Authenticatable
         'phone',
         'language',
         'last_active_at',
+        'is_blocked',
     ];
 
     /**
@@ -49,6 +50,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'last_active_at' => 'datetime',
+            'is_blocked' => 'boolean',
         ];
     }
 

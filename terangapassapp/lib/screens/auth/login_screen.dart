@@ -5,6 +5,7 @@ import '../../l10n/app_localizations.dart';
 import '../../theme/app_theme.dart';
 import '../../services/api_service.dart';
 import '../../state/app_state.dart';
+import '../../utils/email_normalize.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -36,11 +37,20 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       final apiService = ApiService();
-      final email = _emailController.text.trim();
+      final email = normalizeEmailForAuth(_emailController.text);
       final password = _passwordController.text;
       await apiService.login(email, password);
 
       final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+      if (token == null || token.isEmpty) {
+        await apiService.clearLocalAuth();
+        throw Exception(
+          'Connexion incomplète : aucun jeton reçu depuis l’API. '
+          'Vérifiez l’URL de l’API (…/api/v1).',
+        );
+      }
+
       await prefs.setString('user_email', email);
 
       if (mounted) {

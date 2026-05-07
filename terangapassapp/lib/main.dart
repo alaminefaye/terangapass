@@ -112,10 +112,8 @@ class _AuthWrapperState extends State<AuthWrapper> {
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('auth_token');
-      final cookie = prefs.getString('auth_cookie');
-      final isAuthenticated =
-          (token != null && token.isNotEmpty) ||
-          (cookie != null && cookie.isNotEmpty);
+      // Un cookie HTTP seul ne prouve pas un compte API Teranga Pass (sessions hébergés / WAF).
+      final isAuthenticated = token != null && token.isNotEmpty;
 
       setState(() {
         _isAuthenticated = isAuthenticated;

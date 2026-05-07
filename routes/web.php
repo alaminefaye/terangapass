@@ -67,8 +67,11 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
 
     // Utilisateurs Mobile
     Route::get('mobile-users', [MobileUserController::class, 'index'])->name('mobile-users.index');
+    Route::get('mobile-users/{user}/edit', [MobileUserController::class, 'edit'])->name('mobile-users.edit');
+    Route::put('mobile-users/{user}', [MobileUserController::class, 'update'])->name('mobile-users.update');
+    Route::post('mobile-users/{user}/toggle-block', [MobileUserController::class, 'toggleBlock'])->name('mobile-users.toggle-block');
+    Route::delete('mobile-users/{user}', [MobileUserController::class, 'destroy'])->name('mobile-users.destroy');
     Route::get('mobile-users/{user}', [MobileUserController::class, 'show'])->name('mobile-users.show');
-    Route::put('mobile-users/{user}/status', [MobileUserController::class, 'updateStatus'])->name('mobile-users.updateStatus');
 
     // Sites de Compétition
     Route::resource('competition-sites', CompetitionSiteManagementController::class);

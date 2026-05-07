@@ -5,6 +5,7 @@ import '../../l10n/app_localizations.dart';
 import '../../theme/app_theme.dart';
 import '../../services/api_service.dart';
 import '../../state/app_state.dart';
+import '../../utils/email_normalize.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -45,7 +46,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     try {
       final apiService = ApiService();
       final name = _nameController.text.trim();
-      final email = _emailController.text.trim();
+      final email = normalizeEmailForAuth(_emailController.text);
       final phone = _phoneController.text.trim();
       final password = _passwordController.text;
 
@@ -57,10 +58,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
       await prefs.setString('user_phone', phone);
       var token = prefs.getString('auth_token');
       if (token == null || token.isEmpty) {
-        try {
-          await apiService.login(email, password);
-          token = prefs.getString('auth_token');
-        } catch (_) {}
+        await apiService.login(email, password);
+        token = prefs.getString('auth_token');
+      }
+
+      if (token == null || token.isEmpty) {
+        await apiService.clearLocalAuth();
+        throw Exception(
+          'Compte non confirmé par le serveur (pas de jeton). '
+          'Vérifiez que l’URL API est bien …/api/v1 et que le serveur répond en JSON.',
+        );
       }
 
       if (phone.isNotEmpty) {

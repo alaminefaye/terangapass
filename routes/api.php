@@ -32,13 +32,12 @@ Route::prefix('v1')->group(function () {
     // Authentification
     Route::post('/auth/login', [AuthController::class, 'login']);
     Route::post('/auth/register', [AuthController::class, 'register']);
+    Route::post('/auth/logout', [AuthController::class, 'logout']);
 });
 
 // Routes protégées (nécessitent une authentification)
 // TODO: Ajouter 'auth:sanctum' quand Sanctum sera configuré
-Route::middleware([])->prefix('v1')->group(function () {
-    // Auth
-    Route::post('/auth/logout', [AuthController::class, 'logout']);
+Route::middleware(['api.user.active'])->prefix('v1')->group(function () {
     Route::get('/user/profile', [UserController::class, 'profile']);
     Route::put('/user/profile', [UserController::class, 'updateProfile']);
 

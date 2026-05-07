@@ -294,6 +294,11 @@ class ApiService {
     _cookieHeader = null;
   }
 
+  /// Réinitialise tout stockage local d’auth (jeton + cookie) sans appeler l’API.
+  Future<void> clearLocalAuth() async {
+    await _clearToken();
+  }
+
   // ==================== AUTHENTIFICATION ====================
 
   /// Connexion
@@ -371,18 +376,11 @@ class ApiService {
       if (data == null ||
           (data is String && data.trim().isEmpty) ||
           response.statusCode == 204) {
-        final headerToken = _extractTokenFromHeaders(response.headers);
-        if (headerToken != null && headerToken.isNotEmpty) {
-          await _saveToken(headerToken);
-          return {'success': true, 'token': headerToken};
-        }
-        final cookieHeader = _extractCookieHeaderFromResponse(response.headers);
-        if (cookieHeader != null && cookieHeader.isNotEmpty) {
-          await _saveCookie(cookieHeader);
-          return {'success': true};
-        }
+        // Ne pas accepter cookie / en-têtes seuls : souvent une page HTML ou une redirection
+        // → l’app affichait « connecté » sans compte créé côté Laravel.
         throw Exception(
-          'Inscription impossible: réponse serveur vide. Vérifiez l’URL API et le serveur.',
+          'Inscription impossible: réponse API vide ou non JSON. '
+          'L’URL doit finir par /api/v1 (ex. https://votredomaine.com/api/v1).',
         );
       }
 
@@ -392,15 +390,23 @@ class ApiService {
           _extractTokenFromBody(responseData) ??
           _extractTokenFromHeaders(response.headers);
 
-      if (responseData['success'] == true && token != null) {
+      if (responseData['success'] == true && token != null && token.isNotEmpty) {
         await _saveToken(token);
         responseData['token'] = token;
         return responseData;
-      } else if (responseData['success'] == true) {
-        return responseData;
-      } else if (token != null) {
+      }
+      // Ne pas traiter comme inscription réussie sans jeton exploitable par l’API.
+      if (responseData['success'] == true &&
+          (token == null || token.isEmpty)) {
+        throw Exception(
+          responseData['message'] ??
+              'Inscription incomplète : aucun jeton reçu. Réessayez ou connectez-vous.',
+        );
+      }
+      if (token != null && token.isNotEmpty) {
         await _saveToken(token);
         responseData['token'] = token;
+        responseData['success'] = true;
         return responseData;
       }
 
@@ -913,7 +919,10 @@ class ApiService {
 
       // Si le serveur retourne un message d'erreur, l'utiliser
       String message;
-      if (data is Map && data.containsKey('message')) {
+      final validationDetail = _firstValidationErrorDetail(data);
+      if (validationDetail != null && validationDetail.isNotEmpty) {
+        message = validationDetail;
+      } else if (data is Map && data.containsKey('message')) {
         message = data['message'] as String;
       } else if (data is Map && data.containsKey('error')) {
         message = data['error'] as String;
@@ -991,5 +1000,29 @@ class ApiService {
       }
       return Exception(message);
     }
+  }
+
+  /// Premier message Laravel `errors.{field}[0]` si présent.
+  String? _firstValidationErrorDetail(dynamic data) {
+    if (data is! Map) {
+      return null;
+    }
+    final map = Map<String, dynamic>.from(data);
+    final errors = map['errors'];
+    if (errors is! Map) {
+      return null;
+    }
+    for (final dynamic v in errors.values) {
+      if (v is List && v.isNotEmpty && v.first is String) {
+        final s = (v.first as String).trim();
+        if (s.isNotEmpty) {
+          return s;
+        }
+      }
+      if (v is String && v.trim().isNotEmpty) {
+        return v.trim();
+      }
+    }
+    return null;
   }
 }
