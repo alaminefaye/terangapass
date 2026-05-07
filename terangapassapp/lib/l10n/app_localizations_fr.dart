@@ -901,4 +901,21 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get profileOfflinePackDialogBody =>
       'Le téléchargement d’un pack local (cartes et annuaire) arrivera dans une prochaine version. Le numéro de catalogue ci-dessous permet déjà de vérifier que l’app dialogue avec le serveur.';
+
+  @override
+  String get offlineUsingCache => 'Affichage hors ligne : données en cache.';
+
+  @override
+  String offlinePackUpdated(String version) {
+    return 'Pack $version enregistré sur l’appareil.';
+  }
+
+  @override
+  String profileOfflinePackFilesVersion(String version) {
+    return 'Fichiers locaux : $version';
+  }
+
+  @override
+  String get profileOfflinePackStaleFiles =>
+      'Des fichiers sont plus anciens que le catalogue : reconnectez-vous au réseau pour terminer la mise à jour.';
 }

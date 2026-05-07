@@ -21,4 +21,23 @@ class OfflinePackController extends Controller
     {
         return app(CompetitionSiteController::class)->index();
     }
+
+    public function embassiesBundle()
+    {
+        $request = Request::create('/api/v1/tourism/embassies', 'GET');
+
+        return app(TourismController::class)->embassies($request);
+    }
+
+    public function competitionCalendarBundle()
+    {
+        return app(CompetitionSiteController::class)->calendar();
+    }
+
+    public function audioAnnouncementsBundle()
+    {
+        $request = Request::create('/api/v1/announcements/audio', 'GET');
+
+        return app(AudioAnnouncementController::class)->index($request);
+    }
 }

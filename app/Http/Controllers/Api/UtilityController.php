@@ -21,6 +21,17 @@ class UtilityController extends Controller
         $sitesResponse = app(CompetitionSiteController::class)->index();
         $sitesRaw = $sitesResponse->getContent();
 
+        $embassiesRequest = Request::create('/api/v1/tourism/embassies', 'GET');
+        $embassiesResponse = app(TourismController::class)->embassies($embassiesRequest);
+        $embassiesRaw = $embassiesResponse->getContent();
+
+        $calendarResponse = app(CompetitionSiteController::class)->calendar();
+        $calendarRaw = $calendarResponse->getContent();
+
+        $audioRequest = Request::create('/api/v1/announcements/audio', 'GET');
+        $audioResponse = app(AudioAnnouncementController::class)->index($audioRequest);
+        $audioRaw = $audioResponse->getContent();
+
         $bundles = [
             [
                 'id' => 'poi',
@@ -35,6 +46,27 @@ class UtilityController extends Controller
                 'url' => url('api/v1/utility/offline-bundle/competition-sites'),
                 'sha256' => hash('sha256', $sitesRaw),
                 'byte_size' => strlen($sitesRaw),
+            ],
+            [
+                'id' => 'embassies',
+                'kind' => 'json',
+                'url' => url('api/v1/utility/offline-bundle/embassies'),
+                'sha256' => hash('sha256', $embassiesRaw),
+                'byte_size' => strlen($embassiesRaw),
+            ],
+            [
+                'id' => 'competition_calendar',
+                'kind' => 'json',
+                'url' => url('api/v1/utility/offline-bundle/competition-calendar'),
+                'sha256' => hash('sha256', $calendarRaw),
+                'byte_size' => strlen($calendarRaw),
+            ],
+            [
+                'id' => 'audio_announcements',
+                'kind' => 'json',
+                'url' => url('api/v1/utility/offline-bundle/audio-announcements'),
+                'sha256' => hash('sha256', $audioRaw),
+                'byte_size' => strlen($audioRaw),
             ],
         ];
 

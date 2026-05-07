@@ -133,7 +133,7 @@ Constantes partagées côté app : `terangapassapp/lib/constants/map_constants.d
 |------------|----------|-------------------|
 | 7.1 | Liste des **données** à embarquer (POI, cartes, annonces d’urgence) | **Partiel** : POI + sites JOJ dans `bundles` ; autres types (audio, etc.) à ajouter |
 | 7.2 | Téléchargement **1 clic** + gestion stockage / mise à jour | **Partiel** : téléchargement auto si `pack_version` change → `Documents/offline_packs/*.json` ; pas encore bouton « Télécharger » ni reprise après coupure |
-| 7.3 | Comportement si données **périmées** | Non — dépend de 7.2 |
+| 7.3 | Comportement si données **périmées** | **Partiel** : repli hors ligne si API KO (cache fichiers) ; invite explicite « mise à jour du pack » si version manifeste > locale — à peaufiner |
 
 **Terminé quand** : test terrain sans réseau sur parcours défini.
 

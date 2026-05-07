@@ -43,6 +43,9 @@ Route::prefix('v1')->group(function () {
     Route::get('/utility/offline-manifest', [UtilityController::class, 'offlineManifest']);
     Route::get('/utility/offline-bundle/poi', [OfflinePackController::class, 'poiBundle']);
     Route::get('/utility/offline-bundle/competition-sites', [OfflinePackController::class, 'competitionSitesBundle']);
+    Route::get('/utility/offline-bundle/embassies', [OfflinePackController::class, 'embassiesBundle']);
+    Route::get('/utility/offline-bundle/competition-calendar', [OfflinePackController::class, 'competitionCalendarBundle']);
+    Route::get('/utility/offline-bundle/audio-announcements', [OfflinePackController::class, 'audioAnnouncementsBundle']);
 });
 
 // Routes protégées (nécessitent une authentification)

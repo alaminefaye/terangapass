@@ -23,7 +23,7 @@
 
 1. **Autres bundles** : annonces audio, ambassades, etc.
 2. **UX téléchargement** : barre de progression, reprise après coupure, indicateur « X Mo » dans le profil.
-3. **Lecture hors ligne** : carte / listes lisent `offline_packs/*.json` si l’API est injoignable.
+3. **Lecture hors ligne** : ✅ accueil JOJ, carte interactive, tourisme, « À deux pas », INFOS JOJ **rechargent depuis** `offline_packs/*.json` si l’API échoue (snackbar « données en cache »).
 4. **Périmé** : invitation explicite à mettre à jour le pack si le manifeste change.
 
 ## Variables

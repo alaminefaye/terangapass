@@ -9,6 +9,9 @@ import '../services/location_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/loading_placeholders.dart';
 import '../widgets/map_legend_strip.dart';
+import '../services/offline_pack_service.dart';
+import '../services/offline_nearby_builder.dart';
+import '../widgets/offline_cache_snack.dart';
 import '../widgets/teranga_osm_tile_layer.dart';
 
 class NearbyScreen extends StatefulWidget {
@@ -110,16 +113,31 @@ class _NearbyScreenState extends State<NearbyScreen> {
       final selectedCat = chips[_chipIndex.clamp(0, chips.length - 1)].categoryKey;
 
       // On récupère d'abord tous les lieux pour calculer les compteurs par catégorie.
-      final allRaw = await ApiService().getNearby(
-        latitude: lat,
-        longitude: lng,
-        radiusMeters: _radiusM,
-      );
-      final allPlaces = allRaw.map((e) => e as Map<String, dynamic>).toList();
-      final inRadiusPlaces = allPlaces.where((p) {
-        final d = _distanceMetersForPlace(p);
-        return d != null && d <= _radiusM;
-      }).toList();
+      List<Map<String, dynamic>> inRadiusPlaces;
+      var usedOffline = false;
+      try {
+        final allRaw = await ApiService().getNearby(
+          latitude: lat,
+          longitude: lng,
+          radiusMeters: _radiusM,
+        );
+        final allPlaces =
+            allRaw.map((e) => e as Map<String, dynamic>).toList();
+        inRadiusPlaces = allPlaces.where((p) {
+          final d = _distanceMetersForPlace(p);
+          return d != null && d <= _radiusM;
+        }).toList();
+      } catch (_) {
+        final offline = await OfflinePackService().readOfflinePoiList();
+        if (offline.isEmpty) rethrow;
+        inRadiusPlaces = OfflineNearbyBuilder.build(
+          userLat: lat,
+          userLng: lng,
+          radiusMeters: _radiusM,
+          poi: offline,
+        );
+        usedOffline = true;
+      }
       final counts = _computeCategoryCounts(inRadiusPlaces);
       final placesForSelection = selectedCat == null
           ? inRadiusPlaces
@@ -139,6 +157,11 @@ class _NearbyScreenState extends State<NearbyScreen> {
         _places = placesForSelection;
         _loading = false;
       });
+      if (usedOffline) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) showOfflineCacheSnackBar(context);
+        });
+      }
     } catch (e) {
       if (!mounted) return;
       setState(() {

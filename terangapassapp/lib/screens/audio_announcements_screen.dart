@@ -5,6 +5,8 @@ import 'package:google_fonts/google_fonts.dart';
 import '../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 import '../services/api_service.dart';
+import '../services/offline_pack_service.dart';
+import '../widgets/offline_cache_snack.dart';
 import '../constants/api_constants.dart';
 import '../widgets/loading_placeholders.dart';
 
@@ -99,10 +101,22 @@ class _AudioAnnouncementsScreenState extends State<AudioAnnouncementsScreen>
       });
     } catch (e) {
       if (!mounted) return;
-      setState(() {
-        _announcements = [];
-        _errorMessage = e.toString().replaceAll('Exception: ', '');
-      });
+      final offline =
+          await OfflinePackService().readOfflineAudioAnnouncementsList();
+      if (offline.isNotEmpty) {
+        setState(() {
+          _announcements = offline;
+          _errorMessage = null;
+        });
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) showOfflineCacheSnackBar(context);
+        });
+      } else {
+        setState(() {
+          _announcements = [];
+          _errorMessage = e.toString().replaceAll('Exception: ', '');
+        });
+      }
     } finally {
       if (mounted) {
         setState(() {

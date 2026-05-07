@@ -31,6 +31,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String _cachedEmail = '';
   String _cachedPhone = '';
   String? _offlineCatalogVersion;
+  String? _offlineDownloadedVersion;
 
   static bool _looksLikePlaceholder(String value) {
     final v = value.trim().toLowerCase();
@@ -107,16 +108,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
       } catch (_) {}
 
       String? offlineCatalog;
+      String? offlineDl;
       try {
         await OfflinePackService().refresh(apiService);
         offlineCatalog = await OfflinePackService().cachedCatalogVersion();
+        offlineDl = await OfflinePackService().downloadedPackVersion();
       } catch (_) {
         offlineCatalog = await OfflinePackService().cachedCatalogVersion();
+        offlineDl = await OfflinePackService().downloadedPackVersion();
       }
 
       if (!mounted) return;
       setState(() {
         _offlineCatalogVersion = offlineCatalog;
+        _offlineDownloadedVersion = offlineDl;
         _alertsCount = alerts.length;
         _reportsCount = reports.length;
         _recentActivities = _buildRecentActivities(alerts, reports);
@@ -129,6 +134,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         'phone': _cachedPhone,
       };
       final offlineCatalog = await OfflinePackService().cachedCatalogVersion();
+      final offlineDl = await OfflinePackService().downloadedPackVersion();
       setState(() {
         _userProfile = fallback;
         _alertsCount = 0;
@@ -136,6 +142,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _errorMessage = e.toString().replaceAll('Exception: ', '');
         _recentActivities = [];
         _offlineCatalogVersion = offlineCatalog;
+        _offlineDownloadedVersion = offlineDl;
       });
     } finally {
       if (mounted) {
@@ -697,12 +704,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   String _offlinePackSubtitle(AppLocalizations l10n) {
-    final v = _offlineCatalogVersion?.trim();
     final body = l10n.profileOfflinePackBody;
-    if (v != null && v.isNotEmpty) {
-      return '$body\n${l10n.profileOfflinePackCatalogVersion(v)}';
+    final cat = _offlineCatalogVersion?.trim();
+    final dl = _offlineDownloadedVersion?.trim();
+    final lines = <String>[body];
+    if (cat != null && cat.isNotEmpty) {
+      lines.add(l10n.profileOfflinePackCatalogVersion(cat));
+    } else {
+      lines.add(l10n.profileOfflinePackCatalogPending);
     }
-    return '$body\n${l10n.profileOfflinePackCatalogPending}';
+    if (dl != null && dl.isNotEmpty) {
+      lines.add(l10n.profileOfflinePackFilesVersion(dl));
+    }
+    if (cat != null &&
+        cat.isNotEmpty &&
+        dl != null &&
+        dl.isNotEmpty &&
+        cat != dl) {
+      lines.add(l10n.profileOfflinePackStaleFiles);
+    }
+    return lines.join('\n');
   }
 
   Widget _buildSettingTile(
@@ -755,7 +776,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   color: AppTheme.textSecondary,
                   height: 1.35,
                 ),
-                maxLines: 5,
+                maxLines: 8,
               )
             : null,
         trailing: hasSwitch

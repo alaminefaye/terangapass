@@ -891,4 +891,21 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get profileOfflinePackDialogBody =>
       'Downloading a local pack (maps and directory) will ship in a later release. The catalog version below already confirms the app can reach the server.';
+
+  @override
+  String get offlineUsingCache => 'Offline view: using cached data.';
+
+  @override
+  String offlinePackUpdated(String version) {
+    return 'Pack $version saved on this device.';
+  }
+
+  @override
+  String profileOfflinePackFilesVersion(String version) {
+    return 'Local files: $version';
+  }
+
+  @override
+  String get profileOfflinePackStaleFiles =>
+      'Some files are older than the catalog: go online to finish updating.';
 }

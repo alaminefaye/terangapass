@@ -46,6 +46,8 @@ class TourismController extends Controller
                 'id' => $partner->id,
                 'name' => $partner->name,
                 'category' => $this->getCategoryName($partner->category),
+                'category_key' => $partner->category,
+                'is_sponsor' => (bool) $partner->is_sponsor,
                 'distance' => $distance,
                 'address' => $partner->address,
                 'phone' => $partner->phone,
@@ -103,11 +105,11 @@ class TourismController extends Controller
         $dLat = deg2rad($lat2 - $lat1);
         $dLon = deg2rad($lon2 - $lon1);
 
-        $a = sin($dLat/2) * sin($dLat/2) +
+        $a = sin($dLat / 2) * sin($dLat / 2) +
              cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
-             sin($dLon/2) * sin($dLon/2);
+             sin($dLon / 2) * sin($dLon / 2);
 
-        $c = 2 * atan2(sqrt($a), sqrt(1-$a));
+        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
         $distanceKm = $earthRadius * $c;
 
         return $distanceKm * 1000;
@@ -116,9 +118,10 @@ class TourismController extends Controller
     private function formatDistance(float $distanceMeters): string
     {
         if ($distanceMeters < 1000) {
-            return round($distanceMeters) . ' m';
+            return round($distanceMeters).' m';
         }
-        return round($distanceMeters / 1000, 1) . ' km';
+
+        return round($distanceMeters / 1000, 1).' km';
     }
 
     private function getCategoryName($category)
@@ -151,7 +154,7 @@ class TourismController extends Controller
 
     private function normalizeUrl($value): ?string
     {
-        if (!$value) {
+        if (! $value) {
             return null;
         }
 
@@ -175,7 +178,8 @@ class TourismController extends Controller
             return ($useHttps || request()->isSecure()) ? secure_url($value) : url($value);
         }
 
-        $value = '/' . ltrim($value, '/');
+        $value = '/'.ltrim($value, '/');
+
         return ($useHttps || request()->isSecure()) ? secure_url($value) : url($value);
     }
 }

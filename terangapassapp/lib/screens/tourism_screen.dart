@@ -5,7 +5,9 @@ import 'package:url_launcher/url_launcher.dart';
 import '../theme/app_theme.dart';
 import '../services/api_service.dart';
 import '../services/location_service.dart';
+import '../services/offline_pack_service.dart';
 import '../widgets/loading_placeholders.dart';
+import '../widgets/offline_cache_snack.dart';
 import 'embassies_screen.dart';
 import 'nearby_screen.dart';
 
@@ -96,10 +98,21 @@ class _TourismScreenState extends State<TourismScreen>
       });
     } catch (e) {
       if (!mounted) return;
-      setState(() {
-        _pointsOfInterest = [];
-        _errorMessage = e.toString().replaceAll('Exception: ', '');
-      });
+      final offline = await OfflinePackService().readOfflinePoiList();
+      if (offline.isNotEmpty) {
+        setState(() {
+          _pointsOfInterest = offline;
+          _errorMessage = null;
+        });
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) showOfflineCacheSnackBar(context);
+        });
+      } else {
+        setState(() {
+          _pointsOfInterest = [];
+          _errorMessage = e.toString().replaceAll('Exception: ', '');
+        });
+      }
     } finally {
       if (mounted) {
         setState(() {

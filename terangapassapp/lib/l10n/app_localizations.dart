@@ -1783,6 +1783,30 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Le téléchargement d’un pack local (cartes et annuaire) arrivera dans une prochaine version. Le numéro de catalogue ci-dessous permet déjà de vérifier que l’app dialogue avec le serveur.'**
   String get profileOfflinePackDialogBody;
+
+  /// No description provided for @offlineUsingCache.
+  ///
+  /// In fr, this message translates to:
+  /// **'Affichage hors ligne : données en cache.'**
+  String get offlineUsingCache;
+
+  /// No description provided for @offlinePackUpdated.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pack {version} enregistré sur l’appareil.'**
+  String offlinePackUpdated(String version);
+
+  /// No description provided for @profileOfflinePackFilesVersion.
+  ///
+  /// In fr, this message translates to:
+  /// **'Fichiers locaux : {version}'**
+  String profileOfflinePackFilesVersion(String version);
+
+  /// No description provided for @profileOfflinePackStaleFiles.
+  ///
+  /// In fr, this message translates to:
+  /// **'Des fichiers sont plus anciens que le catalogue : reconnectez-vous au réseau pour terminer la mise à jour.'**
+  String get profileOfflinePackStaleFiles;
 }
 
 class _AppLocalizationsDelegate

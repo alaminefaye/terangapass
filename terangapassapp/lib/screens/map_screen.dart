@@ -10,6 +10,8 @@ import '../services/location_service.dart';
 import '../services/api_service.dart';
 import '../widgets/loading_placeholders.dart';
 import '../widgets/map_legend_strip.dart';
+import '../services/offline_pack_service.dart';
+import '../widgets/offline_cache_snack.dart';
 
 enum _MapFilter { all, help, sites, hotels, restaurants, pharmacies, hospitals }
 
@@ -135,11 +137,44 @@ class _MapScreenState extends State<MapScreen> {
       _syncMapToPoints();
     } catch (e) {
       if (!mounted) return;
-      setState(() {
-        _allPoints = [];
-        _pointsOfInterest = [];
-        _pointsErrorMessage = e.toString().replaceAll('Exception: ', '');
-      });
+      final offlinePoi = await OfflinePackService().readOfflinePoiList();
+      final offlineSites =
+          await OfflinePackService().readOfflineCompetitionSitesList();
+      if (offlinePoi.isNotEmpty || offlineSites.isNotEmpty) {
+        final sitePoints = offlineSites
+            .map(
+              (s) => <String, dynamic>{
+                'id': 'site_${s['id']}',
+                'name': s['name'],
+                'category': 'Sites JOJ',
+                'distance': s['location'] ?? '',
+                'latitude': s['latitude'],
+                'longitude': s['longitude'],
+                'address': s['address'] ?? s['location'],
+              },
+            )
+            .toList();
+        final merged = [
+          ...offlinePoi,
+          ...sitePoints,
+        ];
+        final filtered = merged.where(_matchesCurrentFilter).toList();
+        setState(() {
+          _allPoints = merged;
+          _pointsOfInterest = filtered;
+          _pointsErrorMessage = null;
+        });
+        _syncMapToPoints();
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) showOfflineCacheSnackBar(context);
+        });
+      } else {
+        setState(() {
+          _allPoints = [];
+          _pointsOfInterest = [];
+          _pointsErrorMessage = e.toString().replaceAll('Exception: ', '');
+        });
+      }
     } finally {
       if (mounted) {
         setState(() {

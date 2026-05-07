@@ -4,7 +4,9 @@ import 'package:url_launcher/url_launcher.dart';
 import '../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 import '../services/api_service.dart';
+import '../services/offline_pack_service.dart';
 import '../widgets/loading_placeholders.dart';
+import '../widgets/offline_cache_snack.dart';
 import 'currency_converter_screen.dart';
 
 class JOJInfoScreen extends StatefulWidget {
@@ -45,13 +47,38 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
 
     try {
       final apiService = ApiService();
-      final sites = await apiService.getCompetitionSites();
-      final calendar = await apiService.getCompetitionCalendar();
+
+      List<Map<String, dynamic>> siteMaps = [];
+      try {
+        final sites = await apiService.getCompetitionSites();
+        siteMaps = sites.map((s) => s as Map<String, dynamic>).toList();
+      } catch (_) {
+        siteMaps = await OfflinePackService().readOfflineCompetitionSitesList();
+        if (siteMaps.isNotEmpty && mounted) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) showOfflineCacheSnackBar(context);
+          });
+        }
+      }
+
+      List<Map<String, dynamic>> calendarMaps = [];
+      try {
+        final calendar = await apiService.getCompetitionCalendar();
+        calendarMaps =
+            calendar.map((c) => c as Map<String, dynamic>).toList();
+      } catch (_) {
+        calendarMaps = await OfflinePackService().readOfflineCalendarList();
+        if (calendarMaps.isNotEmpty && mounted) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) showOfflineCacheSnackBar(context);
+          });
+        }
+      }
 
       if (!mounted) return;
       setState(() {
-        _sites = sites.map((s) => s as Map<String, dynamic>).toList();
-        _calendar = calendar.map((c) => c as Map<String, dynamic>).toList();
+        _sites = siteMaps;
+        _calendar = calendarMaps;
         _sports = _deriveSportsFromCalendar(_calendar);
         _selectedDayKey = _buildDayChips(_calendar).firstOrNull?['key'];
       });

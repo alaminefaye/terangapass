@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../services/api_service.dart';
+import '../services/offline_pack_service.dart';
+import '../widgets/offline_cache_snack.dart';
 import '../services/location_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/loading_placeholders.dart';
@@ -80,7 +82,18 @@ class _EmbassiesScreenState extends State<EmbassiesScreen> {
       });
     } catch (e) {
       if (!mounted) return;
-      setState(() => _error = e.toString().replaceAll('Exception: ', ''));
+      final offline = await OfflinePackService().readOfflineEmbassiesList();
+      if (offline.isNotEmpty) {
+        setState(() {
+          _embassies = offline;
+          _error = null;
+        });
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) showOfflineCacheSnackBar(context);
+        });
+      } else {
+        setState(() => _error = e.toString().replaceAll('Exception: ', ''));
+      }
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);

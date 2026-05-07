@@ -12,6 +12,6 @@ return [
     | copie locale et proposer un téléchargement.
     |
     */
-    'offline_catalog_version' => env('TERANGA_OFFLINE_CATALOG_VERSION', '2026.2.0'),
+    'offline_catalog_version' => env('TERANGA_OFFLINE_CATALOG_VERSION', '2026.4.0'),
 
 ];

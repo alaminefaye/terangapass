@@ -27,6 +27,7 @@ import 'embassies_screen.dart';
 import 'currency_converter_screen.dart';
 import '../widgets/loading_placeholders.dart';
 import '../widgets/map_legend_strip.dart';
+import '../widgets/offline_cache_snack.dart';
 import '../widgets/teranga_osm_tile_layer.dart';
 
 enum _HomeFeatureId {
@@ -138,6 +139,13 @@ class _HomeScreenState extends State<HomeScreen>
       ]);
       // Manifeste pack hors ligne : sync en arrière-plan (throttle dans [OfflinePackService]).
       unawaited(OfflinePackService().refreshIfStale(ApiService()));
+      if (mounted) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            unawaited(OfflinePackService().maybeShowPackUpdatedToast(context));
+          }
+        });
+      }
     });
   }
 
@@ -161,6 +169,13 @@ class _HomeScreenState extends State<HomeScreen>
           _loadJojCountdown(),
         ]);
         unawaited(OfflinePackService().refreshIfStale(ApiService()));
+        if (mounted) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              unawaited(OfflinePackService().maybeShowPackUpdatedToast(context));
+            }
+          });
+        }
       });
     }
   }
@@ -215,12 +230,32 @@ class _HomeScreenState extends State<HomeScreen>
         });
       }
     } catch (_) {
+      final offline =
+          await OfflinePackService().readOfflineAudioAnnouncementsList();
+      Map<String, dynamic>? next;
+      if (offline.isNotEmpty) {
+        next = offline.first;
+      }
       if (mounted) {
-        _resetOfficialPlayer();
-        _officialAudioUrl = null;
         setState(() {
-          _officialAnnouncement = null;
+          if (next != null) {
+            final nextUrl = _extractAudioUrl(next);
+            if (nextUrl != null && nextUrl != _officialAudioUrl) {
+              _resetOfficialPlayer();
+              _officialAudioUrl = nextUrl;
+            }
+            _officialAnnouncement = next;
+          } else {
+            _resetOfficialPlayer();
+            _officialAudioUrl = null;
+            _officialAnnouncement = null;
+          }
         });
+        if (next != null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) showOfflineCacheSnackBar(context);
+          });
+        }
       }
     } finally {
       if (mounted) {
@@ -249,7 +284,18 @@ class _HomeScreenState extends State<HomeScreen>
         });
       }
     } catch (e) {
-      if (mounted) {
+      if (!mounted) return;
+      final offline =
+          await OfflinePackService().readOfflineCompetitionSitesList();
+      if (offline.isNotEmpty) {
+        setState(() {
+          _competitionSites = offline;
+          _competitionSitesError = null;
+        });
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) showOfflineCacheSnackBar(context);
+        });
+      } else {
         setState(() {
           _competitionSites = [];
           _competitionSitesError = e.toString().replaceAll('Exception: ', '');

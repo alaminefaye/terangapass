@@ -350,5 +350,23 @@
     }
   },
   "profileOfflinePackCatalogPending": "Catalog: not synced yet",
-  "profileOfflinePackDialogBody": "Downloading a local pack (maps and directory) will ship in a later release. The catalog version below already confirms the app can reach the server."
+  "profileOfflinePackDialogBody": "Downloading a local pack (maps and directory) will ship in a later release. The catalog version below already confirms the app can reach the server.",
+  "offlineUsingCache": "Offline view: using cached data.",
+  "offlinePackUpdated": "Pack {version} saved on this device.",
+  "@offlinePackUpdated": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "profileOfflinePackFilesVersion": "Local files: {version}",
+  "@profileOfflinePackFilesVersion": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "profileOfflinePackStaleFiles": "Some files are older than the catalog: go online to finish updating."
 }

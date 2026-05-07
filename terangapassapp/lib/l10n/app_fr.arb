@@ -350,5 +350,23 @@
     }
   },
   "profileOfflinePackCatalogPending": "Catalogue : non synchronisé",
-  "profileOfflinePackDialogBody": "Le téléchargement d’un pack local (cartes et annuaire) arrivera dans une prochaine version. Le numéro de catalogue ci-dessous permet déjà de vérifier que l’app dialogue avec le serveur."
+  "profileOfflinePackDialogBody": "Le téléchargement d’un pack local (cartes et annuaire) arrivera dans une prochaine version. Le numéro de catalogue ci-dessous permet déjà de vérifier que l’app dialogue avec le serveur.",
+  "offlineUsingCache": "Affichage hors ligne : données en cache.",
+  "offlinePackUpdated": "Pack {version} enregistré sur l’appareil.",
+  "@offlinePackUpdated": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "profileOfflinePackFilesVersion": "Fichiers locaux : {version}",
+  "@profileOfflinePackFilesVersion": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "profileOfflinePackStaleFiles": "Des fichiers sont plus anciens que le catalogue : reconnectez-vous au réseau pour terminer la mise à jour."
 }
