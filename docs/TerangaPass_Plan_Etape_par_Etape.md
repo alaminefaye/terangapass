@@ -83,7 +83,7 @@ Constantes partagées côté app : `terangapassapp/lib/constants/map_constants.d
 | Sous-étape | Livrable | Statut (mai 2026) |
 |------------|----------|-------------------|
 | 4.1 | **Base unifiée** : `MapConstants` utilisé partout (`HomeScreen` aperçu JOJ, `MapScreen`, `NearbyScreen`) — éviter URLs / user-agent dupliqués ou divergents | OK côté code |
-| 4.2 | **UX carte** : zoom par défaut, marqueurs, légende / contrôles homogènes entre écrans | Zoom et tuiles alignés ; légende / contrôles : à affiner si besoin produit |
+| 4.2 | **UX carte** : zoom par défaut, marqueurs, légende / contrôles homogènes entre écrans | Zoom et tuiles alignés ; **légende** `MapLegendStrip` sur **accueil JOJ** (sites), **Carte** (filtres) et **À deux pas** (vous / lieu / partenaire) |
 | 4.3 | **Perf** : limiter les rebuilds lourds, éviter rechargements tuiles inutiles, tester sur appareil faible | `RepaintBoundary` sur les trois cartes ; **test dispositif réel** encore recommandé |
 | 4.4 | **Tuiles / réseau** : message clair si les tuiles OSM sont indisponibles (timeout) ; pas d’abus des serveurs publics OSM | `TerangaOsmTileLayer` : `errorImage` + snack throttlé sur erreur tuile + user-agent unifié ; [politique tuiles OSM](https://operations.osmfoundation.org/policies/tiles/) |
 | 4.5 | **Offline (optionnel, plus tard)** : cache ou pack tuiles — seulement après stabilisation du flux en ligne | Non démarré |
@@ -119,7 +119,7 @@ Constantes partagées côté app : `terangapassapp/lib/constants/map_constants.d
 |------------|----------|-------------------|
 | 6.1 | Modèle **anti-fraude** (QR signé, horodatage, révocation) | **MVP** : format `TPASS1` + HMAC + table `pass_tickets` ; révocation possible côté données ([note technique](TerangaPass_Etape6_Pass_QR.md)) |
 | 6.2 | Intégration **un** type de billet (JOJ ou musée pilote) | **MVP** : type `joj_visitor_pilot` + écran QR + `GET /api/v1/pass/ticket` |
-| 6.3 | Scénarios **offline** de contrôle (si applicable) | Non — contrôle en ligne (`POST /api/v1/pass/validate`) |
+| 6.3 | Scénarios **offline** de contrôle (si applicable) | **Partiel** : `GET /api/v1/pass/revocations` (+ `since`) pour synchro des révocations côté staff ; validation QR toujours en ligne (`POST /api/v1/pass/validate`) |
 
 **Terminé quand** : documentation opérateur + tests de charge légers sur la validation.
 
@@ -201,6 +201,10 @@ Ne démarrer qu’avec des **micro-livrables** :
 | [TerangaPass_Etape4_Carte_Choix.md](TerangaPass_Etape4_Carte_Choix.md) | Décisions carte in-app (`flutter_map`, OSM, UX réseau) |
 | [TerangaPass_Etape5_Paiements_Prerequis.md](TerangaPass_Etape5_Paiements_Prerequis.md) | Cadre avant toute intégration Wave / OM |
 | [TerangaPass_Etape6_Pass_QR.md](TerangaPass_Etape6_Pass_QR.md) | Pass QR / billetterie pilote (API + staff) |
+| [TerangaPass_Operateur_Pass_Controle.md](TerangaPass_Operateur_Pass_Controle.md) | Opérateur : en-tête contrôle, `validate`, `revocations` |
+| [TerangaPass_QA_Demo_15min.md](TerangaPass_QA_Demo_15min.md) | Démo 15 min / QA étape 1 |
+| [TerangaPass_Security_Checklist.md](TerangaPass_Security_Checklist.md) | Rappel sécurité (HTTPS, secrets, contrôle Pass) |
+| [TerangaPass_Process_Contenu_Annuaire.md](TerangaPass_Process_Contenu_Annuaire.md) | Process contenu / annuaire (étape 3) |
 | **Ce fichier** | Par quoi commencer, dans quel ordre, critères de fin |
 
-Entrées README : `README.md` (racine) et `terangapassapp/README.md` pointent vers ce plan, le document d’inspiration et les fiches étapes 4–5.
+Entrées README : `README.md` (racine) et `terangapassapp/README.md` pointent vers ce plan, le document d’inspiration et les fiches étapes 4–6.

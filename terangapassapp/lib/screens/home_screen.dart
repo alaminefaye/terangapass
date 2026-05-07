@@ -23,6 +23,7 @@ import 'ai_assistant_screen.dart';
 import 'embassies_screen.dart';
 import 'currency_converter_screen.dart';
 import '../widgets/loading_placeholders.dart';
+import '../widgets/map_legend_strip.dart';
 import '../widgets/teranga_osm_tile_layer.dart';
 
 enum _HomeFeatureId {
@@ -1590,6 +1591,12 @@ class _HomeScreenState extends State<HomeScreen>
                       ),
               ),
             ),
+            if (!_isLoadingCompetitionSites &&
+                _competitionSitesError == null &&
+                hasCoords) ...[
+              const SizedBox(height: 10),
+              const MapLegendStrip.homeJoj(),
+            ],
             if (previewSites.isNotEmpty) ...[
               const SizedBox(height: 12),
               ...previewSites.map((site) {

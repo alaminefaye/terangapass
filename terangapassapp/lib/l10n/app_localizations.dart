@@ -1717,6 +1717,42 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'L’intégration partenaire (ex. Airalo), les paiements (PayDunya, Wave) et l’activation par QR arriveront dans une prochaine version. Cet écran sert de repère pour la démo et la recette produit.'**
   String get esimComingBody;
+
+  /// No description provided for @mapLegendTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Légende'**
+  String get mapLegendTitle;
+
+  /// No description provided for @mapLegendYou.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous'**
+  String get mapLegendYou;
+
+  /// No description provided for @mapLegendPlace.
+  ///
+  /// In fr, this message translates to:
+  /// **'Lieu'**
+  String get mapLegendPlace;
+
+  /// No description provided for @mapLegendSponsor.
+  ///
+  /// In fr, this message translates to:
+  /// **'Partenaire mis en avant'**
+  String get mapLegendSponsor;
+
+  /// No description provided for @mapLegendCategoriesHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Les couleurs des repères sur la carte indiquent le type de lieu (filtres ci-dessus).'**
+  String get mapLegendCategoriesHint;
+
+  /// No description provided for @mapLegendJojSitesHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Repères verts : sites de compétition JOJ sur la carte.'**
+  String get mapLegendJojSitesHint;
 }
 
 class _AppLocalizationsDelegate

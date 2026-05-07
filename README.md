@@ -9,6 +9,10 @@ Projet Laravel avec intégration complète du template Sneat (Bootstrap 5 HTML A
 - [Carte in-app — choix techniques (étape 4)](docs/TerangaPass_Etape4_Carte_Choix.md)
 - [Paiements in-app — prérequis avant code (étape 5)](docs/TerangaPass_Etape5_Paiements_Prerequis.md)
 - [Pass QR / billetterie pilote (étape 6)](docs/TerangaPass_Etape6_Pass_QR.md)
+- [Démo 15 min / QA](docs/TerangaPass_QA_Demo_15min.md)
+- [Checklist sécurité](docs/TerangaPass_Security_Checklist.md)
+- [Process contenu / annuaire](docs/TerangaPass_Process_Contenu_Annuaire.md)
+- [Opérateur — contrôle Pass (staff)](docs/TerangaPass_Operateur_Pass_Controle.md)
 
 ## 🚀 Installation
 

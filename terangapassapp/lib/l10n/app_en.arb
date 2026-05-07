@@ -332,5 +332,11 @@
   "profileEsimTitle": "eSIM plans",
   "profileEsimSubtitle": "Travel data (coming soon)",
   "esimComingTitle": "Teranga Pass eSIM",
-  "esimComingBody": "Partner integration (e.g. Airalo), payments (PayDunya, Wave) and QR activation will ship in a later release. This screen is a placeholder for demo and product sign-off."
+  "esimComingBody": "Partner integration (e.g. Airalo), payments (PayDunya, Wave) and QR activation will ship in a later release. This screen is a placeholder for demo and product sign-off.",
+  "mapLegendTitle": "Legend",
+  "mapLegendYou": "You",
+  "mapLegendPlace": "Place",
+  "mapLegendSponsor": "Featured partner",
+  "mapLegendCategoriesHint": "Marker colors on the map indicate the type of place (filters above).",
+  "mapLegendJojSitesHint": "Green markers: JOJ competition sites on the map."
 }

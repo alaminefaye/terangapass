@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\PassTicket;
 use App\Models\User;
 use App\Services\TerangaPassQrSigner;
+use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -77,20 +79,57 @@ class PassTicketController extends Controller
     }
 
     /**
+     * Liste des billets révoqués (synchro staff / base d’un contrôle hors-ligne futur).
+     * Query optionnelle : since=ISO8601 — uniquement les révocations après cette date.
+     */
+    public function revokedFeed(Request $request): JsonResponse
+    {
+        $deny = $this->rejectUnlessPassControl($request);
+        if ($deny !== null) {
+            return $deny;
+        }
+
+        $q = PassTicket::query()->whereNotNull('revoked_at');
+        $sinceRaw = $request->query('since');
+        if ($sinceRaw !== null && $sinceRaw !== '') {
+            try {
+                $since = Carbon::parse((string) $sinceRaw);
+                $q->where('revoked_at', '>', $since);
+            } catch (\Throwable $e) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Paramètre since invalide (ISO 8601 attendu).',
+                ], 422);
+            }
+        }
+
+        $rows = $q->orderBy('revoked_at')
+            ->get(['public_id', 'revoked_at']);
+
+        $revoked = $rows->map(static function (PassTicket $t): array {
+            return [
+                'public_id' => $t->public_id,
+                'revoked_at' => $t->revoked_at?->toIso8601String(),
+            ];
+        })->values();
+
+        return response()->json([
+            'data' => [
+                'revoked' => $revoked,
+                'count' => $revoked->count(),
+                'generated_at' => now()->toIso8601String(),
+            ],
+        ]);
+    }
+
+    /**
      * Vérification côté contrôleur / staff — protégée par X-Teranga-Pass-Control.
      */
     public function validateScan(Request $request, TerangaPassQrSigner $signer)
     {
-        $control = (string) $request->header('X-Teranga-Pass-Control', '');
-        $expected = config('services.teranga_pass.control_key');
-        if ($expected === null || $expected === '') {
-            return response()->json([
-                'success' => false,
-                'message' => 'Contrôle Pass non configuré (TERANGA_PASS_CONTROL_KEY).',
-            ], 503);
-        }
-        if (! hash_equals($expected, $control)) {
-            return response()->json(['success' => false, 'message' => 'Non autorisé.'], 403);
+        $deny = $this->rejectUnlessPassControl($request);
+        if ($deny !== null) {
+            return $deny;
         }
 
         $qr = (string) $request->input('qr', '');
@@ -143,6 +182,23 @@ class PassTicketController extends Controller
                 'public_id' => $ticket->public_id,
             ],
         ]);
+    }
+
+    private function rejectUnlessPassControl(Request $request): ?JsonResponse
+    {
+        $control = (string) $request->header('X-Teranga-Pass-Control', '');
+        $expected = config('services.teranga_pass.control_key');
+        if ($expected === null || $expected === '') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Contrôle Pass non configuré (TERANGA_PASS_CONTROL_KEY).',
+            ], 503);
+        }
+        if (! hash_equals($expected, $control)) {
+            return response()->json(['success' => false, 'message' => 'Non autorisé.'], 403);
+        }
+
+        return null;
     }
 
     private function passDeactivatedMessage(Request $request): string

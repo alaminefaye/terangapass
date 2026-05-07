@@ -9,6 +9,7 @@ import '../widgets/teranga_osm_tile_layer.dart';
 import '../services/location_service.dart';
 import '../services/api_service.dart';
 import '../widgets/loading_placeholders.dart';
+import '../widgets/map_legend_strip.dart';
 
 enum _MapFilter { all, help, sites, hotels, restaurants, pharmacies, hospitals }
 
@@ -419,6 +420,12 @@ class _MapScreenState extends State<MapScreen> {
                   ],
                 ),
               ),
+            ),
+            Positioned(
+              top: 110,
+              left: 16,
+              right: 100,
+              child: const MapLegendStrip.mapHint(),
             ),
             Positioned(
               right: 16,

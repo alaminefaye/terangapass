@@ -332,5 +332,11 @@
   "profileEsimTitle": "Forfaits eSIM",
   "profileEsimSubtitle": "Data voyage (bientôt)",
   "esimComingTitle": "eSIM Teranga Pass",
-  "esimComingBody": "L’intégration partenaire (ex. Airalo), les paiements (PayDunya, Wave) et l’activation par QR arriveront dans une prochaine version. Cet écran sert de repère pour la démo et la recette produit."
+  "esimComingBody": "L’intégration partenaire (ex. Airalo), les paiements (PayDunya, Wave) et l’activation par QR arriveront dans une prochaine version. Cet écran sert de repère pour la démo et la recette produit.",
+  "mapLegendTitle": "Légende",
+  "mapLegendYou": "Vous",
+  "mapLegendPlace": "Lieu",
+  "mapLegendSponsor": "Partenaire mis en avant",
+  "mapLegendCategoriesHint": "Les couleurs des repères sur la carte indiquent le type de lieu (filtres ci-dessus).",
+  "mapLegendJojSitesHint": "Repères verts : sites de compétition JOJ sur la carte."
 }

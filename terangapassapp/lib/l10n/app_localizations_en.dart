@@ -852,4 +852,24 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get esimComingBody =>
       'Partner integration (e.g. Airalo), payments (PayDunya, Wave) and QR activation will ship in a later release. This screen is a placeholder for demo and product sign-off.';
+
+  @override
+  String get mapLegendTitle => 'Legend';
+
+  @override
+  String get mapLegendYou => 'You';
+
+  @override
+  String get mapLegendPlace => 'Place';
+
+  @override
+  String get mapLegendSponsor => 'Featured partner';
+
+  @override
+  String get mapLegendCategoriesHint =>
+      'Marker colors on the map indicate the type of place (filters above).';
+
+  @override
+  String get mapLegendJojSitesHint =>
+      'Green markers: JOJ competition sites on the map.';
 }

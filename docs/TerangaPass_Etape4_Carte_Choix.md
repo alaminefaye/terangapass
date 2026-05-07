@@ -31,9 +31,15 @@
 - En cas d’indisponibilité ou timeout, l’utilisateur voit une tuile de repli uniforme au lieu d’un fond cassé.
 - Respecter la [politique d’usage des tuiles OSM](https://operations.osmfoundation.org/policies/tiles/) : pas de surcharge, user-agent identifiable, considérer à terme un hébergeur de tuiles ou un cache si le trafic augmente (piste étape 4.5 / offline).
 
+## Légendes (`MapLegendStrip`)
+
+- **Accueil JOJ** : bandeau sous la mini-carte (« repères verts : sites JOJ »).
+- **Carte globale** : rappel sur les couleurs / filtres.
+- **Proximité** : vous (bleu) / lieu (vert) / partenaire mis en avant (ambre).
+
 ## QA recommandée (checklist rapide)
 
-1. **Accueil (aperçu JOJ)** : carte visible, marqueurs sites ; pas de freeze au scroll de la page.
+1. **Accueil (aperçu JOJ)** : carte visible, marqueurs sites, **légende** lisible ; pas de freeze au scroll de la page.
 2. **Carte interactive** : filtres, recentrage GPS si applicable ; tuiles qui se chargent en 4G / Wi‑Fi.
 3. **Proximité** : carte + liste ; position utilisateur cohérente.
 4. **Réseau** : couper données / Wi‑Fi → fond tuiles en repli + snack « connexion » (au plus une fois / 30 s par écran) ; rétablir le réseau → rechargement correct.

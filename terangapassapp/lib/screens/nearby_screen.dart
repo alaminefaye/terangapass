@@ -8,6 +8,7 @@ import '../services/api_service.dart';
 import '../services/location_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/loading_placeholders.dart';
+import '../widgets/map_legend_strip.dart';
 import '../widgets/teranga_osm_tile_layer.dart';
 
 class NearbyScreen extends StatefulWidget {
@@ -423,6 +424,8 @@ class _NearbyScreenState extends State<NearbyScreen> {
               ),
             ),
           ),
+          const SizedBox(height: 10),
+          const MapLegendStrip.nearby(),
           const SizedBox(height: 14),
           if (_places.isEmpty)
             Padding(
