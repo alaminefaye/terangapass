@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+
 import '../services/api_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/loading_placeholders.dart';
 
+/// Suivi d’un signalement : données réelles API uniquement (plus de texte fictif).
 class IncidentTrackingScreen extends StatefulWidget {
   final int incidentId;
 
@@ -43,13 +45,32 @@ class _IncidentTrackingScreenState extends State<IncidentTrackingScreen> {
     }
   }
 
+  /// Libellé du type choisi à l’envoi (`perte`, `accident`, `suspect`, `autre`).
+  String _incidentTypeLabel(String type) {
+    switch (type.trim().toLowerCase()) {
+      case 'perte':
+        return 'Perte d’objet ou effets personnels';
+      case 'accident':
+        return 'Accident';
+      case 'suspect':
+        return 'Comportement suspect';
+      case 'autre':
+        return 'Autre signalement';
+      default:
+        return type.isEmpty ? 'Signalement' : type;
+    }
+  }
+
   Color _statusColor(String status) {
     switch (status) {
       case 'resolved':
       case 'closed':
+      case 'validated':
         return AppTheme.primaryGreen;
       case 'in_progress':
         return const Color(0xFFD4A017);
+      case 'rejected':
+        return AppTheme.textSecondary;
       default:
         return const Color(0xFFC73E1D);
     }
@@ -58,69 +79,76 @@ class _IncidentTrackingScreenState extends State<IncidentTrackingScreen> {
   String _statusLabel(String status) {
     switch (status) {
       case 'in_progress':
-        return 'EN COURS - POLICE TOURISTIQUE';
+        return 'En cours de traitement';
       case 'resolved':
       case 'closed':
-        return 'TRAITE';
+        return 'Traité';
+      case 'validated':
+        return 'Validé';
+      case 'rejected':
+        return 'Refusé';
+      case 'pending':
+        return 'En attente';
       default:
-        return 'EN ATTENTE';
+        return 'En attente';
     }
   }
 
-  List<Map<String, String>> _fallbackTimeline() {
-    return const [
-      {
-        'time': '09:24 · IL Y A 12 MIN',
-        'title': 'Signalement recu',
-        'desc': 'Votre signalement a ete enregistre et chiffre.',
-        'authority': 'Centre Reception',
-      },
-      {
-        'time': '09:24 · IL Y A 12 MIN',
-        'title': 'Tri automatique IA',
-        'desc': 'Categorise: Securite · Gravite 3/5 · Route.',
-        'authority': 'CIVI-VOX',
-      },
-      {
-        'time': '09:25 · IL Y A 11 MIN',
-        'title': 'Notifie a l autorite',
-        'desc': 'Commissariat Plateau alerte avec preuves.',
-        'authority': 'Police Nationale',
-      },
-      {
-        'time': '09:32 · IL Y A 4 MIN',
-        'title': 'Patrouille depechee',
-        'desc': 'Une equipe se rend sur place. ETA 6 min.',
-        'authority': 'Police Touristique',
-      },
-      {
-        'time': 'A venir',
-        'title': 'Prise en charge sur place',
-        'desc': 'L equipe vous contactera a l arrivee.',
-        'authority': '',
-      },
-    ];
+  String _dossierRef() {
+    final created =
+        DateTime.tryParse((_tracking['created_at'] ?? '').toString());
+    if (created != null) {
+      final y = created.year;
+      final m = created.month.toString().padLeft(2, '0');
+      return 'Dossier TP-$y-$m-${widget.incidentId.toString().padLeft(6, '0')}';
+    }
+    return 'Dossier #${widget.incidentId}';
   }
 
   String _timeLabel(Object? value) {
     final s = (value ?? '').toString().trim();
-    if (s.isEmpty) return 'A venir';
+    if (s.isEmpty) return '—';
     final dt = DateTime.tryParse(s);
-    if (dt == null) return 'À venir';
+    if (dt == null) return '—';
     final hh = dt.hour.toString().padLeft(2, '0');
     final mm = dt.minute.toString().padLeft(2, '0');
     return '$hh:$mm';
   }
 
+  List<Map<String, dynamic>> _timelineRows() {
+    final raw = _tracking['timeline'];
+    if (raw is! List) return [];
+    final list = raw.whereType<Map>().map((e) {
+      return Map<String, dynamic>.from(
+        e.map((k, v) => MapEntry(k.toString(), v)),
+      );
+    }).toList();
+
+    final firstIncomplete = list.indexWhere((e) => e['completed'] != true);
+
+    return list.asMap().entries.map((entry) {
+      final i = entry.key;
+      final step = entry.value;
+      final done = step['completed'] == true;
+      final anchor = firstIncomplete >= 0 ? firstIncomplete : -1;
+      final current = !done && i == anchor;
+      return {
+        'time': _timeLabel(step['at']),
+        'title': (step['label'] ?? '').toString(),
+        'done': done,
+        'current': current,
+      };
+    }).toList();
+  }
+
   @override
   Widget build(BuildContext context) {
     final status = (_tracking['status'] ?? 'pending').toString();
-    final timeline = (_tracking['timeline'] is List)
-        ? (_tracking['timeline'] as List)
-              .whereType<Map>()
-              .map((e) => e.map((k, v) => MapEntry(k.toString(), v)))
-              .toList()
-        : const <Map<String, dynamic>>[];
+    final type = (_tracking['type'] ?? '').toString();
+    final description = (_tracking['description'] ?? '').toString().trim();
+    final address = (_tracking['address'] ?? '').toString().trim();
+    final typeTitle = _incidentTypeLabel(type);
+    final rows = _timelineRows();
 
     return Scaffold(
       backgroundColor: const Color(0xFFFAF7F0),
@@ -173,16 +201,50 @@ class _IncidentTrackingScreenState extends State<IncidentTrackingScreen> {
                       padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
                       children: [
                         Text(
-                          'Vol sur la Corniche',
+                          typeTitle,
                           style: GoogleFonts.robotoSlab(
                             fontSize: 22,
                             fontWeight: FontWeight.w700,
                             color: const Color(0xFF1A1F2E),
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        if (description.isNotEmpty) ...[
+                          const SizedBox(height: 10),
+                          Text(
+                            description,
+                            style: GoogleFonts.poppins(
+                              fontSize: 14,
+                              height: 1.45,
+                              color: AppTheme.textPrimary,
+                            ),
+                          ),
+                        ],
+                        if (address.isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(
+                                Icons.place_outlined,
+                                size: 18,
+                                color: AppTheme.textSecondary,
+                              ),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  address,
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 13,
+                                    color: AppTheme.textSecondary,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                        const SizedBox(height: 8),
                         Text(
-                          'Dossier TP-2026-04-${widget.incidentId.toString().padLeft(6, '0')}',
+                          _dossierRef(),
                           style: GoogleFonts.robotoMono(
                             fontSize: 11,
                             color: AppTheme.textSecondary,
@@ -211,7 +273,7 @@ class _IncidentTrackingScreenState extends State<IncidentTrackingScreen> {
                               ),
                               const SizedBox(width: 6),
                               Text(
-                                _statusLabel(status),
+                                _statusLabel(status).toUpperCase(),
                                 style: GoogleFonts.poppins(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w700,
@@ -221,8 +283,17 @@ class _IncidentTrackingScreenState extends State<IncidentTrackingScreen> {
                             ],
                           ),
                         ),
-                        const SizedBox(height: 16),
-                        _buildTimelineWithDesign(timeline),
+                        const SizedBox(height: 20),
+                        if (rows.isEmpty)
+                          Text(
+                            'Le suivi sera affiché dès que votre dossier sera traité.',
+                            style: GoogleFonts.poppins(
+                              fontSize: 13,
+                              color: AppTheme.textSecondary,
+                            ),
+                          )
+                        else
+                          _buildTimeline(rows),
                       ],
                     ),
                   ),
@@ -232,38 +303,7 @@ class _IncidentTrackingScreenState extends State<IncidentTrackingScreen> {
     );
   }
 
-  Widget _buildTimelineWithDesign(List<Map<String, dynamic>> apiTimeline) {
-    final fallback = _fallbackTimeline();
-    final hasReal = apiTimeline.isNotEmpty;
-    final rows = hasReal
-        ? apiTimeline.asMap().entries.map((entry) {
-            final i = entry.key;
-            final step = entry.value;
-            return {
-              'time': _timeLabel(step['at']),
-              'title': (step['label'] ?? '').toString(),
-              'desc': i < fallback.length ? fallback[i]['desc']! : '',
-              'authority': i < fallback.length ? fallback[i]['authority']! : '',
-              'done': step['completed'] == true ? '1' : '0',
-              'current':
-                  (i == apiTimeline.indexWhere((e) => e['completed'] != true) &&
-                          step['completed'] != true)
-                      ? '1'
-                      : '0',
-            };
-          }).toList()
-        : fallback
-              .asMap()
-              .entries
-              .map(
-                (entry) => {
-                  ...entry.value,
-                  'done': entry.key < 3 ? '1' : '0',
-                  'current': entry.key == 3 ? '1' : '0',
-                },
-              )
-              .toList();
-
+  Widget _buildTimeline(List<Map<String, dynamic>> rows) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Stack(
@@ -280,10 +320,8 @@ class _IncidentTrackingScreenState extends State<IncidentTrackingScreen> {
                   (row) => _timelineStep(
                     label: (row['title'] ?? '').toString(),
                     time: (row['time'] ?? '').toString(),
-                    desc: (row['desc'] ?? '').toString(),
-                    authority: (row['authority'] ?? '').toString(),
-                    done: (row['done'] ?? '0') == '1',
-                    current: (row['current'] ?? '0') == '1',
+                    done: row['done'] == true,
+                    current: row['current'] == true,
                   ),
                 )
                 .toList(),
@@ -296,8 +334,6 @@ class _IncidentTrackingScreenState extends State<IncidentTrackingScreen> {
   Widget _timelineStep({
     required String label,
     required String time,
-    required String desc,
-    required String authority,
     required bool done,
     required bool current,
   }) {
@@ -343,26 +379,6 @@ class _IncidentTrackingScreenState extends State<IncidentTrackingScreen> {
                     color: const Color(0xFF1A1F2E),
                   ),
                 ),
-                if (desc.trim().isNotEmpty) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    desc,
-                    style: GoogleFonts.poppins(
-                      fontSize: 11,
-                      color: AppTheme.textSecondary,
-                    ),
-                  ),
-                ],
-                if (authority.trim().isNotEmpty) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    authority,
-                    style: GoogleFonts.robotoMono(
-                      fontSize: 10,
-                      color: const Color(0xFF1A1F2E),
-                    ),
-                  ),
-                ],
               ],
             ),
           ),
@@ -371,4 +387,3 @@ class _IncidentTrackingScreenState extends State<IncidentTrackingScreen> {
     );
   }
 }
-

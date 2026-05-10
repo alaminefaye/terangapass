@@ -132,26 +132,32 @@ class IncidentController extends Controller
             ->where('user_id', $user->id)
             ->firstOrFail();
 
+        $inProgressStatuses = ['validated', 'in_progress', 'resolved', 'closed', 'rejected'];
         $timeline = [
             [
                 'key' => 'reported',
-                'label' => 'Signalement envoye',
+                'label' => 'Signalement envoyé',
                 'completed' => true,
                 'at' => optional($incident->created_at)?->toIso8601String(),
             ],
             [
                 'key' => 'review',
                 'label' => 'En cours de traitement',
-                'completed' => in_array($incident->status, ['in_progress', 'resolved', 'closed'], true),
-                'at' => in_array($incident->status, ['in_progress', 'resolved', 'closed'], true)
+                'completed' => in_array($incident->status, $inProgressStatuses, true),
+                'at' => in_array($incident->status, $inProgressStatuses, true)
                     ? optional($incident->updated_at)?->toIso8601String()
                     : null,
             ],
             [
                 'key' => 'resolved',
-                'label' => 'Traite',
-                'completed' => in_array($incident->status, ['resolved', 'closed'], true),
-                'at' => $incident->resolved_at?->toIso8601String(),
+                'label' => $incident->status === 'rejected'
+                    ? 'Signalement clos'
+                    : 'Traité',
+                'completed' => in_array($incident->status, ['resolved', 'closed', 'rejected'], true),
+                'at' => $incident->resolved_at?->toIso8601String()
+                    ?? (in_array($incident->status, ['resolved', 'closed', 'rejected'], true)
+                        ? optional($incident->updated_at)?->toIso8601String()
+                        : null),
             ],
         ];
 
