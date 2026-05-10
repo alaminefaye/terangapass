@@ -453,11 +453,9 @@ class _AudioAnnouncementsScreenState extends State<AudioAnnouncementsScreen>
                                       borderRadius: BorderRadius.circular(20),
                                     ),
                                     child: Text(
-                                      announcement['language'] == 'fr'
-                                          ? '🇫🇷 FR'
-                                          : announcement['language'] == 'en'
-                                          ? '🇬🇧 EN'
-                                          : '🇪🇸 ES',
+                                      _languageBadge(
+                                        announcement['language'] as String?,
+                                      ),
                                       style: GoogleFonts.poppins(
                                         fontSize: 12,
                                         fontWeight: FontWeight.bold,
@@ -744,6 +742,23 @@ class _AudioAnnouncementsScreenState extends State<AudioAnnouncementsScreen>
     );
   }
 
+  String _languageBadge(String? code) {
+    switch ((code ?? '').toLowerCase()) {
+      case 'fr':
+        return '🇫🇷 FR';
+      case 'en':
+        return '🇬🇧 EN';
+      case 'es':
+        return '🇪🇸 ES';
+      case 'pt':
+        return '🇵🇹 PT';
+      case 'ar':
+        return '🇸🇦 AR';
+      default:
+        return (code ?? '?').toUpperCase();
+    }
+  }
+
   List<Map<String, dynamic>> get _filteredAnnouncements {
     if (_selectedLanguage == 'all') return _announcements;
     return _announcements
@@ -796,6 +811,19 @@ class _AudioAnnouncementsScreenState extends State<AudioAnnouncementsScreen>
                 leading: const Text('ES'),
                 title: Text(l10n.languageSpanish, style: GoogleFonts.poppins()),
                 onTap: () => Navigator.of(context).pop('es'),
+              ),
+              ListTile(
+                leading: const Text('PT'),
+                title: Text(
+                  l10n.languagePortuguese,
+                  style: GoogleFonts.poppins(),
+                ),
+                onTap: () => Navigator.of(context).pop('pt'),
+              ),
+              ListTile(
+                leading: const Text('AR'),
+                title: Text(l10n.languageArabic, style: GoogleFonts.poppins()),
+                onTap: () => Navigator.of(context).pop('ar'),
               ),
               const SizedBox(height: 8),
             ],

@@ -323,6 +323,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (c == 'fr') return l10n.languageFrench;
     if (c == 'en') return l10n.languageEnglish;
     if (c == 'es') return l10n.languageSpanish;
+    if (c == 'pt') return l10n.languagePortuguese;
+    if (c == 'ar') return l10n.languageArabic;
     return code;
   }
 
@@ -344,6 +346,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         final options = [
           {'code': 'fr', 'label': l10n.languageFrench},
           {'code': 'en', 'label': l10n.languageEnglish},
+          {'code': 'ar', 'label': l10n.languageArabic},
+          {'code': 'es', 'label': l10n.languageSpanish},
+          {'code': 'pt', 'label': l10n.languagePortuguese},
         ];
         return SafeArea(
           child: ListView(
@@ -1106,6 +1111,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (v == 'fr' || v.contains('fran')) return 'fr';
       if (v == 'en' || v.contains('eng')) return 'en';
       if (v == 'es' || v.contains('esp')) return 'es';
+      if (v == 'pt' || v.contains('port')) return 'pt';
       return 'fr';
     }
 
@@ -1205,8 +1211,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         child: Text(l10n.languageEnglish),
                       ),
                       DropdownMenuItem(
+                        value: 'ar',
+                        child: Text(l10n.languageArabic),
+                      ),
+                      DropdownMenuItem(
                         value: 'es',
                         child: Text(l10n.languageSpanish),
+                      ),
+                      DropdownMenuItem(
+                        value: 'pt',
+                        child: Text(l10n.languagePortuguese),
                       ),
                     ],
                     onChanged: (v) {

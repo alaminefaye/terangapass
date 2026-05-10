@@ -14,7 +14,7 @@ class UserController extends Controller
     public function profile(Request $request)
     {
         $user = $this->getUserFromToken($request);
-        if (!$user) {
+        if (! $user) {
             return response()->json([
                 'success' => false,
                 'message' => 'Non autorisé. Veuillez vous reconnecter.',
@@ -33,7 +33,7 @@ class UserController extends Controller
     public function updateProfile(Request $request)
     {
         $user = $this->getUserFromToken($request);
-        if (!$user) {
+        if (! $user) {
             return response()->json([
                 'success' => false,
                 'message' => 'Non autorisé. Veuillez vous reconnecter.',
@@ -64,7 +64,7 @@ class UserController extends Controller
                 'max:30',
                 Rule::unique('users', 'phone')->ignore($user->id),
             ],
-            'language' => 'sometimes|in:fr,en,es',
+            'language' => 'sometimes|in:fr,en,es,pt',
             'user_type' => 'sometimes|in:athlete,visitor,citizen',
         ], [
             'phone.unique' => 'Ce numéro de téléphone est déjà utilisé.',
@@ -94,6 +94,7 @@ class UserController extends Controller
                 return User::find($parts[0]);
             }
         }
+
         return null;
     }
 }

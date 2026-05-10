@@ -24,6 +24,7 @@
                         <option value="fr" {{ request('language') == 'fr' ? 'selected' : '' }}>Français</option>
                         <option value="en" {{ request('language') == 'en' ? 'selected' : '' }}>Anglais</option>
                         <option value="es" {{ request('language') == 'es' ? 'selected' : '' }}>Espagnol</option>
+                        <option value="pt" {{ request('language') == 'pt' ? 'selected' : '' }}>Portugais</option>
                     </select>
                 </div>
                 <div class="col-md-4">

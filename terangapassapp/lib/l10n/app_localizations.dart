@@ -5,8 +5,11 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/intl.dart' as intl;
 
+import 'app_localizations_ar.dart';
 import 'app_localizations_en.dart';
+import 'app_localizations_es.dart';
 import 'app_localizations_fr.dart';
+import 'app_localizations_pt.dart';
 
 // ignore_for_file: type=lint
 
@@ -94,8 +97,11 @@ abstract class AppLocalizations {
 
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[
+    Locale('ar'),
     Locale('en'),
+    Locale('es'),
     Locale('fr'),
+    Locale('pt'),
   ];
 
   /// No description provided for @appTitle.
@@ -1700,6 +1706,18 @@ abstract class AppLocalizations {
   /// **'Español'**
   String get languageSpanish;
 
+  /// No description provided for @languagePortuguese.
+  ///
+  /// In fr, this message translates to:
+  /// **'Português'**
+  String get languagePortuguese;
+
+  /// No description provided for @languageArabic.
+  ///
+  /// In fr, this message translates to:
+  /// **'العربية'**
+  String get languageArabic;
+
   /// No description provided for @profileEditTitle.
   ///
   /// In fr, this message translates to:
@@ -2147,6 +2165,78 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Stockage local : {size}'**
   String profileOfflinePackLocalSize(String size);
+
+  /// No description provided for @incidentTrackingNavTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mon signalement'**
+  String get incidentTrackingNavTitle;
+
+  /// No description provided for @incidentTypeLossLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Perte d\'objet ou effets personnels'**
+  String get incidentTypeLossLabel;
+
+  /// No description provided for @incidentTypeSuspiciousLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Comportement suspect'**
+  String get incidentTypeSuspiciousLabel;
+
+  /// No description provided for @incidentTypeOtherLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Autre signalement'**
+  String get incidentTypeOtherLabel;
+
+  /// No description provided for @incidentStatusInProgress.
+  ///
+  /// In fr, this message translates to:
+  /// **'En cours de traitement'**
+  String get incidentStatusInProgress;
+
+  /// No description provided for @incidentStatusProcessed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Traité'**
+  String get incidentStatusProcessed;
+
+  /// No description provided for @incidentStatusValidated.
+  ///
+  /// In fr, this message translates to:
+  /// **'Validé'**
+  String get incidentStatusValidated;
+
+  /// No description provided for @incidentStatusRejected.
+  ///
+  /// In fr, this message translates to:
+  /// **'Refusé'**
+  String get incidentStatusRejected;
+
+  /// No description provided for @incidentStatusPending.
+  ///
+  /// In fr, this message translates to:
+  /// **'En attente'**
+  String get incidentStatusPending;
+
+  /// No description provided for @incidentStatusCancelled.
+  ///
+  /// In fr, this message translates to:
+  /// **'Annulé'**
+  String get incidentStatusCancelled;
+
+  /// No description provided for @incidentTrackingEmptyTimeline.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le suivi sera affiché dès que votre dossier sera traité.'**
+  String get incidentTrackingEmptyTimeline;
+
+  /// No description provided for @loadingWait.
+  ///
+  /// In fr, this message translates to:
+  /// **'Patientez un instant…'**
+  String get loadingWait;
 }
 
 class _AppLocalizationsDelegate
@@ -2160,7 +2250,7 @@ class _AppLocalizationsDelegate
 
   @override
   bool isSupported(Locale locale) =>
-      <String>['en', 'fr'].contains(locale.languageCode);
+      <String>['ar', 'en', 'es', 'fr', 'pt'].contains(locale.languageCode);
 
   @override
   bool shouldReload(_AppLocalizationsDelegate old) => false;
@@ -2169,10 +2259,16 @@ class _AppLocalizationsDelegate
 AppLocalizations lookupAppLocalizations(Locale locale) {
   // Lookup logic when only language code is specified.
   switch (locale.languageCode) {
+    case 'ar':
+      return AppLocalizationsAr();
     case 'en':
       return AppLocalizationsEn();
+    case 'es':
+      return AppLocalizationsEs();
     case 'fr':
       return AppLocalizationsFr();
+    case 'pt':
+      return AppLocalizationsPt();
   }
 
   throw FlutterError(

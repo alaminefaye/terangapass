@@ -40,5 +40,8 @@ class AppConstants {
   
   // Languages
   static const String defaultLanguage = 'fr';
-  static const List<String> supportedLanguages = ['fr', 'en'];
+  static const List<String> supportedLanguages = ['fr', 'en', 'es', 'pt', 'ar'];
+
+  /// Mis à `true` une fois que l'utilisateur a choisi sa langue (écran onboarding).
+  static const String languageChosenKey = 'language_chosen';
 }

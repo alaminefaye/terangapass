@@ -857,6 +857,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String get languageSpanish => 'Español';
 
   @override
+  String get languagePortuguese => 'Português';
+
+  @override
+  String get languageArabic => 'العربية';
+
+  @override
   String get profileEditTitle => 'Modifier le profil';
 
   @override
@@ -1104,4 +1110,41 @@ class AppLocalizationsFr extends AppLocalizations {
   String profileOfflinePackLocalSize(String size) {
     return 'Stockage local : $size';
   }
+
+  @override
+  String get incidentTrackingNavTitle => 'Mon signalement';
+
+  @override
+  String get incidentTypeLossLabel => 'Perte d\'objet ou effets personnels';
+
+  @override
+  String get incidentTypeSuspiciousLabel => 'Comportement suspect';
+
+  @override
+  String get incidentTypeOtherLabel => 'Autre signalement';
+
+  @override
+  String get incidentStatusInProgress => 'En cours de traitement';
+
+  @override
+  String get incidentStatusProcessed => 'Traité';
+
+  @override
+  String get incidentStatusValidated => 'Validé';
+
+  @override
+  String get incidentStatusRejected => 'Refusé';
+
+  @override
+  String get incidentStatusPending => 'En attente';
+
+  @override
+  String get incidentStatusCancelled => 'Annulé';
+
+  @override
+  String get incidentTrackingEmptyTimeline =>
+      'Le suivi sera affiché dès que votre dossier sera traité.';
+
+  @override
+  String get loadingWait => 'Patientez un instant…';
 }

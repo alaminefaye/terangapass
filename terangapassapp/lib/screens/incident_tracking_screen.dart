@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../services/api_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/loading_placeholders.dart';
 
-/// Suivi d’un signalement : données réelles API uniquement (plus de texte fictif).
+/// Suivi d'un signalement : données réelles API uniquement.
 class IncidentTrackingScreen extends StatefulWidget {
   final int incidentId;
 
@@ -45,19 +46,19 @@ class _IncidentTrackingScreenState extends State<IncidentTrackingScreen> {
     }
   }
 
-  /// Libellé du type choisi à l’envoi (`perte`, `accident`, `suspect`, `autre`).
-  String _incidentTypeLabel(String type) {
+  /// Libellé localisé du type d'incident (`perte`, `accident`, `suspect`, `autre`).
+  String _incidentTypeLabel(String type, AppLocalizations l10n) {
     switch (type.trim().toLowerCase()) {
       case 'perte':
-        return 'Perte d’objet ou effets personnels';
+        return l10n.incidentTypeLossLabel;
       case 'accident':
-        return 'Accident';
+        return l10n.incidentTypeAccident;
       case 'suspect':
-        return 'Comportement suspect';
+        return l10n.incidentTypeSuspiciousLabel;
       case 'autre':
-        return 'Autre signalement';
+        return l10n.incidentTypeOtherLabel;
       default:
-        return type.isEmpty ? 'Signalement' : type;
+        return type.isEmpty ? l10n.incidentReportTitle : type;
     }
   }
 
@@ -76,21 +77,20 @@ class _IncidentTrackingScreenState extends State<IncidentTrackingScreen> {
     }
   }
 
-  String _statusLabel(String status) {
+  String _statusLabel(String status, AppLocalizations l10n) {
     switch (status) {
       case 'in_progress':
-        return 'En cours de traitement';
+        return l10n.incidentStatusInProgress;
       case 'resolved':
       case 'closed':
-        return 'Traité';
+        return l10n.incidentStatusProcessed;
       case 'validated':
-        return 'Validé';
+        return l10n.incidentStatusValidated;
       case 'rejected':
-        return 'Refusé';
+        return l10n.incidentStatusRejected;
       case 'pending':
-        return 'En attente';
       default:
-        return 'En attente';
+        return l10n.incidentStatusPending;
     }
   }
 
@@ -143,11 +143,12 @@ class _IncidentTrackingScreenState extends State<IncidentTrackingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final status = (_tracking['status'] ?? 'pending').toString();
     final type = (_tracking['type'] ?? '').toString();
     final description = (_tracking['description'] ?? '').toString().trim();
     final address = (_tracking['address'] ?? '').toString().trim();
-    final typeTitle = _incidentTypeLabel(type);
+    final typeTitle = _incidentTypeLabel(type, l10n);
     final rows = _timelineRows();
 
     return Scaffold(
@@ -184,7 +185,7 @@ class _IncidentTrackingScreenState extends State<IncidentTrackingScreen> {
                         ),
                         const Spacer(),
                         Text(
-                          'Mon signalement',
+                          l10n.incidentTrackingNavTitle,
                           style: GoogleFonts.poppins(
                             color: const Color(0xFF1A1F2E),
                             fontWeight: FontWeight.w600,
@@ -273,7 +274,7 @@ class _IncidentTrackingScreenState extends State<IncidentTrackingScreen> {
                               ),
                               const SizedBox(width: 6),
                               Text(
-                                _statusLabel(status).toUpperCase(),
+                                _statusLabel(status, l10n).toUpperCase(),
                                 style: GoogleFonts.poppins(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w700,
@@ -286,7 +287,7 @@ class _IncidentTrackingScreenState extends State<IncidentTrackingScreen> {
                         const SizedBox(height: 20),
                         if (rows.isEmpty)
                           Text(
-                            'Le suivi sera affiché dès que votre dossier sera traité.',
+                            l10n.incidentTrackingEmptyTimeline,
                             style: GoogleFonts.poppins(
                               fontSize: 13,
                               color: AppTheme.textSecondary,

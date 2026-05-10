@@ -42,7 +42,7 @@ class AudioAnnouncementManagementController extends Controller
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'content' => 'required|string',
-            'language' => 'required|in:fr,en,es',
+            'language' => 'required|in:fr,en,es,pt',
             'audio_file' => 'required|file|mimes:mp3,wav,ogg,m4a|max:10240', // 10MB max
             'is_active' => 'boolean',
         ]);
@@ -86,7 +86,7 @@ class AudioAnnouncementManagementController extends Controller
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'content' => 'required|string',
-            'language' => 'required|in:fr,en,es',
+            'language' => 'required|in:fr,en,es,pt',
             'audio_file' => 'nullable|file|mimes:mp3,wav,ogg,m4a|max:10240',
             'is_active' => 'boolean',
         ]);

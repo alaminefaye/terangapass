@@ -328,6 +328,8 @@
   "languageFrench": "French",
   "languageEnglish": "English",
   "languageSpanish": "Spanish",
+  "languagePortuguese": "Portuguese",
+  "languageArabic": "Arabic",
   "profileEditTitle": "Edit profile",
   "profileNameLabel": "Name",
   "profilePhoneLabel": "Phone",
@@ -449,5 +451,17 @@
         "type": "String"
       }
     }
-  }
+  },
+  "incidentTrackingNavTitle": "My report",
+  "incidentTypeLossLabel": "Lost object or personal belongings",
+  "incidentTypeSuspiciousLabel": "Suspicious behaviour",
+  "incidentTypeOtherLabel": "Other report",
+  "incidentStatusInProgress": "Being processed",
+  "incidentStatusProcessed": "Processed",
+  "incidentStatusValidated": "Validated",
+  "incidentStatusRejected": "Rejected",
+  "incidentStatusPending": "Pending",
+  "incidentStatusCancelled": "Cancelled",
+  "incidentTrackingEmptyTimeline": "Tracking will appear once your report is processed.",
+  "loadingWait": "Please wait…"
 }

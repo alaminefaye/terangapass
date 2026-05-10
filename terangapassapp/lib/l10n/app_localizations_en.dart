@@ -847,6 +847,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get languageSpanish => 'Spanish';
 
   @override
+  String get languagePortuguese => 'Portuguese';
+
+  @override
+  String get languageArabic => 'Arabic';
+
+  @override
   String get profileEditTitle => 'Edit profile';
 
   @override
@@ -1092,4 +1098,41 @@ class AppLocalizationsEn extends AppLocalizations {
   String profileOfflinePackLocalSize(String size) {
     return 'Local storage: $size';
   }
+
+  @override
+  String get incidentTrackingNavTitle => 'My report';
+
+  @override
+  String get incidentTypeLossLabel => 'Lost object or personal belongings';
+
+  @override
+  String get incidentTypeSuspiciousLabel => 'Suspicious behaviour';
+
+  @override
+  String get incidentTypeOtherLabel => 'Other report';
+
+  @override
+  String get incidentStatusInProgress => 'Being processed';
+
+  @override
+  String get incidentStatusProcessed => 'Processed';
+
+  @override
+  String get incidentStatusValidated => 'Validated';
+
+  @override
+  String get incidentStatusRejected => 'Rejected';
+
+  @override
+  String get incidentStatusPending => 'Pending';
+
+  @override
+  String get incidentStatusCancelled => 'Cancelled';
+
+  @override
+  String get incidentTrackingEmptyTimeline =>
+      'Tracking will appear once your report is processed.';
+
+  @override
+  String get loadingWait => 'Please wait…';
 }

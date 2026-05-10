@@ -117,24 +117,23 @@ class _IncidentHistoryScreenState extends State<IncidentHistoryScreen> {
     return int.tryParse(raw.toString());
   }
 
-  String _statusLabel(String status) {
+  String _statusLabel(String status, AppLocalizations l10n) {
     switch (status) {
       case 'in_progress':
-        return 'En traitement';
+        return l10n.incidentStatusInProgress;
       case 'resolved':
       case 'closed':
-        return 'Traité';
+        return l10n.incidentStatusProcessed;
       case 'validated':
-        return 'Validé';
+        return l10n.incidentStatusValidated;
       case 'rejected':
-        return 'Refusé';
-      case 'pending':
-        return 'En attente';
+        return l10n.incidentStatusRejected;
       case 'cancelled':
       case 'canceled':
-        return 'Annulé';
+        return l10n.incidentStatusCancelled;
+      case 'pending':
       default:
-        return 'En attente';
+        return l10n.incidentStatusPending;
     }
   }
 
@@ -338,7 +337,7 @@ class _IncidentHistoryScreenState extends State<IncidentHistoryScreen> {
                                 children: [
                                   const SizedBox(height: 4),
                                   Text(
-                                    _statusLabel(status),
+                                    _statusLabel(status, l10n),
                                     style: GoogleFonts.poppins(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w600,

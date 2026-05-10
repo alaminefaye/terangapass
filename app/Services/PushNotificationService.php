@@ -368,6 +368,9 @@ class PushNotificationService
         $title = match ($announcement->language) {
             'en' => 'New audio announcement',
             'es' => 'Nuevo anuncio de audio',
+            'pt' => 'Novo anúncio em áudio',
+            'ar' => 'إعلان صوتي جديد',
+            'fr' => 'Nouvelle annonce audio',
             default => 'Nouvelle annonce audio',
         };
 

@@ -49,7 +49,7 @@ class AuthController extends Controller
             ],
             'user_type' => 'sometimes|in:athlete,visitor,citizen',
             'country' => 'sometimes|string|size:2',
-            'language' => 'sometimes|in:fr,en,es',
+            'language' => 'sometimes|in:fr,en,es,pt',
         ], [
             'email.unique' => 'Cet email est déjà utilisé.',
             'phone.unique' => 'Ce numéro de téléphone est déjà utilisé.',
@@ -83,7 +83,7 @@ class AuthController extends Controller
             ]);
 
             // Token simple (à remplacer par Sanctum plus tard)
-            $token = base64_encode($user->id . '|' . now()->timestamp . '|' . $user->email);
+            $token = base64_encode($user->id.'|'.now()->timestamp.'|'.$user->email);
 
             return response()->json([
                 'success' => true,
@@ -174,7 +174,7 @@ class AuthController extends Controller
             $user = User::where('phone', $phone)->first();
         }
 
-        if (!$user || !Hash::check($request->password, $user->password)) {
+        if (! $user || ! Hash::check($request->password, $user->password)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Les identifiants fournis ne correspondent pas à nos enregistrements.',
@@ -195,7 +195,7 @@ class AuthController extends Controller
         }
 
         // Token simple (à remplacer par Sanctum plus tard)
-        $token = base64_encode($user->id . '|' . now()->timestamp . '|' . $user->email);
+        $token = base64_encode($user->id.'|'.now()->timestamp.'|'.$user->email);
 
         return response()->json([
             'success' => true,

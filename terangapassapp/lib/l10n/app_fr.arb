@@ -328,6 +328,8 @@
   "languageFrench": "Français",
   "languageEnglish": "English",
   "languageSpanish": "Español",
+  "languagePortuguese": "Português",
+  "languageArabic": "العربية",
   "profileEditTitle": "Modifier le profil",
   "profileNameLabel": "Nom",
   "profilePhoneLabel": "Téléphone",
@@ -449,5 +451,17 @@
         "type": "String"
       }
     }
-  }
+  },
+  "incidentTrackingNavTitle": "Mon signalement",
+  "incidentTypeLossLabel": "Perte d'objet ou effets personnels",
+  "incidentTypeSuspiciousLabel": "Comportement suspect",
+  "incidentTypeOtherLabel": "Autre signalement",
+  "incidentStatusInProgress": "En cours de traitement",
+  "incidentStatusProcessed": "Traité",
+  "incidentStatusValidated": "Validé",
+  "incidentStatusRejected": "Refusé",
+  "incidentStatusPending": "En attente",
+  "incidentStatusCancelled": "Annulé",
+  "incidentTrackingEmptyTimeline": "Le suivi sera affiché dès que votre dossier sera traité.",
+  "loadingWait": "Patientez un instant…"
 }

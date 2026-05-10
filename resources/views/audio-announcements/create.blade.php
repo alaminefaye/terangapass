@@ -34,6 +34,8 @@
                             <option value="fr" {{ old('language') == 'fr' ? 'selected' : '' }}>🇫🇷 Français</option>
                             <option value="en" {{ old('language') == 'en' ? 'selected' : '' }}>🇬🇧 Anglais</option>
                             <option value="es" {{ old('language') == 'es' ? 'selected' : '' }}>🇪🇸 Espagnol</option>
+                            <option value="pt" {{ old('language') == 'pt' ? 'selected' : '' }}>🇵🇹 Portugais</option>
+                            <option value="ar">🇸🇦 Arabe</option>
                         </select>
                         @error('language')
                         <div class="invalid-feedback">{{ $message }}</div>

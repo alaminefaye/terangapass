@@ -13,6 +13,7 @@ import 'screens/home_screen.dart';
 import 'widgets/loading_placeholders.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/register_screen.dart';
+import 'screens/language_selection_screen.dart';
 import 'screens/notifications_screen.dart';
 import 'screens/sos_screen.dart';
 import 'screens/incident_history_screen.dart';
@@ -64,7 +65,7 @@ class TerangaPassApp extends StatelessWidget {
           theme: AppTheme.lightTheme,
           navigatorKey: navigatorKey,
           locale: locale ?? const Locale(AppConstants.defaultLanguage),
-          supportedLocales: const [Locale('fr'), Locale('en')],
+          supportedLocales: AppLocalizations.supportedLocales,
           localizationsDelegates: const [
             AppLocalizations.delegate,
             CountryLocalizations.delegate,
@@ -107,6 +108,7 @@ class AuthWrapper extends StatefulWidget {
 class _AuthWrapperState extends State<AuthWrapper> {
   bool _isLoading = true;
   bool _isAuthenticated = false;
+  bool _languageChosen = true;
 
   @override
   void initState() {
@@ -117,6 +119,15 @@ class _AuthWrapperState extends State<AuthWrapper> {
   Future<void> _checkAuth() async {
     try {
       final prefs = await SharedPreferences.getInstance();
+
+      // Vérifier si l'utilisateur a déjà choisi sa langue (onboarding).
+      final languageChosen =
+          prefs.getBool(AppConstants.languageChosenKey) ?? false;
+      final savedLanguage = prefs.getString(AppConstants.languageKey);
+      final hasLanguage =
+          languageChosen ||
+          (savedLanguage != null && savedLanguage.isNotEmpty);
+
       var token = prefs.getString('auth_token');
       // Session « sans souvenir » : ne pas garder la connexion après fermeture de l’app.
       final persistSession = prefs.getBool(AppConstants.authPersistSessionKey);
@@ -136,6 +147,8 @@ class _AuthWrapperState extends State<AuthWrapper> {
 
       setState(() {
         _isAuthenticated = isAuthenticated;
+        // Si déjà connecté, pas besoin de montrer l'écran de langue
+        _languageChosen = hasLanguage || isAuthenticated;
       });
       isAuthenticatedNotifier.value = isAuthenticated;
 
@@ -146,6 +159,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
     } catch (e) {
       setState(() {
         _isAuthenticated = false;
+        _languageChosen = true;
       });
       isAuthenticatedNotifier.value = false;
     } finally {
@@ -165,7 +179,9 @@ class _AuthWrapperState extends State<AuthWrapper> {
       return const AuthGateLoadingScaffold();
     }
 
-    return _isAuthenticated ? const HomeScreen() : const LoginScreen();
+    if (_isAuthenticated) return const HomeScreen();
+    if (!_languageChosen) return const LanguageSelectionScreen();
+    return const LoginScreen();
   }
 }
 

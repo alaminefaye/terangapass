@@ -124,7 +124,7 @@ class MobileUserController extends Controller
             ],
             'country' => 'required|string|size:2',
             'user_type' => 'required|in:athlete,visitor,citizen',
-            'language' => 'required|in:fr,en,es',
+            'language' => 'required|in:fr,en,es,pt',
             'password' => 'nullable|string|min:8|confirmed',
         ], [
             'email.unique' => 'Cet email est déjà utilisé.',
