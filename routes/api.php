@@ -68,9 +68,14 @@ Route::middleware(['api.user.active'])->prefix('v1')->group(function () {
     Route::get('/incidents/history', [IncidentController::class, 'history']);
     Route::get('/incidents/{id}/tracking', [IncidentController::class, 'tracking']);
 
-    // Notifications
+    // Notifications (admin broadcasts + historique personnel de l'utilisateur)
     Route::get('/notifications', [NotificationController::class, 'index']);
     Route::put('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
+    Route::get('/my-notifications', [NotificationController::class, 'myNotifications']);
+    Route::put('/my-notifications/{id}/read', [NotificationController::class, 'markMyNotificationAsRead']);
+    Route::put('/my-notifications/{id}/unread', [NotificationController::class, 'markMyNotificationAsUnread']);
+    Route::put('/my-notifications/read-all', [NotificationController::class, 'markAllMyNotificationsAsRead']);
+    Route::delete('/my-notifications/{id}', [NotificationController::class, 'deleteMyNotification']);
 
     // Annonces Audio
     Route::get('/announcements/audio', [AudioAnnouncementController::class, 'index']);

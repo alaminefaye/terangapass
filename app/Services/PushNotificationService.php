@@ -6,6 +6,7 @@ use App\Models\DeviceToken;
 use App\Models\Notification as NotificationModel;
 use App\Models\NotificationLog;
 use App\Models\User;
+use App\Models\UserNotification;
 use Google\Auth\Credentials\ServiceAccountCredentials;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -166,6 +167,19 @@ class PushNotificationService
                 Log::warning('Operational FCM failure: '.$e->getMessage());
                 $results['failed']++;
             }
+        }
+
+        // Persister la notification dans l'historique personnel de l'utilisateur
+        try {
+            UserNotification::create([
+                'user_id' => $user->id,
+                'type' => $data['type'] ?? 'general',
+                'title' => $title,
+                'body' => $body,
+                'extra_data' => $data,
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('UserNotification persist failure: '.$e->getMessage());
         }
 
         return $results;

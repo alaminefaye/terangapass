@@ -38,10 +38,23 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     });
   }
 
+  Future<void> _persistReadIds() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_readIdsKey, _readIds.toList());
+  }
+
   bool _isRead(Map<String, dynamic> notification) {
     final id = notification['id'];
     if (id == null) return false;
-    return _readIds.contains(id.toString());
+    // Check local cache first; backend is source of truth for user_ notifs
+    if (_readIds.contains(id.toString())) return true;
+    // The API also returns is_read from the backend
+    return notification['is_read'] == true;
+  }
+
+  bool _isPersonal(Map<String, dynamic> notification) {
+    final id = notification['id']?.toString() ?? '';
+    return id.startsWith('user_');
   }
 
   Future<void> _loadNotifications() async {
@@ -89,16 +102,62 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
     setState(() {
       _readIds = {..._readIds, idString};
+      notification['is_read'] = true;
+    });
+    await _persistReadIds();
+
+    try {
+      await ApiService().markNotificationAsRead(id);
+    } catch (_) {}
+  }
+
+  Future<void> _markAsUnread(Map<String, dynamic> notification) async {
+    final id = notification['id'];
+    if (id == null) return;
+    final idString = id.toString();
+
+    setState(() {
+      _readIds = _readIds.difference({idString});
+      notification['is_read'] = false;
+    });
+    await _persistReadIds();
+
+    try {
+      await ApiService().markNotificationAsUnread(id);
+    } catch (_) {}
+  }
+
+  Future<void> _markAllAsRead() async {
+    final hasUnread = _notifications.any((n) => !_isRead(n));
+    if (!hasUnread) return;
+
+    setState(() {
+      for (final n in _notifications) {
+        final id = n['id'];
+        if (id != null) _readIds = {..._readIds, id.toString()};
+        n['is_read'] = true;
+      }
+    });
+    await _persistReadIds();
+
+    try {
+      await ApiService().markAllNotificationsAsRead();
+    } catch (_) {}
+  }
+
+  Future<void> _deleteNotification(Map<String, dynamic> notification) async {
+    final id = notification['id'];
+    if (id == null) return;
+
+    setState(() {
+      _notifications.removeWhere((n) => n['id'] == id);
     });
 
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList(_readIdsKey, _readIds.toList());
-
-    if (id is int) {
-      try {
-        final apiService = ApiService();
-        await apiService.markNotificationAsRead(id);
-      } catch (_) {}
+    try {
+      await ApiService().deleteNotification(id);
+    } catch (_) {
+      // Reload list if deletion failed
+      await _loadNotifications();
     }
   }
 
@@ -108,11 +167,16 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
     final type = (notification['type'] ?? '').toString().trim();
     final title = (notification['title'] ?? '').toString().trim();
-    final description = (notification['description'] ?? '').toString().trim();
+    final description = (notification['description'] ??
+            notification['body'] ??
+            '')
+        .toString()
+        .trim();
     final zone = (notification['zone'] ?? '').toString().trim();
     final time = _displayTime(notification);
     final icon = _iconForType(type);
     final color = _colorForType(type);
+    final isPersonal = _isPersonal(notification);
 
     await showModalBottomSheet<void>(
       context: context,
@@ -122,9 +186,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) {
-        final l10n = AppLocalizations.of(context)!;
-        final maxH = MediaQuery.sizeOf(context).height * 0.88;
+      builder: (ctx) {
+        final l10n = AppLocalizations.of(ctx)!;
+        final maxH = MediaQuery.sizeOf(ctx).height * 0.88;
         return SafeArea(
           child: ConstrainedBox(
             constraints: BoxConstraints(maxHeight: maxH),
@@ -133,121 +197,147 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 left: 16,
                 right: 16,
                 top: 8,
-                bottom: MediaQuery.viewInsetsOf(context).bottom + 16,
+                bottom: MediaQuery.viewInsetsOf(ctx).bottom + 16,
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: color.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(icon, color: color, size: 20),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        title.isEmpty ? l10n.notificationsFallbackTitle : title,
-                        maxLines: 4,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.poppins(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.textPrimary,
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: color.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(12),
                         ),
+                        child: Icon(icon, color: color, size: 20),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    if (type.isNotEmpty)
-                      Flexible(
+                      const SizedBox(width: 12),
+                      Expanded(
                         child: Text(
-                          type,
-                          maxLines: 1,
+                          title.isEmpty ? l10n.notificationsFallbackTitle : title,
+                          maxLines: 4,
                           overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.poppins(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: color,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.textPrimary,
                           ),
                         ),
                       ),
-                    if (type.isNotEmpty) const SizedBox(width: 10),
-                    if (time.isNotEmpty)
-                      Text(
-                        time,
-                        style: GoogleFonts.poppins(
-                          fontSize: 12,
-                          color: AppTheme.textSecondary,
-                        ),
-                      ),
-                  ],
-                ),
-                if (zone.isNotEmpty) ...[
-                  const SizedBox(height: 10),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
                   Row(
                     children: [
-                      Icon(
-                        Icons.location_on_outlined,
-                        size: 16,
-                        color: AppTheme.textSecondary,
-                      ),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          zone,
+                      if (type.isNotEmpty)
+                        Flexible(
+                          child: Text(
+                            type,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.poppins(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: color,
+                            ),
+                          ),
+                        ),
+                      if (type.isNotEmpty) const SizedBox(width: 10),
+                      if (time.isNotEmpty)
+                        Text(
+                          time,
                           style: GoogleFonts.poppins(
                             fontSize: 12,
                             color: AppTheme.textSecondary,
+                          ),
+                        ),
+                    ],
+                  ),
+                  if (zone.isNotEmpty) ...[
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.location_on_outlined,
+                          size: 16,
+                          color: AppTheme.textSecondary,
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            zone,
+                            style: GoogleFonts.poppins(
+                              fontSize: 12,
+                              color: AppTheme.textSecondary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                  const SizedBox(height: 12),
+                  Text(
+                    description.isEmpty ? '—' : description,
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      color: AppTheme.textSecondary,
+                      height: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      if (isPersonal) ...[
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () {
+                              Navigator.of(ctx).pop();
+                              _deleteNotification(notification);
+                            },
+                            icon: const Icon(
+                              Icons.delete_outline_rounded,
+                              size: 18,
+                            ),
+                            label: Text(
+                              l10n.delete,
+                              style: GoogleFonts.poppins(),
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppTheme.primaryRed,
+                              side: BorderSide(color: AppTheme.primaryRed),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                      ],
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () => Navigator.of(ctx).pop(),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.primaryGreen,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: Text(
+                            l10n.close,
+                            style: GoogleFonts.poppins(),
                           ),
                         ),
                       ),
                     ],
                   ),
                 ],
-                const SizedBox(height: 12),
-                Text(
-                  description.isEmpty ? '—' : description,
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
-                    color: AppTheme.textSecondary,
-                    height: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.primaryGreen,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: Text(
-                          l10n.close,
-                          style: GoogleFonts.poppins(),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+              ),
             ),
           ),
-        ),
-      );
+        );
       },
     );
   }
@@ -313,9 +403,111 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     return t;
   }
 
+  void _showContextMenu(Map<String, dynamic> notification) {
+    final l10n = AppLocalizations.of(context)!;
+    final isRead = _isRead(notification);
+    final isPersonal = _isPersonal(notification);
+
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.white,
+      showDragHandle: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (isRead)
+                ListTile(
+                  leading: const Icon(Icons.mark_email_unread_rounded),
+                  title: Text(
+                    l10n.markAsUnread,
+                    style: GoogleFonts.poppins(),
+                  ),
+                  onTap: () {
+                    Navigator.of(ctx).pop();
+                    _markAsUnread(notification);
+                  },
+                )
+              else
+                ListTile(
+                  leading: const Icon(Icons.mark_email_read_rounded),
+                  title: Text(
+                    l10n.markAsRead,
+                    style: GoogleFonts.poppins(),
+                  ),
+                  onTap: () {
+                    Navigator.of(ctx).pop();
+                    _markAsRead(notification);
+                  },
+                ),
+              if (isPersonal)
+                ListTile(
+                  leading: Icon(
+                    Icons.delete_outline_rounded,
+                    color: AppTheme.primaryRed,
+                  ),
+                  title: Text(
+                    l10n.delete,
+                    style: GoogleFonts.poppins(color: AppTheme.primaryRed),
+                  ),
+                  onTap: () {
+                    Navigator.of(ctx).pop();
+                    _confirmDelete(notification);
+                  },
+                ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _confirmDelete(Map<String, dynamic> notification) async {
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(
+          l10n.deleteNotificationTitle,
+          style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+        ),
+        content: Text(
+          l10n.deleteNotificationBody,
+          style: GoogleFonts.poppins(),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(l10n.cancel, style: GoogleFonts.poppins()),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryRed,
+            ),
+            child: Text(
+              l10n.delete,
+              style: GoogleFonts.poppins(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      await _deleteNotification(notification);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final unreadCount = _notifications.where((n) => !_isRead(n)).length;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF4F1EA),
       body: Column(
@@ -336,15 +528,38 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                   Expanded(
-                    child: Text(
-                      l10n.notificationsTitle,
-                      style: GoogleFonts.poppins(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 18,
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          l10n.notificationsTitle,
+                          style: GoogleFonts.poppins(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 18,
+                          ),
+                        ),
+                        if (unreadCount > 0)
+                          Text(
+                            l10n.unreadCount(unreadCount),
+                            style: GoogleFonts.poppins(
+                              color: Colors.white54,
+                              fontSize: 12,
+                            ),
+                          ),
+                      ],
                     ),
                   ),
+                  if (unreadCount > 0)
+                    IconButton(
+                      tooltip: l10n.markAllAsRead,
+                      icon: const Icon(
+                        Icons.done_all_rounded,
+                        color: Colors.white,
+                      ),
+                      onPressed: _markAllAsRead,
+                    ),
                   IconButton(
                     icon: const Icon(Icons.filter_list, color: Colors.white),
                     onPressed: _showZoneFilterSheet,
@@ -353,7 +568,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               ),
             ),
           ),
-          // Filtre par zone
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 16),
             padding: const EdgeInsets.all(14),
@@ -372,7 +586,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 ),
                 const SizedBox(width: 10),
                 Expanded(
-                    child: DropdownButton<String?>(
+                  child: DropdownButton<String?>(
                     value: _selectedZone,
                     isExpanded: true,
                     underline: Container(),
@@ -406,7 +620,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             ),
           ),
 
-          // Liste des notifications
           Expanded(
             child: _isLoading
                 ? const TerangaBrandedLoading()
@@ -475,33 +688,84 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       itemCount: _notifications.length,
                       itemBuilder: (context, index) {
                         final notification = _notifications[index];
-                        final type = (notification['type'] ?? '').toString();
-                        final title = (notification['title'] ?? '').toString();
-                        final description = (notification['description'] ?? '')
-                            .toString();
-                        final zone = (notification['zone'] ?? '').toString();
-                        final time = _displayTime(notification);
-                        final icon = _iconForType(type);
-                        final color = _colorForType(type);
+                        final isPersonal = _isPersonal(notification);
                         final isRead = _isRead(notification);
+
+                        Widget card = _buildNotificationCard(
+                          notification: notification,
+                          isRead: isRead,
+                          isPersonal: isPersonal,
+                        );
+
+                        if (isPersonal) {
+                          card = Dismissible(
+                            key: ValueKey(notification['id']),
+                            direction: DismissDirection.endToStart,
+                            background: Container(
+                              alignment: Alignment.centerRight,
+                              padding: const EdgeInsets.only(right: 20),
+                              decoration: BoxDecoration(
+                                color: AppTheme.primaryRed,
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              child: const Icon(
+                                Icons.delete_outline_rounded,
+                                color: Colors.white,
+                                size: 28,
+                              ),
+                            ),
+                            confirmDismiss: (_) async {
+                              final confirmed = await showDialog<bool>(
+                                context: context,
+                                builder: (ctx) => AlertDialog(
+                                  title: Text(
+                                    l10n.deleteNotificationTitle,
+                                    style: GoogleFonts.poppins(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  content: Text(
+                                    l10n.deleteNotificationBody,
+                                    style: GoogleFonts.poppins(),
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () =>
+                                          Navigator.of(ctx).pop(false),
+                                      child: Text(
+                                        l10n.cancel,
+                                        style: GoogleFonts.poppins(),
+                                      ),
+                                    ),
+                                    ElevatedButton(
+                                      onPressed: () =>
+                                          Navigator.of(ctx).pop(true),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: AppTheme.primaryRed,
+                                      ),
+                                      child: Text(
+                                        l10n.delete,
+                                        style: GoogleFonts.poppins(
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                              if (confirmed == true) {
+                                await _deleteNotification(notification);
+                                return false; // Already removed from list
+                              }
+                              return false;
+                            },
+                            child: card,
+                          );
+                        }
 
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 10),
-                          child: _buildNotificationCard(
-                            type: type.isEmpty
-                                ? l10n.notificationsFallbackTitle
-                                : type,
-                            title: title.isEmpty
-                                ? l10n.notificationsFallbackTitle
-                                : title,
-                            description: description,
-                            time: time,
-                            zone: zone.isEmpty ? '—' : zone,
-                            icon: icon,
-                            color: color,
-                            isRead: isRead,
-                            onTap: () => _openNotification(notification),
-                          ),
+                          child: card,
                         );
                       },
                     ),
@@ -513,19 +777,23 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   Widget _buildNotificationCard({
-    required String type,
-    required String title,
-    required String description,
-    required String time,
-    required String zone,
-    required IconData icon,
-    required Color color,
+    required Map<String, dynamic> notification,
     required bool isRead,
-    required VoidCallback onTap,
+    required bool isPersonal,
   }) {
+    final type = (notification['type'] ?? '').toString();
+    final title = (notification['title'] ?? '').toString();
+    final description =
+        (notification['description'] ?? notification['body'] ?? '').toString();
+    final zone = (notification['zone'] ?? '').toString();
+    final time = _displayTime(notification);
+    final icon = _iconForType(type);
+    final color = _colorForType(type);
+    final l10n = AppLocalizations.of(context)!;
+
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isRead ? Colors.white : const Color(0xFFF0FFF4),
         borderRadius: BorderRadius.circular(14),
         border: Border(
           left: BorderSide(color: color, width: 4),
@@ -536,9 +804,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(14),
-          onTap: onTap,
+          onTap: () => _openNotification(notification),
+          onLongPress: () => _showContextMenu(notification),
           child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -562,7 +831,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                             const SizedBox(width: 6),
                             Expanded(
                               child: Text(
-                                type,
+                                type.isEmpty
+                                    ? l10n.notificationsFallbackTitle
+                                    : type,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: GoogleFonts.poppins(
@@ -599,11 +870,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  title,
+                  title.isEmpty ? l10n.notificationsFallbackTitle : title,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.poppins(
-                    fontWeight: FontWeight.bold,
+                    fontWeight:
+                        isRead ? FontWeight.w500 : FontWeight.bold,
                     fontSize: 16,
                     color: AppTheme.textPrimary,
                   ),
@@ -629,7 +901,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     const SizedBox(width: 4),
                     Expanded(
                       child: Text(
-                        zone,
+                        zone.isEmpty ? '—' : zone,
                         style: GoogleFonts.poppins(
                           fontSize: 12,
                           color: AppTheme.textSecondary,
@@ -639,10 +911,17 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    const Icon(
-                      Icons.chevron_right_rounded,
-                      color: AppTheme.textSecondary,
-                    ),
+                    if (isPersonal)
+                      const Icon(
+                        Icons.swipe_left_rounded,
+                        size: 14,
+                        color: AppTheme.textSecondary,
+                      )
+                    else
+                      const Icon(
+                        Icons.chevron_right_rounded,
+                        color: AppTheme.textSecondary,
+                      ),
                   ],
                 ),
               ],

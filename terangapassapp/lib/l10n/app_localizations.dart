@@ -146,6 +146,48 @@ abstract class AppLocalizations {
   /// **'Aucune notification'**
   String get noNotifications;
 
+  /// No description provided for @markAsRead.
+  ///
+  /// In fr, this message translates to:
+  /// **'Marquer comme lu'**
+  String get markAsRead;
+
+  /// No description provided for @markAsUnread.
+  ///
+  /// In fr, this message translates to:
+  /// **'Marquer comme non lu'**
+  String get markAsUnread;
+
+  /// No description provided for @markAllAsRead.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tout marquer comme lu'**
+  String get markAllAsRead;
+
+  /// No description provided for @delete.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer'**
+  String get delete;
+
+  /// No description provided for @deleteNotificationTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer la notification'**
+  String get deleteNotificationTitle;
+
+  /// No description provided for @deleteNotificationBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Voulez-vous vraiment supprimer cette notification ?'**
+  String get deleteNotificationBody;
+
+  /// {count} unread notifications
+  ///
+  /// In fr, this message translates to:
+  /// **'{count} non lu(s)'**
+  String unreadCount(int count);
+
   /// No description provided for @pullToRefresh.
   ///
   /// In fr, this message translates to:

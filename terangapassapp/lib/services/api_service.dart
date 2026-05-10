@@ -780,12 +780,56 @@ class ApiService {
     }
   }
 
-  /// Marque une notification comme lue
-  Future<void> markNotificationAsRead(int notificationId) async {
+  /// Marque une notification comme lue (supporte id préfixé "user_X" ou "admin_X" ou entier brut)
+  Future<void> markNotificationAsRead(dynamic notificationId) async {
     try {
-      await _dio.put('notifications/$notificationId/read');
+      final idStr = notificationId.toString();
+      if (idStr.startsWith('user_')) {
+        final rawId = idStr.replaceFirst('user_', '');
+        await _dio.put('my-notifications/$rawId/read');
+      } else {
+        final rawId = idStr.replaceFirst('admin_', '');
+        await _dio.put('notifications/$rawId/read');
+      }
     } on DioException catch (e) {
-      throw _handleError(e);
+      _debugLog('markNotificationAsRead error: ${_handleError(e)}');
+    }
+  }
+
+  /// Marque une notification personnelle comme non lue
+  Future<void> markNotificationAsUnread(dynamic notificationId) async {
+    try {
+      final idStr = notificationId.toString();
+      if (idStr.startsWith('user_')) {
+        final rawId = idStr.replaceFirst('user_', '');
+        await _dio.put('my-notifications/$rawId/unread');
+      }
+      // Les notifications admin n'ont pas de statut lu/non-lu par utilisateur
+    } on DioException catch (e) {
+      _debugLog('markNotificationAsUnread error: ${_handleError(e)}');
+    }
+  }
+
+  /// Marque toutes les notifications personnelles comme lues
+  Future<void> markAllNotificationsAsRead() async {
+    try {
+      await _dio.put('my-notifications/read-all');
+    } on DioException catch (e) {
+      _debugLog('markAllNotificationsAsRead error: ${_handleError(e)}');
+    }
+  }
+
+  /// Supprime une notification personnelle (user_X uniquement)
+  Future<void> deleteNotification(dynamic notificationId) async {
+    try {
+      final idStr = notificationId.toString();
+      if (idStr.startsWith('user_')) {
+        final rawId = idStr.replaceFirst('user_', '');
+        await _dio.delete('my-notifications/$rawId');
+      }
+      // Les notifications admin globales ne peuvent pas être supprimées par l'utilisateur
+    } on DioException catch (e) {
+      _debugLog('deleteNotification error: ${_handleError(e)}');
     }
   }
 

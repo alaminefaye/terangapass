@@ -33,6 +33,28 @@ class AppLocalizationsFr extends AppLocalizations {
   String get noNotifications => 'Aucune notification';
 
   @override
+  String get markAsRead => 'Marquer comme lu';
+
+  @override
+  String get markAsUnread => 'Marquer comme non lu';
+
+  @override
+  String get markAllAsRead => 'Tout marquer comme lu';
+
+  @override
+  String get delete => 'Supprimer';
+
+  @override
+  String get deleteNotificationTitle => 'Supprimer la notification';
+
+  @override
+  String get deleteNotificationBody =>
+      'Voulez-vous vraiment supprimer cette notification ?';
+
+  @override
+  String unreadCount(int count) => '$count non lu(s)';
+
+  @override
   String get pullToRefresh => 'Tirez pour actualiser';
 
   @override
