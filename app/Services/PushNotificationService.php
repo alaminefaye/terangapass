@@ -318,7 +318,8 @@ class PushNotificationService
 
     /**
      * Chemin absolu du JSON compte de service Firebase si lisible,
-     * ou null. [FIREBASE_SERVICE_ACCOUNT_PATH] est relatif à la racine Laravel (pas public/).
+     * ou null. [FIREBASE_SERVICE_ACCOUNT_PATH] : chemin absolu Unix/Windows,
+     * ou relatif à la racine Laravel (ex. storage/app/... — pas public/).
      */
     protected function resolveFirebaseServiceAccountPath(): ?string
     {
@@ -328,18 +329,46 @@ class PushNotificationService
             return null;
         }
 
-        $trimmed = trim($path);
-        $full = preg_match('#^/#', $trimmed) || preg_match('#^[A-Za-z]:\\\\#', $trimmed)
-            ? $trimmed
-            : base_path($trimmed);
+        $trimmed = trim($path, " \t\n\r\0\x0B\"'");
 
-        if (! is_readable($full)) {
-            Log::warning('Fichier compte Firebase introuvable ou illisible', ['path_config' => $trimmed]);
+        $candidates = [];
 
-            return null;
+        if (preg_match('#^/#', $trimmed) || preg_match('#^[A-Za-z]:\\\\#', $trimmed)) {
+            $candidates[] = $trimmed;
+        } else {
+            $candidates[] = base_path($trimmed);
+            if (str_starts_with(str_replace('\\', '/', $trimmed), 'storage/app/')) {
+                $insideApp = substr($trimmed, strlen('storage/app/'));
+                $candidates[] = storage_path('app/'.$insideApp);
+            }
+            $basename = basename(str_replace('\\', '/', $trimmed));
+            if ($basename !== '' && str_contains($basename, '.json')) {
+                $candidates[] = storage_path('app/firebase/'.$basename);
+                $candidates[] = storage_path('app/'.$basename);
+            }
         }
 
-        return $full;
+        $triedMeta = [];
+        foreach (array_unique($candidates) as $candidate) {
+            $resolved = realpath($candidate);
+            $use = $resolved !== false ? $resolved : $candidate;
+            $triedMeta[] = [
+                'path' => $use,
+                'exists' => file_exists($use),
+                'readable' => is_readable($use),
+            ];
+            if (is_readable($use)) {
+                return $use;
+            }
+        }
+
+        Log::warning('Fichier compte Firebase introuvable ou illisible', [
+            'path_config' => $trimmed,
+            'laravel_base_path' => base_path(),
+            'tried' => $triedMeta,
+        ]);
+
+        return null;
     }
 
     /**
