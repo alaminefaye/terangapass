@@ -30,6 +30,12 @@ class IncidentController extends Controller
         ]);
 
         $user = $this->getUserFromToken($request);
+        if (! $user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized',
+            ], 401);
+        }
 
         // Gérer l'upload des photos
         $photoUrls = [];
@@ -65,7 +71,7 @@ class IncidentController extends Controller
         }
 
         $incident = Incident::create([
-            'user_id' => $user ? $user->id : 1,
+            'user_id' => $user->id,
             'type' => $request->incident_type,
             'description' => $request->description,
             'latitude' => $request->latitude,
@@ -97,7 +103,14 @@ class IncidentController extends Controller
     public function history(Request $request)
     {
         $user = $this->getUserFromToken($request);
-        $incidents = Incident::where('user_id', $user ? $user->id : 1)
+        if (! $user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized',
+            ], 401);
+        }
+
+        $incidents = Incident::where('user_id', $user->id)
             ->orderBy('created_at', 'desc')
             ->get();
 
@@ -107,9 +120,16 @@ class IncidentController extends Controller
     public function tracking(Request $request, int $id)
     {
         $user = $this->getUserFromToken($request);
+        if (! $user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized',
+            ], 401);
+        }
+
         $incident = Incident::query()
             ->where('id', $id)
-            ->where('user_id', $user ? $user->id : 1)
+            ->where('user_id', $user->id)
             ->firstOrFail();
 
         $timeline = [
@@ -149,18 +169,34 @@ class IncidentController extends Controller
         ]);
     }
 
-    private function getUserFromToken(Request $request)
+    private function getUserFromToken(Request $request): ?User
     {
-        $token = $request->bearerToken() ?? $request->header('Authorization');
-        if ($token) {
-            $token = str_replace('Bearer ', '', $token);
-            $decoded = base64_decode($token);
-            $parts = explode('|', $decoded);
-            if (count($parts) >= 3) {
-                return User::find($parts[0]);
+        $token = $request->bearerToken();
+        if ($token === null || $token === '') {
+            $auth = $request->header('Authorization');
+            if (is_string($auth) && str_starts_with($auth, 'Bearer ')) {
+                $token = substr($auth, 7);
             }
         }
+        if ($token === null || $token === '') {
+            return null;
+        }
 
-        return null;
+        $decoded = base64_decode($token, true);
+        if ($decoded === false || $decoded === '') {
+            return null;
+        }
+
+        $parts = explode('|', $decoded);
+        if (count($parts) < 3) {
+            return null;
+        }
+
+        $userId = (int) $parts[0];
+        if ($userId <= 0) {
+            return null;
+        }
+
+        return User::find($userId);
     }
 }

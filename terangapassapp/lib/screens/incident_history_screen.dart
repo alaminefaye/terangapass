@@ -44,6 +44,13 @@ class _IncidentHistoryScreenState extends State<IncidentHistoryScreen> {
     }
   }
 
+  int? _parseIncidentId(dynamic raw) {
+    if (raw == null) return null;
+    if (raw is int) return raw;
+    if (raw is num) return raw.toInt();
+    return int.tryParse(raw.toString());
+  }
+
   String _statusLabel(String status) {
     switch (status) {
       case 'in_progress':
@@ -51,6 +58,12 @@ class _IncidentHistoryScreenState extends State<IncidentHistoryScreen> {
       case 'resolved':
       case 'closed':
         return 'Traite';
+      case 'validated':
+        return 'Validé';
+      case 'rejected':
+        return 'Refusé';
+      case 'pending':
+        return 'En attente';
       default:
         return 'En attente';
     }
@@ -62,7 +75,10 @@ class _IncidentHistoryScreenState extends State<IncidentHistoryScreen> {
         return const Color(0xFFD4A017);
       case 'resolved':
       case 'closed':
+      case 'validated':
         return AppTheme.primaryGreen;
+      case 'rejected':
+        return AppTheme.textSecondary;
       default:
         return const Color(0xFFC73E1D);
     }
@@ -131,7 +147,7 @@ class _IncidentHistoryScreenState extends State<IncidentHistoryScreen> {
                         itemCount: _incidents.length,
                         itemBuilder: (context, index) {
                           final incident = _incidents[index];
-                          final id = incident['id'];
+                          final id = _parseIncidentId(incident['id']);
                           final type = (incident['type'] ?? 'incident').toString();
                           final status = (incident['status'] ?? 'pending').toString();
                           final description = (incident['description'] ?? '')
@@ -163,7 +179,7 @@ class _IncidentHistoryScreenState extends State<IncidentHistoryScreen> {
                                 ),
                               ),
                               title: Text(
-                                '#${id ?? '-'} - $type',
+                                '#${id ?? '-'} · $type',
                                 style: GoogleFonts.poppins(
                                   fontWeight: FontWeight.w700,
                                   fontSize: 14,
@@ -198,7 +214,7 @@ class _IncidentHistoryScreenState extends State<IncidentHistoryScreen> {
                               ),
                               trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
                               onTap: () {
-                                if (id is! int) return;
+                                if (id == null) return;
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(

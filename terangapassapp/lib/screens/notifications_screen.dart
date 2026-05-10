@@ -57,6 +57,159 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     return id.startsWith('user_');
   }
 
+  Map<String, dynamic> _extraDataMap(Map<String, dynamic> notification) {
+    final raw = notification['extra_data'];
+    if (raw == null) {
+      return {};
+    }
+    if (raw is Map<String, dynamic>) {
+      return raw;
+    }
+    if (raw is Map) {
+      return Map<String, dynamic>.from(raw);
+    }
+    return {};
+  }
+
+  String _humanizeSlug(String raw) {
+    return raw
+        .split('_')
+        .where((p) => p.isNotEmpty)
+        .map((part) {
+          final p = part.toLowerCase();
+          return p[0].toUpperCase() + p.substring(1);
+        })
+        .join(' ');
+  }
+
+  String _alertStatusChipLabel(AppLocalizations l10n, dynamic statusRaw) {
+    final s = statusRaw?.toString().trim().toLowerCase() ?? '';
+    switch (s) {
+      case 'pending':
+        return l10n.notifChipStatusPending;
+      case 'in_progress':
+        return l10n.notifChipStatusInProgress;
+      case 'resolved':
+        return l10n.notifChipStatusResolved;
+      case 'cancelled':
+      case 'canceled':
+        return l10n.notifChipStatusCancelled;
+      default:
+        if (s.isEmpty) {
+          return l10n.notifChipFollowUp;
+        }
+        return _humanizeSlug(s);
+    }
+  }
+
+  String _incidentStatusChipLabel(AppLocalizations l10n, dynamic statusRaw) {
+    final s = statusRaw?.toString().trim().toLowerCase() ?? '';
+    switch (s) {
+      case 'pending':
+        return l10n.notifChipStatusPending;
+      case 'validated':
+        return l10n.notifChipIncidentValidated;
+      case 'in_progress':
+        return l10n.notifChipStatusInProgress;
+      case 'resolved':
+        return l10n.notifChipStatusResolved;
+      case 'rejected':
+        return l10n.notifChipIncidentRejected;
+      default:
+        if (s.isEmpty) {
+          return l10n.notifChipFollowUp;
+        }
+        return _humanizeSlug(s);
+    }
+  }
+
+  static const String _chipSep = ' · ';
+
+  /// SOS / urgence médicale d’après [extra_data.alert_type] ou le type brut.
+  String _alertCategoryLabel(
+    AppLocalizations l10n,
+    Map<String, dynamic> ex,
+    String rawType,
+  ) {
+    final t = (ex['alert_type'] ?? '').toString().trim().toLowerCase();
+    if (t == 'sos') {
+      return l10n.notifChipSosShort;
+    }
+    if (t == 'medical') {
+      return l10n.notifChipMedicalShort;
+    }
+    final rt = rawType.toLowerCase();
+    if (rt.contains('medical')) {
+      return l10n.notifChipMedicalShort;
+    }
+    if (rt.contains('sos')) {
+      return l10n.notifChipSosShort;
+    }
+    return l10n.notifChipFollowUp;
+  }
+
+  String _alertStatusFromExtra(AppLocalizations l10n, Map<String, dynamic> ex) {
+    final st = ex['alert_status'];
+    if (st != null && st.toString().trim().isNotEmpty) {
+      return _alertStatusChipLabel(l10n, st);
+    }
+    return l10n.notifChipStatusPending;
+  }
+
+  String _chipCategoryStatus(
+    String category,
+    String status,
+  ) {
+    if (status.isEmpty) {
+      return category;
+    }
+    return '$category$_chipSep$status';
+  }
+
+  /// Pastille : « SOS · En cours », « Urgence médicale · Résolu », « Signalement · Validé », etc.
+  String _displayNotificationChipLabel(
+    AppLocalizations l10n,
+    Map<String, dynamic> notification,
+  ) {
+    final raw = (notification['type'] ?? '').toString().trim();
+    final ex = _extraDataMap(notification);
+
+    switch (raw) {
+      case 'sos_sent':
+      case 'medical_sent':
+        return _chipCategoryStatus(
+          _alertCategoryLabel(l10n, ex, raw),
+          _alertStatusFromExtra(l10n, ex),
+        );
+      case 'sos_status_update':
+      case 'medical_status_update':
+        return _chipCategoryStatus(
+          _alertCategoryLabel(l10n, ex, raw),
+          _alertStatusFromExtra(l10n, ex),
+        );
+      case 'incident_reported':
+        return _chipCategoryStatus(
+          l10n.notifChipIncidentShort,
+          l10n.notifChipStatusPending,
+        );
+      case 'incident_status':
+        return _chipCategoryStatus(
+          l10n.notifChipIncidentShort,
+          _incidentStatusChipLabel(l10n, ex['incident_status']),
+        );
+      case 'general':
+        return l10n.notifChipGeneral;
+      default:
+        if (raw.isEmpty) {
+          return l10n.notificationsFallbackTitle;
+        }
+        if (RegExp(r'^[a-z][a-z0-9_]*$').hasMatch(raw) && raw.contains('_')) {
+          return _humanizeSlug(raw);
+        }
+        return raw;
+    }
+  }
+
   Future<void> _loadNotifications() async {
     setState(() {
       _isLoading = true;
@@ -213,7 +366,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     await _markAsRead(notification);
     if (!mounted) return;
 
-    final type = (notification['type'] ?? '').toString().trim();
+    final rawType = (notification['type'] ?? '').toString().trim();
     final title = (notification['title'] ?? '').toString().trim();
     final description = (notification['description'] ??
             notification['body'] ??
@@ -222,8 +375,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         .trim();
     final zone = (notification['zone'] ?? '').toString().trim();
     final time = _displayTime(notification);
-    final icon = _iconForType(type);
-    final color = _colorForType(type);
+    final icon = _iconForType(rawType);
+    final color = _colorForType(rawType);
     final isPersonal = _isPersonal(notification);
 
     await showModalBottomSheet<void>(
@@ -236,6 +389,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       ),
       builder: (ctx) {
         final l10n = AppLocalizations.of(ctx)!;
+        final chipLabel = _displayNotificationChipLabel(l10n, notification);
         final maxH = MediaQuery.sizeOf(ctx).height * 0.88;
         return SafeArea(
           child: ConstrainedBox(
@@ -280,10 +434,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      if (type.isNotEmpty)
+                      if (chipLabel.isNotEmpty)
                         Flexible(
                           child: Text(
-                            type,
+                            chipLabel,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: GoogleFonts.poppins(
@@ -293,7 +447,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                             ),
                           ),
                         ),
-                      if (type.isNotEmpty) const SizedBox(width: 10),
+                      if (chipLabel.isNotEmpty) const SizedBox(width: 10),
                       if (time.isNotEmpty)
                         Text(
                           time,
@@ -392,6 +546,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   IconData _iconForType(String type) {
     final t = type.toLowerCase();
+    if (t.contains('sos')) {
+      return Icons.emergency_rounded;
+    }
+    if (t.contains('incident')) {
+      return Icons.assignment_outlined;
+    }
     if (t.contains('sécur') || t.contains('secur')) {
       return Icons.security_rounded;
     }
@@ -410,6 +570,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   Color _colorForType(String type) {
     final t = type.toLowerCase();
+    if (t.contains('sos')) return AppTheme.primaryRed;
+    if (t.contains('incident')) return Colors.deepOrange;
     if (t.contains('sécur') || t.contains('secur')) return AppTheme.primaryRed;
     if (t.contains('transport') || t.contains('navette')) {
       return AppTheme.primaryGreen;
@@ -866,15 +1028,16 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     required bool isRead,
     required bool isPersonal,
   }) {
-    final type = (notification['type'] ?? '').toString();
+    final rawType = (notification['type'] ?? '').toString();
     final title = (notification['title'] ?? '').toString();
     final description =
         (notification['description'] ?? notification['body'] ?? '').toString();
     final zone = (notification['zone'] ?? '').toString();
     final time = _displayTime(notification);
-    final icon = _iconForType(type);
-    final color = _colorForType(type);
+    final icon = _iconForType(rawType);
+    final color = _colorForType(rawType);
     final l10n = AppLocalizations.of(context)!;
+    final chipLabel = _displayNotificationChipLabel(l10n, notification);
 
     return Container(
       decoration: BoxDecoration(
@@ -916,9 +1079,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                             const SizedBox(width: 6),
                             Expanded(
                               child: Text(
-                                type.isEmpty
-                                    ? l10n.notificationsFallbackTitle
-                                    : type,
+                                chipLabel,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: GoogleFonts.poppins(

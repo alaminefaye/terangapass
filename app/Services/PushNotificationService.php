@@ -92,6 +92,8 @@ class PushNotificationService
      */
     protected function sendToSingleToken(NotificationModel $notification, DeviceToken $deviceToken): bool
     {
+        // Payload « notification » + priorité haute : le système Android/iOS peut afficher
+        // la bannière même si l’application est complètement fermée (pas seulement en arrière-plan).
         $payload = [
             'notification' => [
                 'title' => $notification->title,
@@ -103,8 +105,11 @@ class PushNotificationService
                 'click_action' => 'FLUTTER_NOTIFICATION_CLICK',
                 'type' => 'admin_broadcast',
                 'campaign_type' => (string) ($notification->type ?? 'general'),
+                'title' => (string) $notification->title,
+                'body' => (string) $notification->description,
             ],
             'priority' => 'high',
+            'content_available' => true,
         ];
 
         try {
@@ -495,6 +500,15 @@ class PushNotificationService
         }
 
         $message['android'] = $android;
+
+        // iOS (APNs) : priorité immédiate pour les messages avec alerte affichable (app fermée / arrière-plan).
+        if (isset($message['notification'])) {
+            $message['apns'] = [
+                'headers' => [
+                    'apns-priority' => '10',
+                ],
+            ];
+        }
 
         $url = sprintf('https://fcm.googleapis.com/v1/projects/%s/messages:send', rawurlencode($projectId));
 

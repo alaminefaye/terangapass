@@ -1,3 +1,4 @@
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -6,7 +7,10 @@ import '../constants/app_constants.dart';
 import '../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 import '../services/api_service.dart';
+import '../services/notification_service.dart';
 import '../services/offline_pack_service.dart';
+import '../services/teranga_push_messaging.dart';
+import '../services/user_preferences.dart';
 import '../state/app_state.dart';
 import 'auth/login_screen.dart';
 import 'incident_history_screen.dart';
@@ -34,6 +38,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String? _offlineCatalogVersion;
   String? _offlineDownloadedVersion;
   int _offlinePackBytes = 0;
+  bool _notificationsEnabled = true;
+  bool _geolocationEnabled = true;
 
   static bool _looksLikePlaceholder(String value) {
     final v = value.trim().toLowerCase();
@@ -49,6 +55,40 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _loadProfile();
   }
 
+  Future<void> _refreshTogglePrefs() async {
+    final n = await UserPreferences.notificationsEnabled();
+    final g = await UserPreferences.geolocationEnabled();
+    if (!mounted) return;
+    setState(() {
+      _notificationsEnabled = n;
+      _geolocationEnabled = g;
+    });
+  }
+
+  Future<void> _onNotificationsToggle(bool enabled) async {
+    setState(() => _notificationsEnabled = enabled);
+    await UserPreferences.setNotificationsEnabled(enabled);
+
+    if (!enabled) {
+      try {
+        final token = await FirebaseMessaging.instance.getToken();
+        if (token != null && token.isNotEmpty) {
+          await ApiService().unregisterDeviceToken(token);
+        }
+        await NotificationService().cancelAllNotifications();
+      } catch (_) {}
+    } else {
+      try {
+        await TerangaPushMessaging.registerDeviceTokenIfAuthed();
+      } catch (_) {}
+    }
+  }
+
+  Future<void> _onGeolocationToggle(bool enabled) async {
+    setState(() => _geolocationEnabled = enabled);
+    await UserPreferences.setGeolocationEnabled(enabled);
+  }
+
   Future<void> _loadProfile() async {
     setState(() {
       _isLoading = true;
@@ -56,6 +96,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     });
 
     try {
+      await _refreshTogglePrefs();
       final prefs = await SharedPreferences.getInstance();
       _cachedName = (prefs.getString('user_name') ?? '').trim();
       _cachedEmail = (prefs.getString('user_email') ?? '').trim();
@@ -575,11 +616,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
               l10n.profileNotificationsSetting,
               Icons.notifications_outlined,
               true,
+              switchValue: _notificationsEnabled,
+              onSwitchChanged: _onNotificationsToggle,
             ),
             _buildSettingTile(
               l10n.profileGeolocationSetting,
               Icons.location_on_outlined,
               true,
+              switchValue: _geolocationEnabled,
+              onSwitchChanged: _onGeolocationToggle,
             ),
             _buildSettingTile(
               l10n.profileEsimTitle,
@@ -797,6 +842,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     VoidCallback? onTap,
     String? value,
     String? subtitle,
+    bool? switchValue,
+    ValueChanged<bool>? onSwitchChanged,
   }) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
@@ -847,8 +894,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ? Transform.scale(
                 scale: 0.9,
                 child: Switch(
-                  value: true,
-                  onChanged: (value) {},
+                  value: switchValue ?? true,
+                  onChanged: onSwitchChanged,
                   activeThumbColor: Colors.white,
                   activeTrackColor: AppTheme.primaryGreen,
                   inactiveThumbColor: Colors.white,

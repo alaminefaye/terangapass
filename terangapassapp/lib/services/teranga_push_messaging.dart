@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'api_service.dart';
 import 'notification_service.dart';
+import 'user_preferences.dart';
 
 /// FCM : foreground, ouverture depuis une notification, rafraîchissement du token.
 class TerangaPushMessaging {
@@ -57,6 +58,9 @@ class TerangaPushMessaging {
 
   static Future<void> registerDeviceTokenIfAuthed() async {
     try {
+      if (!await UserPreferences.notificationsEnabled()) {
+        return;
+      }
       await _fm.requestPermission(alert: true, badge: true, sound: true);
       final t = await _fm.getToken();
       if (kDebugMode && t != null && t.isNotEmpty) {
@@ -71,6 +75,9 @@ class TerangaPushMessaging {
   }
 
   static Future<void> _sendTokenIfAuthed(String token) async {
+    if (!await UserPreferences.notificationsEnabled()) {
+      return;
+    }
     final prefs = await SharedPreferences.getInstance();
     final auth = (prefs.getString('auth_token') ?? '').trim();
     if (auth.isEmpty) return;
@@ -90,6 +97,10 @@ class TerangaPushMessaging {
     /// Sur iOS, [setForegroundNotificationPresentationOptions] suffit avec le payload « notification »
     /// FCM pour éviter un doublon bannière + notification locale.
     if (Platform.isIOS) return;
+
+    if (!await UserPreferences.notificationsEnabled()) {
+      return;
+    }
 
     final notification = message.notification;
     final data = message.data;

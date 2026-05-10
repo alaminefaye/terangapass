@@ -1,6 +1,8 @@
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 
+import 'user_preferences.dart';
+
 class LocationService {
   static final LocationService _instance = LocationService._internal();
   factory LocationService() => _instance;
@@ -8,6 +10,13 @@ class LocationService {
 
   /// Vérifie et demande les permissions de localisation
   Future<bool> checkAndRequestPermissions() async {
+    if (!await UserPreferences.geolocationEnabled()) {
+      throw Exception(
+        'La géolocalisation est désactivée dans le profil (Paramètres). '
+        'Activez-la pour utiliser cette fonctionnalité.',
+      );
+    }
+
     // Vérifier si le service de localisation est activé
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
@@ -36,6 +45,9 @@ class LocationService {
   /// Position actuelle si le service est actif et les permissions accordées ; sinon `null` (sans lever d’exception).
   /// Demande la permission « pendant l’usage » si elle n’est pas encore accordée.
   Future<Position?> getCurrentPositionIfAllowed() async {
+    if (!await UserPreferences.geolocationEnabled()) {
+      return null;
+    }
     try {
       final serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) return null;
@@ -78,6 +90,9 @@ class LocationService {
     Duration maxKnownAge = const Duration(minutes: 25),
     Duration gpsTimeout = const Duration(seconds: 7),
   }) async {
+    if (!await UserPreferences.geolocationEnabled()) {
+      return null;
+    }
     Position? last;
     try {
       last = await Geolocator.getLastKnownPosition();

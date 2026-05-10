@@ -206,6 +206,90 @@ abstract class AppLocalizations {
   /// **'{count} non lu(s)'**
   String unreadCount(int count);
 
+  /// No description provided for @notifChipSosShort.
+  ///
+  /// In fr, this message translates to:
+  /// **'SOS'**
+  String get notifChipSosShort;
+
+  /// No description provided for @notifChipMedicalShort.
+  ///
+  /// In fr, this message translates to:
+  /// **'Urgence médicale'**
+  String get notifChipMedicalShort;
+
+  /// No description provided for @notifChipIncidentShort.
+  ///
+  /// In fr, this message translates to:
+  /// **'Signalement'**
+  String get notifChipIncidentShort;
+
+  /// No description provided for @notifChipSosSent.
+  ///
+  /// In fr, this message translates to:
+  /// **'SOS envoyé'**
+  String get notifChipSosSent;
+
+  /// No description provided for @notifChipMedicalSent.
+  ///
+  /// In fr, this message translates to:
+  /// **'Alerte médicale'**
+  String get notifChipMedicalSent;
+
+  /// No description provided for @notifChipIncidentReceived.
+  ///
+  /// In fr, this message translates to:
+  /// **'Signalement enregistré'**
+  String get notifChipIncidentReceived;
+
+  /// No description provided for @notifChipStatusPending.
+  ///
+  /// In fr, this message translates to:
+  /// **'En attente'**
+  String get notifChipStatusPending;
+
+  /// No description provided for @notifChipStatusInProgress.
+  ///
+  /// In fr, this message translates to:
+  /// **'En cours'**
+  String get notifChipStatusInProgress;
+
+  /// No description provided for @notifChipStatusResolved.
+  ///
+  /// In fr, this message translates to:
+  /// **'Résolu'**
+  String get notifChipStatusResolved;
+
+  /// No description provided for @notifChipStatusCancelled.
+  ///
+  /// In fr, this message translates to:
+  /// **'Annulée'**
+  String get notifChipStatusCancelled;
+
+  /// No description provided for @notifChipIncidentValidated.
+  ///
+  /// In fr, this message translates to:
+  /// **'Validé'**
+  String get notifChipIncidentValidated;
+
+  /// No description provided for @notifChipIncidentRejected.
+  ///
+  /// In fr, this message translates to:
+  /// **'Refusé'**
+  String get notifChipIncidentRejected;
+
+  /// No description provided for @notifChipFollowUp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mise à jour'**
+  String get notifChipFollowUp;
+
+  /// No description provided for @notifChipGeneral.
+  ///
+  /// In fr, this message translates to:
+  /// **'Message'**
+  String get notifChipGeneral;
+
   /// No description provided for @pullToRefresh.
   ///
   /// In fr, this message translates to:

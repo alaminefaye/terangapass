@@ -67,6 +67,48 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get notifChipSosShort => 'SOS';
+
+  @override
+  String get notifChipMedicalShort => 'Urgence médicale';
+
+  @override
+  String get notifChipIncidentShort => 'Signalement';
+
+  @override
+  String get notifChipSosSent => 'SOS envoyé';
+
+  @override
+  String get notifChipMedicalSent => 'Alerte médicale';
+
+  @override
+  String get notifChipIncidentReceived => 'Signalement enregistré';
+
+  @override
+  String get notifChipStatusPending => 'En attente';
+
+  @override
+  String get notifChipStatusInProgress => 'En cours';
+
+  @override
+  String get notifChipStatusResolved => 'Résolu';
+
+  @override
+  String get notifChipStatusCancelled => 'Annulée';
+
+  @override
+  String get notifChipIncidentValidated => 'Validé';
+
+  @override
+  String get notifChipIncidentRejected => 'Refusé';
+
+  @override
+  String get notifChipFollowUp => 'Mise à jour';
+
+  @override
+  String get notifChipGeneral => 'Message';
+
+  @override
   String get pullToRefresh => 'Tirez pour actualiser';
 
   @override

@@ -25,6 +25,12 @@ class AppConstants {
   /// Préférence de la case « Se souvenir de moi » sur l’écran de connexion.
   static const String loginRememberMePrefKey = 'login_remember_me_pref';
 
+  /// Profil : notifications push (enregistrement FCM + affichage local au premier plan).
+  static const String prefNotificationsEnabledKey = 'pref_notifications_enabled';
+
+  /// Profil : utilisation de la géolocalisation dans l’app (SOS, signalements, cartes…).
+  static const String prefGeolocationEnabledKey = 'pref_geolocation_enabled';
+
   /// Email prérempli lorsque l’utilisateur s’est connecté avec « Se souvenir de moi ».
   static const String loginSavedEmailKey = 'login_saved_email';
 
