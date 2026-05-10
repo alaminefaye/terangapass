@@ -357,7 +357,7 @@ class PushNotificationService
                 'exists' => file_exists($use),
                 'readable' => is_readable($use),
             ];
-            if (is_readable($use)) {
+            if (is_readable($use) && is_file($use)) {
                 return $use;
             }
         }
@@ -493,9 +493,9 @@ class PushNotificationService
         $v = strtoupper($visibility);
 
         return match ($v) {
-            'PUBLIC' => 'VISIBILITY_PUBLIC',
-            'PRIVATE' => 'VISIBILITY_PRIVATE',
-            'SECRET' => 'VISIBILITY_SECRET',
+            'PUBLIC', 'VISIBILITY_PUBLIC' => 'PUBLIC',
+            'PRIVATE', 'VISIBILITY_PRIVATE' => 'PRIVATE',
+            'SECRET', 'VISIBILITY_SECRET' => 'SECRET',
             default => null,
         };
     }
