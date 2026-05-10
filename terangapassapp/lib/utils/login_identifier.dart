@@ -31,3 +31,11 @@ LoginIdentifierValidationError? validateLoginIdentifier(String? value) {
 }
 
 final RegExp _emailPattern = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]{2,}$');
+
+/// Validation email pour l’inscription (champ email uniquement).
+bool isRegisterEmailValid(String raw) {
+  final t = raw.trim();
+  if (t.isEmpty) return false;
+  final n = normalizeEmailForAuth(t);
+  return _emailPattern.hasMatch(n);
+}

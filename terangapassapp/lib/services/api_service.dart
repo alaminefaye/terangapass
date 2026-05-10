@@ -532,6 +532,7 @@ class ApiService {
     String email,
     String password, {
     String? phone,
+    String country = 'SN',
   }) async {
     try {
       final response = await _dio.post(
@@ -540,6 +541,7 @@ class ApiService {
           'name': name,
           'email': email,
           'password': password,
+          'country': country.trim().toUpperCase(),
           if (phone != null && phone.trim().isNotEmpty) ...{
             'phone': phone.trim(),
             'telephone': phone.trim(),

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Models\Incident;
+use App\Services\PushNotificationService;
 use Illuminate\Http\Request;
 
 class IncidentManagementController extends Controller
@@ -39,7 +40,7 @@ class IncidentManagementController extends Controller
         return view('incidents.show', compact('incident'));
     }
 
-    public function validateIncident(Request $request, Incident $incident)
+    public function validateIncident(Request $request, Incident $incident, PushNotificationService $push)
     {
         $validated = $request->validate([
             'admin_notes' => 'nullable|string',
@@ -50,11 +51,18 @@ class IncidentManagementController extends Controller
             'admin_notes' => $validated['admin_notes'] ?? null,
         ]);
 
+        $incident->refresh()->load('user');
+        try {
+            $push->notifyIncidentStatus($incident);
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
         return redirect()->back()
             ->with('success', 'Signalement validé avec succès.');
     }
 
-    public function reject(Request $request, Incident $incident)
+    public function reject(Request $request, Incident $incident, PushNotificationService $push)
     {
         $validated = $request->validate([
             'admin_notes' => 'required|string',
@@ -65,11 +73,18 @@ class IncidentManagementController extends Controller
             'admin_notes' => $validated['admin_notes'],
         ]);
 
+        $incident->refresh()->load('user');
+        try {
+            $push->notifyIncidentStatus($incident);
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
         return redirect()->back()
             ->with('success', 'Signalement rejeté.');
     }
 
-    public function updateStatus(Request $request, Incident $incident)
+    public function updateStatus(Request $request, Incident $incident, PushNotificationService $push)
     {
         $validated = $request->validate([
             'status' => 'required|in:pending,validated,in_progress,resolved,rejected',
@@ -81,6 +96,13 @@ class IncidentManagementController extends Controller
         }
 
         $incident->update($validated);
+
+        $incident->refresh()->load('user');
+        try {
+            $push->notifyIncidentStatus($incident);
+        } catch (\Throwable $e) {
+            report($e);
+        }
 
         return redirect()->back()
             ->with('success', 'Statut du signalement mis à jour.');

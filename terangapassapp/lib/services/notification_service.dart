@@ -100,11 +100,14 @@ class NotificationService {
   Future<void> showSOSNotification({
     required String title,
     required String body,
+    int notificationId = 1,
+    String? payloadOverride,
   }) async {
     await showNotification(
-      id: 1,
+      id: notificationId,
       title: title,
       body: body,
+      payload: payloadOverride,
       notificationDetails: const NotificationDetails(
         android: AndroidNotificationDetails(
           'sos_channel',
@@ -130,11 +133,14 @@ class NotificationService {
   Future<void> showMedicalAlertNotification({
     required String title,
     required String body,
+    int notificationId = 2,
+    String? payloadOverride,
   }) async {
     await showNotification(
-      id: 2,
+      id: notificationId,
       title: title,
       body: body,
+      payload: payloadOverride,
       notificationDetails: const NotificationDetails(
         android: AndroidNotificationDetails(
           'medical_channel',
@@ -160,11 +166,14 @@ class NotificationService {
   Future<void> showSecurityNotification({
     required String title,
     required String body,
+    int notificationId = 3,
+    String? payloadOverride,
   }) async {
     await showNotification(
-      id: 3,
+      id: notificationId,
       title: title,
       body: body,
+      payload: payloadOverride,
       notificationDetails: const NotificationDetails(
         android: AndroidNotificationDetails(
           'security_channel',
@@ -184,11 +193,13 @@ class NotificationService {
     required String title,
     required String body,
     int id = 0,
+    String? payloadOverride,
   }) async {
     await showNotification(
       id: id,
       title: title,
       body: body,
+      payload: payloadOverride,
     );
   }
 

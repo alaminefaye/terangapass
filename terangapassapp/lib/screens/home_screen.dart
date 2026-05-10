@@ -9,6 +9,7 @@ import '../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 import '../constants/api_constants.dart';
 import '../services/api_service.dart';
+import '../services/teranga_push_messaging.dart';
 import '../services/offline_pack_service.dart';
 import 'sos_screen.dart';
 import 'medical_alert_screen.dart';
@@ -133,6 +134,7 @@ class _HomeScreenState extends State<HomeScreen>
     _bindOfficialPlayerListeners();
     // Parallèle : moins d’attente au premier affichage de l’accueil.
     Future.microtask(() async {
+      unawaited(TerangaPushMessaging.registerDeviceTokenIfAuthed());
       await Future.wait<void>([
         _loadOfficialAnnouncement(),
         _loadCompetitionSites(),

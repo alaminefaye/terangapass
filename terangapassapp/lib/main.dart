@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:country_code_picker/country_code_picker.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:io';
 import 'dart:math' as math;
 import 'constants/app_constants.dart';
 import 'l10n/app_localizations.dart';
@@ -15,15 +15,13 @@ import 'screens/auth/login_screen.dart';
 import 'screens/auth/register_screen.dart';
 import 'screens/notifications_screen.dart';
 import 'screens/sos_screen.dart';
+import 'screens/incident_history_screen.dart';
 import 'services/api_service.dart';
 import 'services/notification_service.dart';
+import 'services/teranga_push_messaging.dart';
 import 'state/app_state.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
-
-Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp();
-}
 
 Future<void> main() async {
   final stopwatch = Stopwatch()..start();
@@ -40,9 +38,10 @@ Future<void> main() async {
   }
 
   await Firebase.initializeApp();
-  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  FirebaseMessaging.onBackgroundMessage(TerangaPushMessaging.firebaseBackgroundHandler);
 
   await NotificationService().initialize(navigatorKey: navigatorKey);
+  await TerangaPushMessaging.bindHandlers(navigatorKey);
   runApp(const TerangaPassApp());
 
   final remainingMs = 3000 - stopwatch.elapsedMilliseconds;
@@ -68,6 +67,7 @@ class TerangaPassApp extends StatelessWidget {
           supportedLocales: const [Locale('fr'), Locale('en')],
           localizationsDelegates: const [
             AppLocalizations.delegate,
+            CountryLocalizations.delegate,
             GlobalMaterialLocalizations.delegate,
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
@@ -77,6 +77,7 @@ class TerangaPassApp extends StatelessWidget {
           routes: {
             '/home': (context) => const HomeScreen(),
             '/notifications': (context) => const NotificationsScreen(),
+            '/incidents-history': (context) => const IncidentHistoryScreen(),
             '/login': (context) => const LoginScreen(),
             '/register': (context) => const RegisterScreen(),
           },
@@ -154,39 +155,8 @@ class _AuthWrapperState extends State<AuthWrapper> {
     }
   }
 
-  /// Enregistre le device token pour les push notifications
-  /// NOTE: Implémenter quand Firebase Messaging sera configuré
-  /// Pour l'instant, cette méthode est vide car Firebase n'est pas encore configuré
   Future<void> _registerDeviceToken() async {
-    try {
-      final messaging = FirebaseMessaging.instance;
-      await messaging.requestPermission(alert: true, badge: true, sound: true);
-
-      final token = await messaging.getToken();
-      if (token != null && token.isNotEmpty) {
-        await ApiService().registerDeviceToken(
-          token: token,
-          platform: _platformName(),
-        );
-      }
-
-      FirebaseMessaging.instance.onTokenRefresh.listen((newToken) async {
-        if (newToken.isNotEmpty) {
-          await ApiService().registerDeviceToken(
-            token: newToken,
-            platform: _platformName(),
-          );
-        }
-      });
-    } catch (e) {
-      debugPrint('Device token registration error: $e');
-    }
-  }
-
-  String _platformName() {
-    if (Platform.isAndroid) return 'android';
-    if (Platform.isIOS) return 'ios';
-    return 'unknown';
+    await TerangaPushMessaging.registerDeviceTokenIfAuthed();
   }
 
   @override

@@ -67,7 +67,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get loginIdentifierLabel => 'Email ou numéro';
 
   @override
-  String get loginIdentifierHint => 'vous@email.com ou 77 123 45 67';
+  String get loginIdentifierHint => 'vous@email.com ou numéro de téléphone';
 
   @override
   String get loginIdentifierRequired =>
@@ -119,6 +119,19 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get registerFullNameRequired => 'Veuillez entrer votre nom';
+
+  @override
+  String get registerPhoneHint => 'Numéro de téléphone';
+
+  @override
+  String get registerPhoneNationalHint => 'Sans indicatif pays';
+
+  @override
+  String get registerPhoneRequired =>
+      'Veuillez entrer votre numéro de téléphone';
+
+  @override
+  String get registerSelectCountry => 'Choisir un pays';
 
   @override
   String get registerPasswordRequired => 'Veuillez entrer un mot de passe';

@@ -17,12 +17,13 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
   bool _obscurePassword = true;
   bool _rememberMe = true;
+  String? _identifierFieldError;
+  String? _passwordFieldError;
 
   @override
   void initState() {
@@ -60,8 +61,66 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
+  bool _validateLoginFields(AppLocalizations l10n) {
+    String? identErr;
+    String? passErr;
+
+    switch (validateLoginIdentifier(_emailController.text)) {
+      case LoginIdentifierValidationError.empty:
+        identErr = l10n.loginIdentifierRequired;
+        break;
+      case LoginIdentifierValidationError.invalidEmail:
+        identErr = l10n.loginEmailInvalid;
+        break;
+      case LoginIdentifierValidationError.phoneTooShort:
+        identErr = l10n.loginPhoneInvalid;
+        break;
+      case null:
+        break;
+    }
+
+    final p = _passwordController.text;
+    if (p.isEmpty) {
+      passErr = l10n.loginPasswordRequired;
+    } else if (p.length < 6) {
+      passErr = l10n.loginPasswordMinLength;
+    }
+
+    setState(() {
+      _identifierFieldError = identErr;
+      _passwordFieldError = passErr;
+    });
+    return identErr == null && passErr == null;
+  }
+
+  Widget _fieldErrorBelow(String? message) {
+    if (message == null || message.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    return Padding(
+      padding: const EdgeInsets.only(top: 6, left: 2, right: 8),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Semantics(
+          liveRegion: true,
+          label: message,
+          child: Text(
+            message,
+            style: GoogleFonts.poppins(
+              fontSize: 11,
+              height: 1.3,
+              color: AppTheme.primaryRed,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Future<void> _login() async {
-    if (!_formKey.currentState!.validate()) return;
+    final l10n = AppLocalizations.of(context)!;
+    if (!_validateLoginFields(l10n)) return;
 
     setState(() {
       _isLoading = true;
@@ -234,12 +293,10 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
           SafeArea(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(20, 28, 20, 20),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
+              padding: const EdgeInsets.fromLTRB(20, 28, 20, 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
                     const SizedBox(height: 10),
                     Center(
                       child: Container(
@@ -301,7 +358,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 20),
                     Container(
-                      padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
+                      padding: const EdgeInsets.fromLTRB(14, 14, 14, 16),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(18),
@@ -330,7 +387,11 @@ class _LoginScreenState extends State<LoginScreen> {
                               color: const Color(0xFFF9FAFB),
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
-                                color: const Color(0xFFE5E7EB),
+                                color: _identifierFieldError != null
+                                    ? AppTheme.primaryRed
+                                    : const Color(0xFFE5E7EB),
+                                width:
+                                    _identifierFieldError != null ? 1.5 : 1,
                               ),
                             ),
                             child: TextFormField(
@@ -342,6 +403,11 @@ class _LoginScreenState extends State<LoginScreen> {
                                 fontSize: 14,
                                 height: 1.2,
                               ),
+                              onChanged: (_) {
+                                if (_identifierFieldError != null) {
+                                  setState(() => _identifierFieldError = null);
+                                }
+                              },
                               decoration: InputDecoration(
                                 isDense: true,
                                 hintText: l10n.loginIdentifierHint,
@@ -364,20 +430,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                                 border: InputBorder.none,
                               ),
-                              validator: (value) {
-                                switch (validateLoginIdentifier(value)) {
-                                  case LoginIdentifierValidationError.empty:
-                                    return l10n.loginIdentifierRequired;
-                                  case LoginIdentifierValidationError.invalidEmail:
-                                    return l10n.loginEmailInvalid;
-                                  case LoginIdentifierValidationError.phoneTooShort:
-                                    return l10n.loginPhoneInvalid;
-                                  case null:
-                                    return null;
-                                }
-                              },
                             ),
                           ),
+                          _fieldErrorBelow(_identifierFieldError),
                           const SizedBox(height: 12),
                           Text(
                             l10n.loginPasswordLabel,
@@ -393,7 +448,10 @@ class _LoginScreenState extends State<LoginScreen> {
                               color: const Color(0xFFF9FAFB),
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
-                                color: const Color(0xFFE5E7EB),
+                                color: _passwordFieldError != null
+                                    ? AppTheme.primaryRed
+                                    : const Color(0xFFE5E7EB),
+                                width: _passwordFieldError != null ? 1.5 : 1,
                               ),
                             ),
                             child: TextFormField(
@@ -403,6 +461,11 @@ class _LoginScreenState extends State<LoginScreen> {
                                 fontSize: 14,
                                 height: 1.2,
                               ),
+                              onChanged: (_) {
+                                if (_passwordFieldError != null) {
+                                  setState(() => _passwordFieldError = null);
+                                }
+                              },
                               decoration: InputDecoration(
                                 isDense: true,
                                 hintText: l10n.loginPasswordHint,
@@ -445,17 +508,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                                 border: InputBorder.none,
                               ),
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return l10n.loginPasswordRequired;
-                                }
-                                if (value.length < 6) {
-                                  return l10n.loginPasswordMinLength;
-                                }
-                                return null;
-                              },
                             ),
                           ),
+                          _fieldErrorBelow(_passwordFieldError),
                           const SizedBox(height: 12),
                           Row(
                             crossAxisAlignment: CrossAxisAlignment.center,
@@ -558,9 +613,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 18),
-                  ],
-                ),
+                  const SizedBox(height: 18),
+                ],
               ),
             ),
           ),

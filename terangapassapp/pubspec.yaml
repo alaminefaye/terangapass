@@ -88,6 +88,7 @@ dependencies:
   # Google Fonts
   google_fonts: ^6.1.0
   flutter_native_splash: ^2.4.7
+  country_code_picker: ^3.4.1
 
 dev_dependencies:
   flutter_test:

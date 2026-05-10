@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Models\Alert;
+use App\Services\PushNotificationService;
 use Illuminate\Http\Request;
 
 class AlertManagementController extends Controller
@@ -39,7 +40,7 @@ class AlertManagementController extends Controller
         return view('alerts.show', compact('alert'));
     }
 
-    public function updateStatus(Request $request, Alert $alert)
+    public function updateStatus(Request $request, Alert $alert, PushNotificationService $push)
     {
         $validated = $request->validate([
             'status' => 'required|in:pending,in_progress,resolved,cancelled',
@@ -51,12 +52,19 @@ class AlertManagementController extends Controller
         }
 
         $alert->update($validated);
+        $alert->refresh()->load('user');
+
+        try {
+            $push->notifyAlertStatusChanged($alert);
+        } catch (\Throwable $e) {
+            report($e);
+        }
 
         return redirect()->back()
             ->with('success', 'Statut de l\'alerte mis à jour.');
     }
 
-    public function assign(Request $request, Alert $alert)
+    public function assign(Request $request, Alert $alert, PushNotificationService $push)
     {
         $validated = $request->validate([
             'assigned_to' => 'required|string',
@@ -67,6 +75,13 @@ class AlertManagementController extends Controller
             'notes' => ($alert->notes ? $alert->notes . "\n" : '') . "Assigné à: {$validated['assigned_to']}\n" . ($validated['notes'] ?? ''),
             'status' => 'in_progress',
         ]);
+
+        $alert->refresh()->load('user');
+        try {
+            $push->notifyAlertStatusChanged($alert);
+        } catch (\Throwable $e) {
+            report($e);
+        }
 
         return redirect()->back()
             ->with('success', 'Alerte assignée avec succès.');

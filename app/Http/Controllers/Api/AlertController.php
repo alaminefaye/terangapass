@@ -4,11 +4,12 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Alert;
+use App\Services\PushNotificationService;
 use Illuminate\Http\Request;
 
 class AlertController extends Controller
 {
-    public function sendSOS(Request $request)
+    public function sendSOS(Request $request, PushNotificationService $push)
     {
         $request->validate([
             'latitude' => 'required|numeric',
@@ -18,9 +19,12 @@ class AlertController extends Controller
         ]);
 
         $user = $this->getUserFromToken($request);
-        
+        if (! $user) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        }
+
         $alert = Alert::create([
-            'user_id' => $user ? $user->id : 1,
+            'user_id' => $user->id,
             'type' => 'sos',
             'latitude' => $request->latitude,
             'longitude' => $request->longitude,
@@ -29,13 +33,21 @@ class AlertController extends Controller
             'status' => 'pending',
         ]);
 
+        $alert->load('user');
+        try {
+            $push->notifyNewAlertCreated($alert);
+        } catch (\Throwable $e) {
+            // Ne pas faire échouer l’enregistrement SOS si la push échoue
+            report($e);
+        }
+
         return response()->json([
             'message' => 'SOS alert sent successfully',
             'alert' => $alert,
         ], 201);
     }
 
-    public function sendMedical(Request $request)
+    public function sendMedical(Request $request, PushNotificationService $push)
     {
         $request->validate([
             'latitude' => 'required|numeric',
@@ -46,9 +58,12 @@ class AlertController extends Controller
         ]);
 
         $user = $this->getUserFromToken($request);
-        
+        if (! $user) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        }
+
         $alert = Alert::create([
-            'user_id' => $user ? $user->id : 1,
+            'user_id' => $user->id,
             'type' => 'medical',
             'emergency_type' => $request->emergency_type,
             'latitude' => $request->latitude,
@@ -57,6 +72,13 @@ class AlertController extends Controller
             'address' => $request->address,
             'status' => 'pending',
         ]);
+
+        $alert->load('user');
+        try {
+            $push->notifyNewAlertCreated($alert);
+        } catch (\Throwable $e) {
+            report($e);
+        }
 
         return response()->json([
             'message' => 'Medical alert sent successfully',
@@ -67,7 +89,10 @@ class AlertController extends Controller
     public function history(Request $request)
     {
         $user = $this->getUserFromToken($request);
-        $alerts = Alert::where('user_id', $user ? $user->id : 1)
+        if (! $user) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        }
+        $alerts = Alert::where('user_id', $user->id)
             ->orderBy('created_at', 'desc')
             ->get();
 

@@ -215,7 +215,7 @@ abstract class AppLocalizations {
   /// No description provided for @loginIdentifierHint.
   ///
   /// In fr, this message translates to:
-  /// **'vous@email.com ou 77 123 45 67'**
+  /// **'vous@email.com ou numéro de téléphone'**
   String get loginIdentifierHint;
 
   /// No description provided for @loginIdentifierRequired.
@@ -313,6 +313,30 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Veuillez entrer votre nom'**
   String get registerFullNameRequired;
+
+  /// No description provided for @registerPhoneHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Numéro de téléphone'**
+  String get registerPhoneHint;
+
+  /// No description provided for @registerPhoneNationalHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sans indicatif pays'**
+  String get registerPhoneNationalHint;
+
+  /// No description provided for @registerPhoneRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Veuillez entrer votre numéro de téléphone'**
+  String get registerPhoneRequired;
+
+  /// No description provided for @registerSelectCountry.
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisir un pays'**
+  String get registerSelectCountry;
 
   /// No description provided for @registerPasswordRequired.
   ///
