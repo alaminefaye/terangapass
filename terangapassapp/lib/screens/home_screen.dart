@@ -724,7 +724,7 @@ class _HomeScreenState extends State<HomeScreen>
               decoration: InputDecoration(
                 isDense: true,
                 border: InputBorder.none,
-                hintText: 'Restaurants, sites, hotels, evenements...',
+                hintText: AppLocalizations.of(context)!.homeSearchHint,
                 hintStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: AppTheme.textSecondary,
                 ),
@@ -852,6 +852,7 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Widget _buildJojCountdownStrip(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -877,8 +878,8 @@ class _HomeScreenState extends State<HomeScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Jours avant les JOJ',
+                Text(
+                  l10n.homeJojCountdownLabel,
                   style: TextStyle(
                     color: Colors.white70,
                     fontSize: 11,
@@ -903,6 +904,7 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Widget _buildFeaturedBoxes(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return GridView.count(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -916,7 +918,7 @@ class _HomeScreenState extends State<HomeScreen>
           icon: Icons.sim_card_rounded,
           iconColor: const Color(0xFF7B2FBE),
           title: 'eSIM',
-          subtitle: 'Connectez-vous',
+          subtitle: l10n.homeEsimConnectSubtitle,
           onTap: () {
             Navigator.push(
               context,
@@ -930,8 +932,8 @@ class _HomeScreenState extends State<HomeScreen>
           context: context,
           icon: Icons.near_me_rounded,
           iconColor: const Color(0xFFE07B39),
-          title: 'À proximité',
-          subtitle: 'Autour de moi',
+          title: l10n.nearbyTitle,
+          subtitle: l10n.homeNearbySubtitle,
           onTap: () {
             Navigator.push(
               context,
@@ -946,6 +948,7 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Widget _buildQuickSupportBoxes(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return GridView.count(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -958,8 +961,8 @@ class _HomeScreenState extends State<HomeScreen>
           context: context,
           icon: Icons.graphic_eq_rounded,
           iconColor: const Color(0xFF2E8B57),
-          title: 'Annonces audio',
-          subtitle: 'Ecouter',
+          title: l10n.homeFeatureAudioAnnouncements,
+          subtitle: l10n.homeAudioListenSubtitle,
           onTap: () {
             Navigator.push(
               context,
@@ -973,8 +976,8 @@ class _HomeScreenState extends State<HomeScreen>
           context: context,
           icon: Icons.assignment_rounded,
           iconColor: const Color(0xFF3A7CA5),
-          title: 'Mes signalements',
-          subtitle: 'Suivre',
+          title: l10n.homeMyReportsTitle,
+          subtitle: l10n.homeMyReportsSubtitle,
           onTap: () {
             Navigator.push(
               context,
@@ -1173,7 +1176,7 @@ class _HomeScreenState extends State<HomeScreen>
                   context: context,
                   icon: Icons.currency_exchange_rounded,
                   color: const Color(0xFFD4A017),
-                  title: 'Convertisseur',
+                  title: l10n.homeCurrencyTitle,
                   onTap: () {
                     Navigator.of(context).pop();
                     Navigator.push(

@@ -1147,4 +1147,28 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get loadingWait => 'Aguarde um momento…';
+
+  @override
+  String get homeSearchHint => 'Restaurantes, sítios, hotéis, eventos...';
+
+  @override
+  String get homeJojCountdownLabel => 'Dias até os JOJ';
+
+  @override
+  String get homeEsimConnectSubtitle => 'Ligar-se';
+
+  @override
+  String get homeNearbySubtitle => 'À minha volta';
+
+  @override
+  String get homeAudioListenSubtitle => 'Ouvir';
+
+  @override
+  String get homeMyReportsTitle => 'Os meus relatórios';
+
+  @override
+  String get homeMyReportsSubtitle => 'Acompanhar';
+
+  @override
+  String get homeCurrencyTitle => 'Conversor';
 }

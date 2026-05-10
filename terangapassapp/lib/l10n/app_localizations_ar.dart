@@ -1133,4 +1133,28 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get loadingWait => 'يرجى الانتظار…';
+
+  @override
+  String get homeSearchHint => 'مطاعم، مواقع، فنادق، فعاليات...';
+
+  @override
+  String get homeJojCountdownLabel => 'أيام حتى الألعاب';
+
+  @override
+  String get homeEsimConnectSubtitle => 'اتصل الآن';
+
+  @override
+  String get homeNearbySubtitle => 'حولي';
+
+  @override
+  String get homeAudioListenSubtitle => 'استمع';
+
+  @override
+  String get homeMyReportsTitle => 'بلاغاتي';
+
+  @override
+  String get homeMyReportsSubtitle => 'تتبّع';
+
+  @override
+  String get homeCurrencyTitle => 'محوّل العملات';
 }

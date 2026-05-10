@@ -2237,6 +2237,54 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Patientez un instant…'**
   String get loadingWait;
+
+  /// No description provided for @homeSearchHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Restaurants, sites, hôtels, événements...'**
+  String get homeSearchHint;
+
+  /// No description provided for @homeJojCountdownLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Jours avant les JOJ'**
+  String get homeJojCountdownLabel;
+
+  /// No description provided for @homeEsimConnectSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connectez-vous'**
+  String get homeEsimConnectSubtitle;
+
+  /// No description provided for @homeNearbySubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Autour de moi'**
+  String get homeNearbySubtitle;
+
+  /// No description provided for @homeAudioListenSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Écouter'**
+  String get homeAudioListenSubtitle;
+
+  /// No description provided for @homeMyReportsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mes signalements'**
+  String get homeMyReportsTitle;
+
+  /// No description provided for @homeMyReportsSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Suivre'**
+  String get homeMyReportsSubtitle;
+
+  /// No description provided for @homeCurrencyTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Convertisseur'**
+  String get homeCurrencyTitle;
 }
 
 class _AppLocalizationsDelegate

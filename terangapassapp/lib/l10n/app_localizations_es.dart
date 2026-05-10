@@ -1142,4 +1142,28 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get loadingWait => 'Un momento por favor…';
+
+  @override
+  String get homeSearchHint => 'Restaurantes, sitios, hoteles, eventos...';
+
+  @override
+  String get homeJojCountdownLabel => 'Días antes de los JOJ';
+
+  @override
+  String get homeEsimConnectSubtitle => 'Conéctate';
+
+  @override
+  String get homeNearbySubtitle => 'A mi alrededor';
+
+  @override
+  String get homeAudioListenSubtitle => 'Escuchar';
+
+  @override
+  String get homeMyReportsTitle => 'Mis reportes';
+
+  @override
+  String get homeMyReportsSubtitle => 'Seguir';
+
+  @override
+  String get homeCurrencyTitle => 'Conversor';
 }

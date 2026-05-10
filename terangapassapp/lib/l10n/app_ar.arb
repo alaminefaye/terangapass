@@ -19,7 +19,9 @@
   "unreadCount": "{count} غير مقروء(ة)",
   "@unreadCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "notifChipSosShort": "SOS",
@@ -463,5 +465,13 @@
   "incidentStatusPending": "قيد الانتظار",
   "incidentStatusCancelled": "ملغى",
   "incidentTrackingEmptyTimeline": "سيظهر تتبع البلاغ فور معالجة ملفك.",
-  "loadingWait": "يرجى الانتظار…"
+  "loadingWait": "يرجى الانتظار…",
+  "homeSearchHint": "مطاعم، مواقع، فنادق، فعاليات...",
+  "homeJojCountdownLabel": "أيام حتى الألعاب",
+  "homeEsimConnectSubtitle": "اتصل الآن",
+  "homeNearbySubtitle": "حولي",
+  "homeAudioListenSubtitle": "استمع",
+  "homeMyReportsTitle": "بلاغاتي",
+  "homeMyReportsSubtitle": "تتبّع",
+  "homeCurrencyTitle": "محوّل العملات"
 }

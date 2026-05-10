@@ -19,7 +19,9 @@
   "unreadCount": "{count} unread",
   "@unreadCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "notifChipSosShort": "SOS",
@@ -463,5 +465,13 @@
   "incidentStatusPending": "Pending",
   "incidentStatusCancelled": "Cancelled",
   "incidentTrackingEmptyTimeline": "Tracking will appear once your report is processed.",
-  "loadingWait": "Please wait…"
+  "loadingWait": "Please wait…",
+  "homeSearchHint": "Restaurants, sites, hotels, events...",
+  "homeJojCountdownLabel": "Days until JOJ",
+  "homeEsimConnectSubtitle": "Connect",
+  "homeNearbySubtitle": "Around me",
+  "homeAudioListenSubtitle": "Listen",
+  "homeMyReportsTitle": "My reports",
+  "homeMyReportsSubtitle": "Track",
+  "homeCurrencyTitle": "Converter"
 }

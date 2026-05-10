@@ -19,7 +19,9 @@
   "unreadCount": "{count} no leído(s)",
   "@unreadCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "notifChipSosShort": "SOS",
@@ -463,5 +465,13 @@
   "incidentStatusPending": "En espera",
   "incidentStatusCancelled": "Cancelado",
   "incidentTrackingEmptyTimeline": "El seguimiento se mostrará cuando tu reporte sea tramitado.",
-  "loadingWait": "Un momento por favor…"
+  "loadingWait": "Un momento por favor…",
+  "homeSearchHint": "Restaurantes, sitios, hoteles, eventos...",
+  "homeJojCountdownLabel": "Días antes de los JOJ",
+  "homeEsimConnectSubtitle": "Conéctate",
+  "homeNearbySubtitle": "A mi alrededor",
+  "homeAudioListenSubtitle": "Escuchar",
+  "homeMyReportsTitle": "Mis reportes",
+  "homeMyReportsSubtitle": "Seguir",
+  "homeCurrencyTitle": "Conversor"
 }
