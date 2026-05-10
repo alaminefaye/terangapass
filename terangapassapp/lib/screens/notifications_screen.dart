@@ -220,6 +220,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         );
       case 'general':
         return l10n.notifChipGeneral;
+      case 'annonces_audio':
+        return l10n.notifChipAudioAnnouncement;
       default:
         if (raw.isEmpty) {
           return l10n.notificationsFallbackTitle;
@@ -586,6 +588,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     if (t.contains('médic') || t.contains('medic')) {
       return Icons.medical_services_rounded;
     }
+    if (t.contains('audio') || t.contains('annonce')) {
+      return Icons.graphic_eq_rounded;
+    }
     return Icons.notifications_rounded;
   }
 
@@ -600,6 +605,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     if (t.contains('météo') || t.contains('meteo')) return Colors.orange;
     if (t.contains('rout')) return Colors.blue;
     if (t.contains('médic') || t.contains('medic')) return Colors.purple;
+    if (t.contains('audio') || t.contains('annonce')) return const Color(0xFF6B4FA3);
     return AppTheme.textSecondary;
   }
 

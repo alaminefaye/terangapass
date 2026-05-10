@@ -5,16 +5,15 @@ namespace App\Http\Controllers\Web;
 use App\Http\Controllers\Controller;
 use App\Models\AudioAnnouncement;
 use App\Services\AudioStorageService;
+use App\Services\PushNotificationService;
 use Illuminate\Http\Request;
 
 class AudioAnnouncementManagementController extends Controller
 {
-    protected $audioService;
-
-    public function __construct(AudioStorageService $audioService)
-    {
-        $this->audioService = $audioService;
-    }
+    public function __construct(
+        protected AudioStorageService $audioService,
+        protected PushNotificationService $pushService,
+    ) {}
 
     public function index(Request $request)
     {
@@ -51,12 +50,22 @@ class AudioAnnouncementManagementController extends Controller
         if ($request->hasFile('audio_file')) {
             $audioUrl = $this->audioService->store($request->file('audio_file'));
             $duration = $this->audioService->getDuration($request->file('audio_file'));
-            
+
             $validated['audio_url'] = $audioUrl;
             $validated['duration'] = $duration;
         }
 
-        AudioAnnouncement::create($validated);
+        $validated['is_active'] = $request->boolean('is_active');
+
+        $announcement = AudioAnnouncement::create($validated);
+
+        if ($announcement->is_active) {
+            try {
+                $this->pushService->notifyAudioAnnouncementPublished($announcement);
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
 
         return redirect()->route('admin.audio-announcements.index')
             ->with('success', 'Annonce audio créée avec succès.');
@@ -82,7 +91,10 @@ class AudioAnnouncementManagementController extends Controller
             'is_active' => 'boolean',
         ]);
 
-        if ($request->hasFile('audio_file')) {
+        $hadNewAudio = $request->hasFile('audio_file');
+        $wasInactive = ! $audioAnnouncement->is_active;
+
+        if ($hadNewAudio) {
             // Supprimer l'ancien fichier
             if ($audioAnnouncement->audio_url) {
                 $this->audioService->delete($audioAnnouncement->audio_url);
@@ -90,12 +102,30 @@ class AudioAnnouncementManagementController extends Controller
 
             $audioUrl = $this->audioService->store($request->file('audio_file'));
             $duration = $this->audioService->getDuration($request->file('audio_file'));
-            
+
             $validated['audio_url'] = $audioUrl;
             $validated['duration'] = $duration;
         }
 
+        $validated['is_active'] = $request->boolean('is_active');
+
         $audioAnnouncement->update($validated);
+
+        if ($audioAnnouncement->is_active) {
+            $shouldPush = $hadNewAudio
+                || $audioAnnouncement->wasChanged('title')
+                || $audioAnnouncement->wasChanged('content')
+                || $audioAnnouncement->wasChanged('language')
+                || ($wasInactive && $audioAnnouncement->is_active);
+
+            if ($shouldPush) {
+                try {
+                    $this->pushService->notifyAudioAnnouncementPublished($audioAnnouncement);
+                } catch (\Throwable $e) {
+                    report($e);
+                }
+            }
+        }
 
         return redirect()->route('admin.audio-announcements.index')
             ->with('success', 'Annonce audio mise à jour avec succès.');

@@ -7,7 +7,6 @@ use App\Models\Notification;
 use App\Models\Zone;
 use App\Services\PushNotificationService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class NotificationManagementController extends Controller
 {
@@ -43,13 +42,14 @@ class NotificationManagementController extends Controller
     public function create()
     {
         $zones = Zone::where('is_active', true)->get();
+
         return view('notifications.create', compact('zones'));
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'type' => 'required|in:sécurité,météo,circulation,consignes_joj',
+            'type' => 'required|in:sécurité,météo,circulation,consignes_joj,annonces_audio',
             'title' => 'required|string|max:255',
             'description' => 'required|string',
             'zone' => 'nullable|string',
@@ -60,7 +60,7 @@ class NotificationManagementController extends Controller
         $notification = Notification::create($validated);
 
         // Si pas de date programmée et actif, envoyer immédiatement
-        if (!$notification->scheduled_at && $notification->is_active) {
+        if (! $notification->scheduled_at && $notification->is_active) {
             $this->pushService->sendToAll($notification);
         }
 
@@ -71,19 +71,21 @@ class NotificationManagementController extends Controller
     public function show(Notification $notification)
     {
         $notification->load('logs.user');
+
         return view('notifications.show', compact('notification'));
     }
 
     public function edit(Notification $notification)
     {
         $zones = Zone::where('is_active', true)->get();
+
         return view('notifications.edit', compact('notification', 'zones'));
     }
 
     public function update(Request $request, Notification $notification)
     {
         $validated = $request->validate([
-            'type' => 'required|in:sécurité,météo,circulation,consignes_joj',
+            'type' => 'required|in:sécurité,météo,circulation,consignes_joj,annonces_audio',
             'title' => 'required|string|max:255',
             'description' => 'required|string',
             'zone' => 'nullable|string',
@@ -100,6 +102,7 @@ class NotificationManagementController extends Controller
     public function destroy(Notification $notification)
     {
         $notification->delete();
+
         return redirect()->route('admin.notifications.index')
             ->with('success', 'Notification supprimée avec succès.');
     }

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\AudioAnnouncement;
 use App\Models\DeviceToken;
 use App\Models\Notification as NotificationModel;
 use App\Models\NotificationLog;
@@ -10,12 +11,19 @@ use App\Models\UserNotification;
 use Google\Auth\Credentials\ServiceAccountCredentials;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Throwable;
 
 class PushNotificationService
 {
     /** Canal Android utilisé pour les pushes FCM (doit exister dans l’app). */
     private const ANDROID_DEFAULT_FCM_CHANNEL_ID = 'teranga_pass_channel';
+
+    /** Son `res/raw/teranga_notification.mp3` (nom sans extension). */
+    private const ANDROID_CUSTOM_NOTIFICATION_SOUND = 'teranga_notification';
+
+    /** Fichier dans le bundle iOS (`Runner/teranga_notification.caf`). */
+    private const IOS_CUSTOM_NOTIFICATION_SOUND = 'teranga_notification.caf';
 
     /**
      * Envoyer une notification push à tous les utilisateurs
@@ -98,16 +106,15 @@ class PushNotificationService
             'notification' => [
                 'title' => $notification->title,
                 'body' => $notification->description,
-                'sound' => 'default',
             ],
-            'data' => [
+            'data' => array_merge([
                 'notification_id' => (string) $notification->id,
                 'click_action' => 'FLUTTER_NOTIFICATION_CLICK',
                 'type' => 'admin_broadcast',
                 'campaign_type' => (string) ($notification->type ?? 'general'),
                 'title' => (string) $notification->title,
                 'body' => (string) $notification->description,
-            ],
+            ], $this->adminBroadcastDataExtras($notification)),
             'priority' => 'high',
             'content_available' => true,
         ];
@@ -132,6 +139,25 @@ class PushNotificationService
     }
 
     /**
+     * Données FCM additionnelles pour les diffusions admin (ex. lien annonce audio).
+     *
+     * @return array<string, string>
+     */
+    protected function adminBroadcastDataExtras(NotificationModel $notification): array
+    {
+        $out = [];
+        $meta = $notification->target_locations;
+        if (! is_array($meta)) {
+            return $out;
+        }
+        if (isset($meta['audio_announcement_id'])) {
+            $out['audio_announcement_id'] = (string) $meta['audio_announcement_id'];
+        }
+
+        return $out;
+    }
+
+    /**
      * Notification opérationnelle (SOS / suivi) sans lien vers la table notifications.
      */
     public function notifyOperational(User $user, string $title, string $body, array $data = []): array
@@ -151,7 +177,6 @@ class PushNotificationService
             'notification' => [
                 'title' => $title,
                 'body' => $body,
-                'sound' => 'default',
             ],
             'data' => $flatData,
             'priority' => 'high',
@@ -332,6 +357,33 @@ class PushNotificationService
             'incident_id' => (string) $incident->id,
             'incident_status' => (string) $status,
         ], $this->incidentLocationPayload($incident)));
+    }
+
+    /**
+     * Push global + entrée dans l’historique « notifications admin » lors de la publication
+     * d’une annonce audio (création ou mise à jour notable).
+     */
+    public function notifyAudioAnnouncementPublished(AudioAnnouncement $announcement): array
+    {
+        $title = match ($announcement->language) {
+            'en' => 'New audio announcement',
+            'es' => 'Nuevo anuncio de audio',
+            default => 'Nouvelle annonce audio',
+        };
+
+        $bodySource = trim((string) ($announcement->content ?: $announcement->title));
+        $body = Str::limit($bodySource !== '' ? $bodySource : (string) $announcement->title, 220);
+
+        $notification = NotificationModel::create([
+            'type' => 'annonces_audio',
+            'title' => $title,
+            'description' => $body,
+            'zone' => null,
+            'target_locations' => ['audio_announcement_id' => $announcement->id],
+            'is_active' => true,
+        ]);
+
+        return $this->sendToAll($notification);
     }
 
     /**
@@ -539,11 +591,16 @@ class PushNotificationService
 
         $message['android'] = $android;
 
-        // iOS (APNs) : priorité immédiate pour les messages avec alerte affichable (app fermée / arrière-plan).
+        // iOS (APNs) : priorité immédiate + sonnerie personnalisée (fichier dans le bundle Runner).
         if (isset($message['notification'])) {
             $message['apns'] = [
                 'headers' => [
                     'apns-priority' => '10',
+                ],
+                'payload' => [
+                    'aps' => [
+                        'sound' => self::IOS_CUSTOM_NOTIFICATION_SOUND,
+                    ],
                 ],
             ];
         }
@@ -655,7 +712,7 @@ class PushNotificationService
         ], $existingAndroid, [
             'notification' => array_merge([
                 'channel_id' => $channelId,
-                'sound' => 'default',
+                'sound' => self::ANDROID_CUSTOM_NOTIFICATION_SOUND,
                 'visibility' => 'PUBLIC',
             ], $nestedNotif),
         ]);

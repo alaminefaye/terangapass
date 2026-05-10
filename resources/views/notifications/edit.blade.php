@@ -27,6 +27,7 @@
                             <option value="météo" {{ old('type', $notification->type) == 'météo' ? 'selected' : '' }}>Météo</option>
                             <option value="circulation" {{ old('type', $notification->type) == 'circulation' ? 'selected' : '' }}>Circulation</option>
                             <option value="consignes_joj" {{ old('type', $notification->type) == 'consignes_joj' ? 'selected' : '' }}>Consignes JOJ</option>
+                            <option value="annonces_audio" {{ old('type', $notification->type) == 'annonces_audio' ? 'selected' : '' }}>Annonces audio</option>
                         </select>
                         @error('type')
                         <div class="invalid-feedback">{{ $message }}</div>

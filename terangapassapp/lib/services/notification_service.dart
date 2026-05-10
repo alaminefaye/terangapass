@@ -1,22 +1,38 @@
+// Son : `android/.../raw/teranga_notification.mp3`, iOS `Runner/teranga_notification.caf` (afconvert depuis le MP3 source).
+
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'user_preferences.dart';
 
 class NotificationService {
-  static final NotificationService _instance =
-      NotificationService._internal();
-  factory NotificationService() => _instance;
   NotificationService._internal();
+  factory NotificationService() => _instance;
+  static final NotificationService _instance = NotificationService._internal();
 
   final FlutterLocalNotificationsPlugin _localNotifications =
       FlutterLocalNotificationsPlugin();
 
   bool _initialized = false;
   GlobalKey<NavigatorState>? _navigatorKey;
+
+  /// Fichier dans `android/app/src/main/res/raw/teranga_notification.mp3`
+  /// (nom de ressource sans extension).
+  static const String _androidSoundResourceName = 'teranga_notification';
+
+  /// Fichier `ios/Runner/teranga_notification.caf` (converti depuis le MP3 source).
+  static const String _iosNotificationSound = 'teranga_notification.caf';
+
+  static const RawResourceAndroidNotificationSound _androidSound =
+      RawResourceAndroidNotificationSound(_androidSoundResourceName);
+
+  /// Supprime les anciens canaux une fois pour appliquer la sonnerie personnalisée (Android O+).
+  static const String _androidChannelSoundMigrationKey =
+      'notif_android_channels_sound_v1';
 
   /// Initialise le service de notifications
   Future<void> initialize({GlobalKey<NavigatorState>? navigatorKey}) async {
@@ -60,6 +76,21 @@ class NotificationService {
             AndroidFlutterLocalNotificationsPlugin>();
     if (android == null) return;
 
+    final prefs = await SharedPreferences.getInstance();
+    if (prefs.getBool(_androidChannelSoundMigrationKey) != true) {
+      for (final id in <String>[
+        'teranga_pass_channel',
+        'sos_channel',
+        'medical_channel',
+        'security_channel',
+      ]) {
+        try {
+          await android.deleteNotificationChannel(id);
+        } catch (_) {}
+      }
+      await prefs.setBool(_androidChannelSoundMigrationKey, true);
+    }
+
     Future<void> create(
       String id,
       String name,
@@ -73,6 +104,7 @@ class NotificationService {
           description: description,
           importance: importance,
           playSound: true,
+          sound: _androidSound,
         ),
       );
     }
@@ -126,6 +158,37 @@ class NotificationService {
     });
   }
 
+  static DarwinNotificationDetails get _iosDetailsWithSound =>
+      const DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+        sound: _iosNotificationSound,
+      );
+
+  static AndroidNotificationDetails _androidDetails({
+    required String channelId,
+    required String channelName,
+    required String channelDescription,
+    required Importance importance,
+    required Priority priority,
+    Color? color,
+    bool enableVibration = false,
+  }) {
+    return AndroidNotificationDetails(
+      channelId,
+      channelName,
+      channelDescription: channelDescription,
+      importance: importance,
+      priority: priority,
+      icon: '@mipmap/ic_launcher',
+      playSound: true,
+      sound: _androidSound,
+      color: color,
+      enableVibration: enableVibration,
+    );
+  }
+
   /// Affiche une notification locale
   Future<void> showNotification({
     required int id,
@@ -143,16 +206,15 @@ class NotificationService {
     }
 
     final details = notificationDetails ??
-        const NotificationDetails(
-          android: AndroidNotificationDetails(
-            'teranga_pass_channel',
-            'Teranga Pass Notifications',
+        NotificationDetails(
+          android: _androidDetails(
+            channelId: 'teranga_pass_channel',
+            channelName: 'Teranga Pass Notifications',
             channelDescription: 'Notifications pour Teranga Pass',
             importance: Importance.high,
             priority: Priority.high,
-            icon: '@mipmap/ic_launcher',
           ),
-          iOS: DarwinNotificationDetails(),
+          iOS: _iosDetailsWithSound,
         );
 
     await _localNotifications.show(id, title, body, details, payload: payload);
@@ -170,23 +232,17 @@ class NotificationService {
       title: title,
       body: body,
       payload: payloadOverride,
-      notificationDetails: const NotificationDetails(
-        android: AndroidNotificationDetails(
-          'sos_channel',
-          'Alertes SOS',
+      notificationDetails: NotificationDetails(
+        android: _androidDetails(
+          channelId: 'sos_channel',
+          channelName: 'Alertes SOS',
           channelDescription: 'Notifications d\'urgence SOS',
           importance: Importance.max,
           priority: Priority.max,
-          icon: '@mipmap/ic_launcher',
-          color: Color(0xFFCE1126), // Rouge
-          playSound: true,
+          color: const Color(0xFFCE1126),
           enableVibration: true,
         ),
-        iOS: DarwinNotificationDetails(
-          presentAlert: true,
-          presentBadge: true,
-          presentSound: true,
-        ),
+        iOS: _iosDetailsWithSound,
       ),
     );
   }
@@ -203,23 +259,17 @@ class NotificationService {
       title: title,
       body: body,
       payload: payloadOverride,
-      notificationDetails: const NotificationDetails(
-        android: AndroidNotificationDetails(
-          'medical_channel',
-          'Alertes Médicales',
+      notificationDetails: NotificationDetails(
+        android: _androidDetails(
+          channelId: 'medical_channel',
+          channelName: 'Alertes Médicales',
           channelDescription: 'Notifications d\'alertes médicales',
           importance: Importance.max,
           priority: Priority.max,
-          icon: '@mipmap/ic_launcher',
-          color: Color(0xFFFF8C00), // Orange
-          playSound: true,
+          color: const Color(0xFFFF8C00),
           enableVibration: true,
         ),
-        iOS: DarwinNotificationDetails(
-          presentAlert: true,
-          presentBadge: true,
-          presentSound: true,
-        ),
+        iOS: _iosDetailsWithSound,
       ),
     );
   }
@@ -236,16 +286,15 @@ class NotificationService {
       title: title,
       body: body,
       payload: payloadOverride,
-      notificationDetails: const NotificationDetails(
-        android: AndroidNotificationDetails(
-          'security_channel',
-          'Alertes Sécurité',
+      notificationDetails: NotificationDetails(
+        android: _androidDetails(
+          channelId: 'security_channel',
+          channelName: 'Alertes Sécurité',
           channelDescription: 'Notifications de sécurité',
           importance: Importance.high,
           priority: Priority.high,
-          icon: '@mipmap/ic_launcher',
         ),
-        iOS: DarwinNotificationDetails(),
+        iOS: _iosDetailsWithSound,
       ),
     );
   }

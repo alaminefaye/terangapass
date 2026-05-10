@@ -109,6 +109,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get notifChipGeneral => 'Message';
 
   @override
+  String get notifChipAudioAnnouncement => 'Annonce audio';
+
+  @override
   String get pullToRefresh => 'Tirez pour actualiser';
 
   @override

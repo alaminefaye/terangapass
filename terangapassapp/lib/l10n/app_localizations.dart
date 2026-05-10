@@ -290,6 +290,12 @@ abstract class AppLocalizations {
   /// **'Message'**
   String get notifChipGeneral;
 
+  /// No description provided for @notifChipAudioAnnouncement.
+  ///
+  /// In fr, this message translates to:
+  /// **'Annonce audio'**
+  String get notifChipAudioAnnouncement;
+
   /// No description provided for @pullToRefresh.
   ///
   /// In fr, this message translates to:

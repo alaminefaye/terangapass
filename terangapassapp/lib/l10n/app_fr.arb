@@ -36,6 +36,7 @@
   "notifChipIncidentRejected": "Refusé",
   "notifChipFollowUp": "Mise à jour",
   "notifChipGeneral": "Message",
+  "notifChipAudioAnnouncement": "Annonce audio",
   "pullToRefresh": "Tirez pour actualiser",
   "openMapError": "Impossible d’ouvrir la carte",
   "settings": "Paramètres",

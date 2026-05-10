@@ -25,6 +25,7 @@
                         <option value="météo" {{ request('type') == 'météo' ? 'selected' : '' }}>Météo</option>
                         <option value="circulation" {{ request('type') == 'circulation' ? 'selected' : '' }}>Circulation</option>
                         <option value="consignes_joj" {{ request('type') == 'consignes_joj' ? 'selected' : '' }}>Consignes JOJ</option>
+                        <option value="annonces_audio" {{ request('type') == 'annonces_audio' ? 'selected' : '' }}>Annonces audio</option>
                     </select>
                 </div>
                 <div class="col-md-3">
