@@ -6,13 +6,16 @@ use App\Models\DeviceToken;
 use App\Models\Notification as NotificationModel;
 use App\Models\NotificationLog;
 use App\Models\User;
+use Google\Auth\Credentials\ServiceAccountCredentials;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class PushNotificationService
 {
     /** Canal Android utilisé pour les pushes FCM (doit exister dans l’app). */
     private const ANDROID_DEFAULT_FCM_CHANNEL_ID = 'teranga_pass_channel';
+
     /**
      * Envoyer une notification push à tous les utilisateurs
      */
@@ -65,14 +68,14 @@ class PushNotificationService
         foreach ($tokens as $deviceToken) {
             try {
                 $sent = $this->sendToSingleToken($notification, $deviceToken);
-                
+
                 if ($sent) {
                     $results['success']++;
                 } else {
                     $results['failed']++;
                 }
             } catch (\Exception $e) {
-                Log::error('Error sending push notification: ' . $e->getMessage());
+                Log::error('Error sending push notification: '.$e->getMessage());
                 $results['failed']++;
             }
         }
@@ -104,10 +107,10 @@ class PushNotificationService
         ];
 
         try {
-            return $this->dispatchLegacyFcm($deviceToken->token, $payload);
+            return $this->dispatchFcm($deviceToken->token, $payload);
         } catch (\Exception $e) {
-            Log::error('Error sending push to device: ' . $e->getMessage());
-            
+            Log::error('Error sending push to device: '.$e->getMessage());
+
             // Créer un log d'erreur
             NotificationLog::create([
                 'notification_id' => $notification->id,
@@ -154,7 +157,7 @@ class PushNotificationService
         foreach ($user->deviceTokens()->where('is_active', true)->cursor() as $deviceToken) {
             $results['total']++;
             try {
-                if ($this->dispatchLegacyFcm($deviceToken->token, $payload)) {
+                if ($this->dispatchFcm($deviceToken->token, $payload)) {
                     $results['success']++;
                 } else {
                     $results['failed']++;
@@ -288,21 +291,184 @@ class PushNotificationService
     }
 
     /**
-     * Envoie un message FCM (legacy HTTP avec clé serveur).
+     * Envoie un message FCM : HTTP v1 (fichier compte de service) si défini,
+     * sinon ancienne API avec FCM_SERVER_KEY.
      */
-    protected function dispatchLegacyFcm(string $token, array $payload): bool
+    protected function dispatchFcm(string $token, array $payload): bool
     {
-        $fcmServerKey = config('services.fcm.server_key');
+        if ($token === '') {
+            return false;
+        }
 
-        if (! $fcmServerKey || $token === '') {
-            if (! $fcmServerKey) {
-                Log::warning('FCM server key not configured — operational push skipped');
-            }
+        $serviceAccountFullPath = $this->resolveFirebaseServiceAccountPath();
+
+        if ($serviceAccountFullPath !== null) {
+            return $this->postFcmV1($token, $serviceAccountFullPath, $payload);
+        }
+
+        $fcmServerKey = config('services.fcm.server_key');
+        if (! empty($fcmServerKey)) {
+            return $this->postLegacyFcm($token, (string) $fcmServerKey, $payload);
+        }
+
+        Log::warning('FCM non configuré : renseigner FIREBASE_SERVICE_ACCOUNT_PATH (fichier JSON) ou FCM_SERVER_KEY dans .env, puis php artisan config:clear');
+
+        return false;
+    }
+
+    /**
+     * Chemin absolu du JSON compte de service Firebase si lisible,
+     * ou null. [FIREBASE_SERVICE_ACCOUNT_PATH] est relatif à la racine Laravel (pas public/).
+     */
+    protected function resolveFirebaseServiceAccountPath(): ?string
+    {
+        $path = config('services.fcm.service_account_path');
+
+        if (! is_string($path) || trim($path) === '') {
+            return null;
+        }
+
+        $trimmed = trim($path);
+        $full = preg_match('#^/#', $trimmed) || preg_match('#^[A-Za-z]:\\\\#', $trimmed)
+            ? $trimmed
+            : base_path($trimmed);
+
+        if (! is_readable($full)) {
+            Log::warning('Fichier compte Firebase introuvable ou illisible', ['path_config' => $trimmed]);
+
+            return null;
+        }
+
+        return $full;
+    }
+
+    /**
+     * FCM HTTP v1 (OAuth2, fichier téléchargé depuis la console Firebase).
+     */
+    protected function postFcmV1(string $token, string $credentialsFullPath, array $payload): bool
+    {
+        $credentialsJson = json_decode((string) file_get_contents($credentialsFullPath), true);
+
+        if (! is_array($credentialsJson) || empty($credentialsJson['project_id'])) {
+            Log::warning('JSON compte Firebase invalide (project_id manquant)', ['path' => $credentialsFullPath]);
 
             return false;
         }
 
-        return $this->postLegacyFcm($token, $fcmServerKey, $payload);
+        $projectId = (string) $credentialsJson['project_id'];
+
+        try {
+            $oauthCreds = new ServiceAccountCredentials(
+                ['https://www.googleapis.com/auth/firebase.messaging'],
+                $credentialsJson
+            );
+
+            /** @var array{access_token: string}|array<mixed> $tokenInfo */
+            $tokenInfo = $oauthCreds->fetchAuthToken();
+            $accessToken = is_array($tokenInfo) && isset($tokenInfo['access_token'])
+                ? (string) $tokenInfo['access_token']
+                : '';
+        } catch (Throwable $e) {
+            Log::warning('OAuth Firebase (FCM v1): '.$e->getMessage());
+
+            return false;
+        }
+
+        if ($accessToken === '') {
+            Log::warning('OAuth Firebase : aucun access_token');
+
+            return false;
+        }
+
+        $payload = $this->applyLegacyAndroidPayload($payload);
+
+        $message = [
+            'token' => $token,
+        ];
+
+        $notif = $payload['notification'] ?? [];
+        if (is_array($notif) && (isset($notif['title']) || isset($notif['body']))) {
+            $message['notification'] = array_filter([
+                'title' => $notif['title'] ?? null,
+                'body' => $notif['body'] ?? null,
+            ], static fn ($v) => $v !== null && $v !== '');
+        }
+
+        $data = $payload['data'] ?? [];
+        if (is_array($data) && $data !== []) {
+            $flat = [];
+            foreach ($data as $key => $value) {
+                $flat[(string) $key] = is_scalar($value)
+                    ? (string) $value
+                    : (string) json_encode($value, JSON_UNESCAPED_UNICODE);
+            }
+            $message['data'] = $flat;
+        }
+
+        $priority = strtoupper((string) ($payload['priority'] ?? 'HIGH'));
+        $android = [
+            'priority' => $priority === 'NORMAL' ? 'NORMAL' : 'HIGH',
+        ];
+
+        $aNotif = is_array($payload['android']['notification'] ?? null)
+            ? $payload['android']['notification']
+            : [];
+
+        if ($aNotif !== []) {
+            $v1AndroidNotif = array_filter([
+                'channel_id' => $aNotif['channel_id'] ?? null,
+                'sound' => $aNotif['sound'] ?? null,
+                'visibility' => $this->mapAndroidVisibilityForV1($aNotif['visibility'] ?? null),
+            ], static fn ($v) => $v !== null && $v !== '');
+
+            if ($v1AndroidNotif !== []) {
+                $android['notification'] = $v1AndroidNotif;
+            }
+        }
+
+        $message['android'] = $android;
+
+        $url = sprintf('https://fcm.googleapis.com/v1/projects/%s/messages:send', rawurlencode($projectId));
+
+        $response = Http::withToken($accessToken)
+            ->timeout(20)
+            ->acceptJson()
+            ->post($url, ['message' => $message]);
+
+        if (! $response->successful()) {
+            Log::warning('FCM v1 HTTP erreur', [
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
+
+            return false;
+        }
+
+        $decoded = $response->json();
+
+        if (is_array($decoded) && isset($decoded['error'])) {
+            Log::warning('FCM v1 erreur API', ['error' => $decoded['error']]);
+
+            return false;
+        }
+
+        return true;
+    }
+
+    protected function mapAndroidVisibilityForV1(mixed $visibility): ?string
+    {
+        if (! is_string($visibility) || $visibility === '') {
+            return null;
+        }
+
+        $v = strtoupper($visibility);
+
+        return match ($v) {
+            'PUBLIC' => 'VISIBILITY_PUBLIC',
+            'PRIVATE' => 'VISIBILITY_PRIVATE',
+            'SECRET' => 'VISIBILITY_SECRET',
+            default => null,
+        };
     }
 
     protected function postLegacyFcm(string $token, string $serverKey, array $payload): bool
