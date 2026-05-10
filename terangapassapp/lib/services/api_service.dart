@@ -1055,9 +1055,21 @@ class ApiService {
         'device-tokens/register',
         data: {'token': token, 'platform': platform},
       );
+      if (kDebugMode) {
+        debugPrint(
+          '[FCM] device-tokens/register OK (${token.length} chars, '
+          '${platform ?? '?'})',
+        );
+      }
     } on DioException catch (e) {
-      // Erreur silencieuse (non bloquante) - on log juste l'erreur
+      // Erreur silencieuse (non bloquante) — toujours visible en debug dans logcat.
       _debugLog('Erreur enregistrement token: ${_handleError(e)}');
+      if (kDebugMode) {
+        debugPrint(
+          '[FCM] device-tokens/register FAILED: '
+          '${e.response?.statusCode} ${e.response?.data}',
+        );
+      }
       // Ne pas throw pour ne pas bloquer l'application
     }
   }

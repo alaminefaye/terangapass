@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -42,7 +44,61 @@ class NotificationService {
       onDidReceiveNotificationResponse: _onNotificationTapped,
     );
 
+    await _ensureAndroidNotificationChannels();
+
     _initialized = true;
+  }
+
+  /// Les notifications FCM affichées par le système (app en arrière-plan) utilisent ces IDs.
+  /// Les créer au démarrage évite un canal inexistant ⇒ aucune heads-up sous Android 8+.
+  Future<void> _ensureAndroidNotificationChannels() async {
+    if (!Platform.isAndroid) return;
+    final android = _localNotifications
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>();
+    if (android == null) return;
+
+    Future<void> create(
+      String id,
+      String name,
+      String description,
+      Importance importance,
+    ) {
+      return android.createNotificationChannel(
+        AndroidNotificationChannel(
+          id,
+          name,
+          description: description,
+          importance: importance,
+          playSound: true,
+        ),
+      );
+    }
+
+    await create(
+      'teranga_pass_channel',
+      'Teranga Pass Notifications',
+      'Notifications pour Teranga Pass',
+      Importance.high,
+    );
+    await create(
+      'sos_channel',
+      'Alertes SOS',
+      'Notifications d\'urgence SOS',
+      Importance.max,
+    );
+    await create(
+      'medical_channel',
+      'Alertes Médicales',
+      'Notifications d\'alertes médicales',
+      Importance.max,
+    );
+    await create(
+      'security_channel',
+      'Alertes Sécurité',
+      'Notifications de sécurité',
+      Importance.high,
+    );
   }
 
   /// Demande les permissions nécessaires

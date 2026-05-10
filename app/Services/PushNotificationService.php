@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\Log;
 
 class PushNotificationService
 {
+    /** Canal Android utilisé pour les pushes FCM (doit exister dans l’app). */
+    private const ANDROID_DEFAULT_FCM_CHANNEL_ID = 'teranga_pass_channel';
     /**
      * Envoyer une notification push à tous les utilisateurs
      */
@@ -305,6 +307,8 @@ class PushNotificationService
 
     protected function postLegacyFcm(string $token, string $serverKey, array $payload): bool
     {
+        $payload = $this->applyLegacyAndroidPayload($payload);
+
         $response = Http::withHeaders([
             'Authorization' => 'key='.$serverKey,
             'Content-Type' => 'application/json',
@@ -314,11 +318,74 @@ class PushNotificationService
         ]);
 
         if (! $response->successful()) {
-            Log::warning('FCM HTTP error: '.$response->body());
+            Log::warning('FCM HTTP error', ['status' => $response->status(), 'body' => $response->body()]);
+
+            return false;
+        }
+
+        $decoded = $response->json();
+        if (! is_array($decoded)) {
+            Log::warning('FCM response not JSON', ['body' => $response->body()]);
+
+            return false;
+        }
+
+        $failure = (int) ($decoded['failure'] ?? 0);
+        if ($failure > 0) {
+            Log::warning('FCM downstream failure', [
+                'failure' => $failure,
+                'success' => $decoded['success'] ?? null,
+                'results' => $decoded['results'] ?? null,
+                'canonical_ids' => $decoded['canonical_ids'] ?? null,
+                'token_prefix' => substr($token, 0, 24).'…',
+            ]);
 
             return false;
         }
 
         return true;
+    }
+
+    /**
+     * Chaines « notification » FCM système sans canal valide ⇒ pas d’alerte lisible sous Android 8+.
+     * Associe tous les payloads legacy à une priorité/châine alignées avec l’application Flutter.
+     */
+    protected function applyLegacyAndroidPayload(array $payload): array
+    {
+        $dataBlock = isset($payload['data']) && is_array($payload['data']) ? $payload['data'] : [];
+        $channelId = $this->inferAndroidNotificationChannel($dataBlock['type'] ?? null);
+
+        $payload['priority'] = $payload['priority'] ?? 'high';
+
+        $existingAndroid = is_array($payload['android'] ?? null) ? $payload['android'] : [];
+        $nestedNotif = is_array($existingAndroid['notification'] ?? null)
+            ? $existingAndroid['notification']
+            : [];
+
+        unset($existingAndroid['notification']);
+
+        $payload['android'] = array_merge([
+            'priority' => 'high',
+        ], $existingAndroid, [
+            'notification' => array_merge([
+                'channel_id' => $channelId,
+                'sound' => 'default',
+                'visibility' => 'PUBLIC',
+            ], $nestedNotif),
+        ]);
+
+        return $payload;
+    }
+
+    protected function inferAndroidNotificationChannel(mixed $dataType): string
+    {
+        $type = is_string($dataType) ? strtolower($dataType) : '';
+
+        return match (true) {
+            $type !== '' && str_contains($type, 'sos') => 'sos_channel',
+            $type !== '' && str_contains($type, 'medical') => 'medical_channel',
+            $type === 'incident_status' => 'security_channel',
+            default => self::ANDROID_DEFAULT_FCM_CHANNEL_ID,
+        };
     }
 }

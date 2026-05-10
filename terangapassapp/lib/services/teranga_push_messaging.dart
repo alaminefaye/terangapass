@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -58,6 +59,9 @@ class TerangaPushMessaging {
     try {
       await _fm.requestPermission(alert: true, badge: true, sound: true);
       final t = await _fm.getToken();
+      if (kDebugMode && t != null && t.isNotEmpty) {
+        debugPrint('[FCM] FirebaseMessaging token: ${t.substring(0, t.length.clamp(0, 32))}…');
+      }
       if (t != null && t.isNotEmpty) {
         await _sendTokenIfAuthed(t);
       }
