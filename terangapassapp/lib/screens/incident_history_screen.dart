@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart';
-
 import '../l10n/app_localizations.dart';
 import '../services/api_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/loading_placeholders.dart';
+import 'alert_tracking_screen.dart';
 import 'incident_tracking_screen.dart';
 
 /// Signalements + SOS + alertes médicales (même liste, tri par date).
@@ -225,142 +224,6 @@ class _IncidentHistoryScreenState extends State<IncidentHistoryScreen> {
     return '';
   }
 
-  void _openAlertDetail(BuildContext context, Map<String, dynamic> e) {
-    final l10n = AppLocalizations.of(context)!;
-    final status = (e['status'] ?? 'pending').toString();
-    final addr = (e['address'] ?? '').toString().trim();
-    final dt = _entrySortDate(e);
-    final lat = e['latitude'];
-    final lon = e['longitude'];
-    final kind = (e['_historyKind'] ?? '').toString();
-    final et = kind == IncidentHistoryScreen._kindMedical
-        ? _medicalEmergencyLabel(
-            l10n,
-            (e['emergency_type'] ?? e['emergencyType'])?.toString(),
-          )
-        : null;
-
-    showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
-      ),
-      builder: (ctx) {
-        return Padding(
-          padding: EdgeInsets.only(
-            left: 20,
-            right: 20,
-            top: 8,
-            bottom: MediaQuery.paddingOf(ctx).bottom + 20,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                l10n.historyAlertDetailTitle,
-                style: GoogleFonts.poppins(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 17,
-                  color: AppTheme.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                _kindLabel(l10n, kind),
-                style: GoogleFonts.poppins(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14,
-                  color: AppTheme.primaryGreen,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                _statusLabel(status),
-                style: GoogleFonts.poppins(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: _statusColor(status),
-                ),
-              ),
-              if (et != null && et.isNotEmpty) ...[
-                const SizedBox(height: 10),
-                Text(
-                  et,
-                  style: GoogleFonts.poppins(
-                    fontSize: 13,
-                    color: AppTheme.textSecondary,
-                  ),
-                ),
-              ],
-              if (addr.isNotEmpty) ...[
-                const SizedBox(height: 10),
-                Text(
-                  '${l10n.historyFieldAddress}:',
-                  style: GoogleFonts.poppins(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 12,
-                    color: AppTheme.textSecondary,
-                  ),
-                ),
-                Text(
-                  addr,
-                  style: GoogleFonts.poppins(fontSize: 13),
-                ),
-              ],
-              if (dt != null) ...[
-                const SizedBox(height: 10),
-                Text(
-                  '${l10n.historyFieldDate}:',
-                  style: GoogleFonts.poppins(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 12,
-                    color: AppTheme.textSecondary,
-                  ),
-                ),
-                Text(
-                  DateFormat(
-                    'd MMM yyyy, HH:mm',
-                    Localizations.localeOf(ctx).languageCode,
-                  ).format(dt.toLocal()),
-                  style: GoogleFonts.poppins(fontSize: 13),
-                ),
-              ],
-              if (lat != null && lon != null) ...[
-                const SizedBox(height: 10),
-                Text(
-                  '${l10n.historyFieldCoords}:',
-                  style: GoogleFonts.poppins(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 12,
-                    color: AppTheme.textSecondary,
-                  ),
-                ),
-                Text(
-                  '${lat.toString()}, ${lon.toString()}',
-                  style: GoogleFonts.poppins(fontSize: 13),
-                ),
-              ],
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () => Navigator.of(ctx).pop(),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primaryGreen,
-                  ),
-                  child: Text(l10n.close, style: GoogleFonts.poppins()),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -513,7 +376,14 @@ class _IncidentHistoryScreenState extends State<IncidentHistoryScreen> {
                                     ),
                                   );
                                 } else {
-                                  _openAlertDetail(context, e);
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => AlertTrackingScreen(
+                                        alert: Map<String, dynamic>.from(e),
+                                      ),
+                                    ),
+                                  );
                                 }
                               },
                             ),

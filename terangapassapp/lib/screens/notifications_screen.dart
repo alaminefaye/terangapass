@@ -71,6 +71,27 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     return {};
   }
 
+  /// Zone (notifications admin) ou lieu issu de `extra_data` (SOS / signalement).
+  String? _notificationLocationText(Map<String, dynamic> notification) {
+    final zone = (notification['zone'] ?? '').toString().trim();
+    if (zone.isNotEmpty) {
+      return zone;
+    }
+    final ex = _extraDataMap(notification);
+    String s(String key) => (ex[key] ?? '').toString().trim();
+
+    final address = s('address');
+    if (address.isNotEmpty) {
+      return address;
+    }
+    final lat = s('latitude');
+    final lon = s('longitude');
+    if (lat.isNotEmpty && lon.isNotEmpty) {
+      return '$lat, $lon';
+    }
+    return null;
+  }
+
   String _humanizeSlug(String raw) {
     return raw
         .split('_')
@@ -373,7 +394,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             '')
         .toString()
         .trim();
-    final zone = (notification['zone'] ?? '').toString().trim();
+    final locationText = _notificationLocationText(notification);
     final time = _displayTime(notification);
     final icon = _iconForType(rawType);
     final color = _colorForType(rawType);
@@ -458,7 +479,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                         ),
                     ],
                   ),
-                  if (zone.isNotEmpty) ...[
+                  if (locationText != null && locationText.isNotEmpty) ...[
                     const SizedBox(height: 10),
                     Row(
                       children: [
@@ -470,7 +491,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                         const SizedBox(width: 6),
                         Expanded(
                           child: Text(
-                            zone,
+                            locationText,
                             style: GoogleFonts.poppins(
                               fontSize: 12,
                               color: AppTheme.textSecondary,
@@ -1032,7 +1053,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     final title = (notification['title'] ?? '').toString();
     final description =
         (notification['description'] ?? notification['body'] ?? '').toString();
-    final zone = (notification['zone'] ?? '').toString();
+    final locationText = _notificationLocationText(notification);
     final time = _displayTime(notification);
     final icon = _iconForType(rawType);
     final color = _colorForType(rawType);
@@ -1139,24 +1160,27 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 const SizedBox(height: 12),
                 Row(
                   children: [
-                    Icon(
-                      Icons.location_on,
-                      size: 14,
-                      color: AppTheme.textSecondary,
-                    ),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        zone.isEmpty ? '—' : zone,
-                        style: GoogleFonts.poppins(
-                          fontSize: 12,
-                          color: AppTheme.textSecondary,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                    if (locationText != null && locationText.isNotEmpty) ...[
+                      Icon(
+                        Icons.location_on,
+                        size: 14,
+                        color: AppTheme.textSecondary,
                       ),
-                    ),
-                    const SizedBox(width: 8),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          locationText,
+                          style: GoogleFonts.poppins(
+                            fontSize: 12,
+                            color: AppTheme.textSecondary,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                    ] else
+                      const Spacer(),
                     if (isPersonal)
                       const Icon(
                         Icons.swipe_left_rounded,

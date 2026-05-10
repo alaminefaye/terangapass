@@ -659,6 +659,24 @@ class AppLocalizationsFr extends AppLocalizations {
   String get historyFieldCoords => 'Coordonnées';
 
   @override
+  String get alertTrackingNavTitle => 'Mon alerte';
+
+  @override
+  String get alertTimelineRecorded => 'Alerte enregistrée';
+
+  @override
+  String get alertTimelineDispatched => 'Transmise aux services de secours';
+
+  @override
+  String get alertTimelineClosed => 'Clôturée';
+
+  @override
+  String get alertTimelineRejected => 'Refusée';
+
+  @override
+  String get alertTimelineCancelled => 'Annulée';
+
+  @override
   String get privacyPersonalDataTitle => 'Données personnelles';
 
   @override

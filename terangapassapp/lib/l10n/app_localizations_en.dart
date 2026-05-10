@@ -650,6 +650,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get historyFieldCoords => 'Coordinates';
 
   @override
+  String get alertTrackingNavTitle => 'My alert';
+
+  @override
+  String get alertTimelineRecorded => 'Alert recorded';
+
+  @override
+  String get alertTimelineDispatched => 'Sent to emergency services';
+
+  @override
+  String get alertTimelineClosed => 'Closed';
+
+  @override
+  String get alertTimelineRejected => 'Declined';
+
+  @override
+  String get alertTimelineCancelled => 'Cancelled';
+
+  @override
   String get privacyPersonalDataTitle => 'Personal data';
 
   @override

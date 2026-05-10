@@ -216,12 +216,12 @@ class PushNotificationService
         $body = $bodies[$lang] ?? $bodies['fr'];
         $type = $alert->type === 'sos' ? 'sos_sent' : 'medical_sent';
 
-        $this->notifyOperational($user, $title, $body, [
+        $this->notifyOperational($user, $title, $body, array_merge([
             'type' => $type,
             'alert_id' => (string) $alert->id,
             'alert_type' => (string) $alert->type,
             'alert_status' => (string) $alert->status,
-        ]);
+        ], $this->alertLocationPayload($alert)));
     }
 
     public function notifyAlertStatusChanged(\App\Models\Alert $alert): void
@@ -267,12 +267,12 @@ class PushNotificationService
                     : ['Suivi SOS', 'Statut : '.trim(str_replace('_', ' ', $status))]),
         };
 
-        $this->notifyOperational($user, $title, $body, [
+        $this->notifyOperational($user, $title, $body, array_merge([
             'type' => $medical ? 'medical_status_update' : 'sos_status_update',
             'alert_id' => (string) $alert->id,
             'alert_type' => (string) $alert->type,
             'alert_status' => (string) $alert->status,
-        ]);
+        ], $this->alertLocationPayload($alert)));
     }
 
     /**
@@ -292,12 +292,12 @@ class PushNotificationService
             ? 'Your incident report has been recorded. You will be notified when it is processed.'
             : 'Votre signalement a bien été enregistré. Vous serez informé lors du traitement.';
 
-        $this->notifyOperational($user, $title, $body, [
+        $this->notifyOperational($user, $title, $body, array_merge([
             'type' => 'incident_reported',
             'incident_id' => (string) $incident->id,
             'incident_type' => (string) $incident->type,
             'incident_status' => (string) $incident->status,
-        ]);
+        ], $this->incidentLocationPayload($incident)));
     }
 
     public function notifyIncidentStatus(\App\Models\Incident $incident): void
@@ -327,11 +327,49 @@ class PushNotificationService
                 : ['Mise à jour signalement', 'Nouveau statut : '.$status],
         };
 
-        $this->notifyOperational($user, $title, $body, [
+        $this->notifyOperational($user, $title, $body, array_merge([
             'type' => 'incident_status',
             'incident_id' => (string) $incident->id,
             'incident_status' => (string) $status,
-        ]);
+        ], $this->incidentLocationPayload($incident)));
+    }
+
+    /**
+     * Champs optionnels pour afficher le lieu dans l’app (liste notifications).
+     *
+     * @return array<string, string>
+     */
+    protected function incidentLocationPayload(\App\Models\Incident $incident): array
+    {
+        $out = [];
+        $addr = trim((string) ($incident->address ?? ''));
+        if ($addr !== '') {
+            $out['address'] = $addr;
+        }
+        if ($incident->latitude !== null && $incident->longitude !== null) {
+            $out['latitude'] = (string) $incident->latitude;
+            $out['longitude'] = (string) $incident->longitude;
+        }
+
+        return $out;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function alertLocationPayload(\App\Models\Alert $alert): array
+    {
+        $out = [];
+        $addr = trim((string) ($alert->address ?? ''));
+        if ($addr !== '') {
+            $out['address'] = $addr;
+        }
+        if ($alert->latitude !== null && $alert->longitude !== null) {
+            $out['latitude'] = (string) $alert->latitude;
+            $out['longitude'] = (string) $alert->longitude;
+        }
+
+        return $out;
     }
 
     /**

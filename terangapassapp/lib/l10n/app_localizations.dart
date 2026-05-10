@@ -1322,6 +1322,42 @@ abstract class AppLocalizations {
   /// **'Coordonnées'**
   String get historyFieldCoords;
 
+  /// No description provided for @alertTrackingNavTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mon alerte'**
+  String get alertTrackingNavTitle;
+
+  /// No description provided for @alertTimelineRecorded.
+  ///
+  /// In fr, this message translates to:
+  /// **'Alerte enregistrée'**
+  String get alertTimelineRecorded;
+
+  /// No description provided for @alertTimelineDispatched.
+  ///
+  /// In fr, this message translates to:
+  /// **'Transmise aux services de secours'**
+  String get alertTimelineDispatched;
+
+  /// No description provided for @alertTimelineClosed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Clôturée'**
+  String get alertTimelineClosed;
+
+  /// No description provided for @alertTimelineRejected.
+  ///
+  /// In fr, this message translates to:
+  /// **'Refusée'**
+  String get alertTimelineRejected;
+
+  /// No description provided for @alertTimelineCancelled.
+  ///
+  /// In fr, this message translates to:
+  /// **'Annulée'**
+  String get alertTimelineCancelled;
+
   /// No description provided for @privacyPersonalDataTitle.
   ///
   /// In fr, this message translates to:
