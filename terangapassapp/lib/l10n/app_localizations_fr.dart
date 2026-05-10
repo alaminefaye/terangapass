@@ -33,6 +33,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get noNotifications => 'Aucune notification';
 
   @override
+  String get clearAll => 'Tout vider';
+
+  @override
+  String get clearAllConfirmTitle => 'Vider toutes les notifications';
+
+  @override
+  String get clearAllConfirmBody =>
+      'Toutes vos notifications personnelles seront supprimées. Cette action est irréversible.';
+
+  @override
   String get markAsRead => 'Marquer comme lu';
 
   @override
@@ -52,7 +62,9 @@ class AppLocalizationsFr extends AppLocalizations {
       'Voulez-vous vraiment supprimer cette notification ?';
 
   @override
-  String unreadCount(int count) => '$count non lu(s)';
+  String unreadCount(int count) {
+    return '$count non lu(s)';
+  }
 
   @override
   String get pullToRefresh => 'Tirez pour actualiser';

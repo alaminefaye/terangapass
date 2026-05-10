@@ -7,6 +7,21 @@
   "retry": "Réessayer",
   "close": "Fermer",
   "noNotifications": "Aucune notification",
+  "clearAll": "Tout vider",
+  "clearAllConfirmTitle": "Vider toutes les notifications",
+  "clearAllConfirmBody": "Toutes vos notifications personnelles seront supprimées. Cette action est irréversible.",
+  "markAsRead": "Marquer comme lu",
+  "markAsUnread": "Marquer comme non lu",
+  "markAllAsRead": "Tout marquer comme lu",
+  "delete": "Supprimer",
+  "deleteNotificationTitle": "Supprimer la notification",
+  "deleteNotificationBody": "Voulez-vous vraiment supprimer cette notification ?",
+  "unreadCount": "{count} non lu(s)",
+  "@unreadCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
   "pullToRefresh": "Tirez pour actualiser",
   "openMapError": "Impossible d’ouvrir la carte",
   "settings": "Paramètres",

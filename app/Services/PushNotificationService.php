@@ -270,6 +270,31 @@ class PushNotificationService
         ]);
     }
 
+    /**
+     * Confirmation à l’utilisateur que son signalement d’incident a bien été enregistré.
+     */
+    public function notifyNewIncidentReported(\App\Models\Incident $incident): void
+    {
+        $user = $incident->user;
+        if (! $user) {
+            return;
+        }
+
+        $lang = strtolower((string) ($user->language ?? 'fr'));
+        $en = $lang === 'en';
+        $title = $en ? 'Report received' : 'Signalement reçu';
+        $body = $en
+            ? 'Your incident report has been recorded. You will be notified when it is processed.'
+            : 'Votre signalement a bien été enregistré. Vous serez informé lors du traitement.';
+
+        $this->notifyOperational($user, $title, $body, [
+            'type' => 'incident_reported',
+            'incident_id' => (string) $incident->id,
+            'incident_type' => (string) $incident->type,
+            'incident_status' => (string) $incident->status,
+        ]);
+    }
+
     public function notifyIncidentStatus(\App\Models\Incident $incident): void
     {
         $user = $incident->user;

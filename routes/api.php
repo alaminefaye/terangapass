@@ -75,6 +75,7 @@ Route::middleware(['api.user.active'])->prefix('v1')->group(function () {
     Route::put('/my-notifications/{id}/read', [NotificationController::class, 'markMyNotificationAsRead']);
     Route::put('/my-notifications/{id}/unread', [NotificationController::class, 'markMyNotificationAsUnread']);
     Route::put('/my-notifications/read-all', [NotificationController::class, 'markAllMyNotificationsAsRead']);
+    Route::delete('/my-notifications/clear-all', [NotificationController::class, 'clearAllMyNotifications']);
     Route::delete('/my-notifications/{id}', [NotificationController::class, 'deleteMyNotification']);
 
     // Annonces Audio

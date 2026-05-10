@@ -5,13 +5,14 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Incident;
 use App\Models\User;
+use App\Services\PushNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class IncidentController extends Controller
 {
-    public function report(Request $request)
+    public function report(Request $request, PushNotificationService $push)
     {
         $request->validate([
             'incident_type' => 'required|in:perte,accident,suspect,autre',
@@ -29,12 +30,12 @@ class IncidentController extends Controller
         ]);
 
         $user = $this->getUserFromToken($request);
-        
+
         // Gérer l'upload des photos
         $photoUrls = [];
         if ($request->hasFile('photos')) {
             foreach ($request->file('photos') as $photo) {
-                $filename = Str::uuid() . '.' . $photo->getClientOriginalExtension();
+                $filename = Str::uuid().'.'.$photo->getClientOriginalExtension();
                 $path = $photo->storeAs('incidents/photos', $filename, 'public');
                 $photoUrls[] = Storage::url($path);
             }
@@ -48,21 +49,21 @@ class IncidentController extends Controller
         if ($request->hasFile('videos')) {
             foreach ($request->file('videos') as $video) {
                 $extension = $video->getClientOriginalExtension() ?: 'mp4';
-                $filename = Str::uuid() . '.' . $extension;
+                $filename = Str::uuid().'.'.$extension;
                 $path = $video->storeAs('incidents/videos', $filename, 'public');
                 $videoUrls[] = Storage::url($path);
             }
         }
-        
+
         // Gérer l'upload de l'audio
         $audioUrl = $request->audio_url;
         if ($request->hasFile('audio')) {
             $audio = $request->file('audio');
-            $filename = Str::uuid() . '.' . $audio->getClientOriginalExtension();
+            $filename = Str::uuid().'.'.$audio->getClientOriginalExtension();
             $path = $audio->storeAs('incidents/audio', $filename, 'public');
             $audioUrl = Storage::url($path);
         }
-        
+
         $incident = Incident::create([
             'user_id' => $user ? $user->id : 1,
             'type' => $request->incident_type,
@@ -71,11 +72,20 @@ class IncidentController extends Controller
             'longitude' => $request->longitude,
             'accuracy' => $request->accuracy,
             'address' => $request->address,
-            'photos' => !empty($photoUrls) ? $photoUrls : null,
-            'video_urls' => !empty($videoUrls) ? $videoUrls : null,
+            'photos' => ! empty($photoUrls) ? $photoUrls : null,
+            'video_urls' => ! empty($videoUrls) ? $videoUrls : null,
             'audio_url' => $audioUrl,
             'status' => 'pending',
         ]);
+
+        $incident->load('user');
+        if ($incident->user) {
+            try {
+                $push->notifyNewIncidentReported($incident);
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
 
         return response()->json([
             'success' => true,
@@ -150,6 +160,7 @@ class IncidentController extends Controller
                 return User::find($parts[0]);
             }
         }
+
         return null;
     }
 }

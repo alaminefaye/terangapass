@@ -139,6 +139,18 @@ class NotificationController extends Controller
         return response()->json(['message' => 'All notifications marked as read']);
     }
 
+    public function clearAllMyNotifications(Request $request)
+    {
+        $user = $this->getAuthUser($request);
+        if (! $user) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
+        UserNotification::where('user_id', $user->id)->delete();
+
+        return response()->json(['message' => 'All notifications cleared']);
+    }
+
     public function deleteMyNotification(Request $request, $id)
     {
         $user = $this->getAuthUser($request);

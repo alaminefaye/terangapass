@@ -827,9 +827,17 @@ class ApiService {
         final rawId = idStr.replaceFirst('user_', '');
         await _dio.delete('my-notifications/$rawId');
       }
-      // Les notifications admin globales ne peuvent pas être supprimées par l'utilisateur
     } on DioException catch (e) {
       _debugLog('deleteNotification error: ${_handleError(e)}');
+    }
+  }
+
+  /// Supprime toutes les notifications personnelles
+  Future<void> clearAllNotifications() async {
+    try {
+      await _dio.delete('my-notifications/clear-all');
+    } on DioException catch (e) {
+      _debugLog('clearAllNotifications error: ${_handleError(e)}');
     }
   }
 

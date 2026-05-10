@@ -146,6 +146,24 @@ abstract class AppLocalizations {
   /// **'Aucune notification'**
   String get noNotifications;
 
+  /// No description provided for @clearAll.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tout vider'**
+  String get clearAll;
+
+  /// No description provided for @clearAllConfirmTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vider toutes les notifications'**
+  String get clearAllConfirmTitle;
+
+  /// No description provided for @clearAllConfirmBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Toutes vos notifications personnelles seront supprimées. Cette action est irréversible.'**
+  String get clearAllConfirmBody;
+
   /// No description provided for @markAsRead.
   ///
   /// In fr, this message translates to:
@@ -182,7 +200,7 @@ abstract class AppLocalizations {
   /// **'Voulez-vous vraiment supprimer cette notification ?'**
   String get deleteNotificationBody;
 
-  /// {count} unread notifications
+  /// No description provided for @unreadCount.
   ///
   /// In fr, this message translates to:
   /// **'{count} non lu(s)'**

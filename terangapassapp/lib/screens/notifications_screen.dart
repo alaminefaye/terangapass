@@ -145,6 +145,54 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     } catch (_) {}
   }
 
+  Future<void> _clearAll() async {
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(
+          l10n.clearAllConfirmTitle,
+          style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+        ),
+        content: Text(l10n.clearAllConfirmBody, style: GoogleFonts.poppins()),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(l10n.cancel, style: GoogleFonts.poppins()),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryRed,
+            ),
+            child: Text(
+              l10n.clearAll,
+              style: GoogleFonts.poppins(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    final personal = _notifications
+        .where((n) => _isPersonal(n))
+        .map((n) => n['id'].toString())
+        .toSet();
+
+    setState(() {
+      _notifications.removeWhere((n) => _isPersonal(n));
+      _readIds = _readIds.difference(personal);
+    });
+    await _persistReadIds();
+
+    try {
+      await ApiService().clearAllNotifications();
+    } catch (_) {
+      await _loadNotifications();
+    }
+  }
+
   Future<void> _deleteNotification(Map<String, dynamic> notification) async {
     final id = notification['id'];
     if (id == null) return;
@@ -560,6 +608,15 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       ),
                       onPressed: _markAllAsRead,
                     ),
+                  if (_notifications.any(_isPersonal))
+                    IconButton(
+                      tooltip: l10n.clearAll,
+                      icon: const Icon(
+                        Icons.delete_sweep_rounded,
+                        color: Colors.white,
+                      ),
+                      onPressed: _clearAll,
+                    ),
                   IconButton(
                     icon: const Icon(Icons.filter_list, color: Colors.white),
                     onPressed: _showZoneFilterSheet,
@@ -691,30 +748,64 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                         final isPersonal = _isPersonal(notification);
                         final isRead = _isRead(notification);
 
-                        Widget card = _buildNotificationCard(
+                        final card = _buildNotificationCard(
                           notification: notification,
                           isRead: isRead,
                           isPersonal: isPersonal,
                         );
 
-                        if (isPersonal) {
-                          card = Dismissible(
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: Dismissible(
                             key: ValueKey(notification['id']),
-                            direction: DismissDirection.endToStart,
+                            direction: isPersonal
+                                ? DismissDirection.horizontal
+                                : DismissDirection.startToEnd,
+                            // Swipe gauche→droite : lu / non-lu
                             background: Container(
-                              alignment: Alignment.centerRight,
-                              padding: const EdgeInsets.only(right: 20),
+                              alignment: Alignment.centerLeft,
+                              padding: const EdgeInsets.only(left: 20),
                               decoration: BoxDecoration(
-                                color: AppTheme.primaryRed,
+                                color: isRead
+                                    ? Colors.orange.shade600
+                                    : AppTheme.primaryGreen,
                                 borderRadius: BorderRadius.circular(14),
                               ),
-                              child: const Icon(
-                                Icons.delete_outline_rounded,
+                              child: Icon(
+                                isRead
+                                    ? Icons.mark_email_unread_rounded
+                                    : Icons.mark_email_read_rounded,
                                 color: Colors.white,
                                 size: 28,
                               ),
                             ),
-                            confirmDismiss: (_) async {
+                            // Swipe droite→gauche : supprimer (perso uniquement)
+                            secondaryBackground: isPersonal
+                                ? Container(
+                                    alignment: Alignment.centerRight,
+                                    padding: const EdgeInsets.only(right: 20),
+                                    decoration: BoxDecoration(
+                                      color: AppTheme.primaryRed,
+                                      borderRadius: BorderRadius.circular(14),
+                                    ),
+                                    child: const Icon(
+                                      Icons.delete_outline_rounded,
+                                      color: Colors.white,
+                                      size: 28,
+                                    ),
+                                  )
+                                : null,
+                            confirmDismiss: (direction) async {
+                              if (direction == DismissDirection.startToEnd) {
+                                // Toggle lu / non-lu, pas de suppression
+                                if (isRead) {
+                                  await _markAsUnread(notification);
+                                } else {
+                                  await _markAsRead(notification);
+                                }
+                                return false;
+                              }
+                              // endToStart = supprimer
                               final confirmed = await showDialog<bool>(
                                 context: context,
                                 builder: (ctx) => AlertDialog(
@@ -755,17 +846,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                               );
                               if (confirmed == true) {
                                 await _deleteNotification(notification);
-                                return false; // Already removed from list
                               }
                               return false;
                             },
                             child: card,
-                          );
-                        }
-
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 10),
-                          child: card,
+                          ),
                         );
                       },
                     ),

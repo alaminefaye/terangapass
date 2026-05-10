@@ -114,6 +114,7 @@ class TerangaPushMessaging {
           payloadOverride: payload,
         );
         return;
+      case 'incident_reported':
       case 'incident_status':
         await NotificationService().showSecurityNotification(
           title: title.isEmpty ? 'Teranga Pass' : title,
@@ -134,7 +135,7 @@ class TerangaPushMessaging {
 
   static String? _routePayloadForPushData(Map<String, dynamic> data) {
     final type = '${data['type'] ?? ''}';
-    if (type == 'incident_status') {
+    if (type == 'incident_status' || type == 'incident_reported') {
       return '/incidents-history';
     }
     return '/notifications';
