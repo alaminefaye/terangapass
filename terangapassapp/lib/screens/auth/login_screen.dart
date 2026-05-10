@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../constants/app_constants.dart';
 import '../../l10n/app_localizations.dart';
 import '../../theme/app_theme.dart';
 import '../../services/api_error_messages.dart';
 import '../../services/api_service.dart';
 import '../../state/app_state.dart';
-import '../../utils/email_normalize.dart';
+import '../../utils/login_identifier.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -21,6 +22,36 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
   bool _isLoading = false;
   bool _obscurePassword = true;
+  bool _rememberMe = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRememberPrefs();
+  }
+
+  Future<void> _loadRememberPrefs() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedEmail = prefs.getString(AppConstants.loginSavedEmailKey);
+    final rememberPref = prefs.getBool(AppConstants.loginRememberMePrefKey);
+    if (!mounted) return;
+    setState(() {
+      _rememberMe = rememberPref ?? true;
+      if (savedEmail != null && savedEmail.trim().isNotEmpty) {
+        _emailController.text = savedEmail.trim();
+      }
+    });
+  }
+
+  Future<void> _persistRememberCheckbox(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(AppConstants.loginRememberMePrefKey, value);
+  }
+
+  void _setRememberMe(bool value) {
+    setState(() => _rememberMe = value);
+    _persistRememberCheckbox(value);
+  }
 
   @override
   void dispose() {
@@ -38,9 +69,12 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       final apiService = ApiService();
-      final email = normalizeEmailForAuth(_emailController.text);
+      final rawIdentifier = _emailController.text;
+      final identifierForApi =
+          normalizedLoginIdentifierForApi(rawIdentifier);
       final password = _passwordController.text;
-      final loginResult = await apiService.login(email, password);
+      final loginResult =
+          await apiService.login(identifierForApi, password);
 
       final prefs = await SharedPreferences.getInstance();
       var token = prefs.getString('auth_token');
@@ -56,7 +90,24 @@ class _LoginScreenState extends State<LoginScreen> {
         throw Exception(ApiErrorMessages.loginIncompleteNoToken);
       }
 
-      await prefs.setString('user_email', email);
+      await prefs.setBool(AppConstants.authPersistSessionKey, _rememberMe);
+      await prefs.setBool(AppConstants.loginRememberMePrefKey, _rememberMe);
+      if (_rememberMe) {
+        await prefs.setString(
+          AppConstants.loginSavedEmailKey,
+          rawIdentifier.trim(),
+        );
+      } else {
+        await prefs.remove(AppConstants.loginSavedEmailKey);
+      }
+
+      var profileEmail = identifierForApi;
+      final userJson = loginResult['user'];
+      if (userJson is Map && userJson['email'] != null) {
+        final e = userJson['email'].toString().trim();
+        if (e.isNotEmpty) profileEmail = e;
+      }
+      await prefs.setString('user_email', profileEmail);
 
       if (mounted) {
         isAuthenticatedNotifier.value = true;
@@ -192,11 +243,11 @@ class _LoginScreenState extends State<LoginScreen> {
                     const SizedBox(height: 10),
                     Center(
                       child: Container(
-                        height: 88,
-                        width: 88,
+                        height: 72,
+                        width: 72,
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(26),
+                          borderRadius: BorderRadius.circular(20),
                           boxShadow: [
                             BoxShadow(
                               color: Colors.black.withValues(alpha: 0.10),
@@ -206,9 +257,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           ],
                         ),
                         child: ClipRRect(
-                          borderRadius: BorderRadius.circular(26),
+                          borderRadius: BorderRadius.circular(20),
                           child: Padding(
-                            padding: const EdgeInsets.all(12),
+                            padding: const EdgeInsets.all(10),
                             child: Image.asset(
                               'assets/images/app_logo.png',
                               fit: BoxFit.contain,
@@ -217,43 +268,43 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 18),
+                    const SizedBox(height: 14),
                     Text(
                       l10n.appTitle,
                       style: GoogleFonts.poppins(
-                        fontSize: 34,
+                        fontSize: 26,
                         fontWeight: FontWeight.w700,
                         color: const Color(0xFF111827),
                         height: 1.05,
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 4),
                     Text(
                       l10n.loginTagline,
                       style: GoogleFonts.poppins(
-                        fontSize: 14,
+                        fontSize: 12,
                         color: const Color(0xFF6B7280),
                         height: 1.3,
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 6),
                     Text(
                       l10n.loginValueProps,
                       style: GoogleFonts.poppins(
-                        fontSize: 12,
+                        fontSize: 10,
                         color: AppTheme.primaryGreen,
                         fontWeight: FontWeight.w600,
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 26),
+                    const SizedBox(height: 20),
                     Container(
-                      padding: const EdgeInsets.fromLTRB(18, 18, 18, 14),
+                      padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(22),
+                        borderRadius: BorderRadius.circular(18),
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black.withValues(alpha: 0.06),
@@ -266,60 +317,81 @@ class _LoginScreenState extends State<LoginScreen> {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           Text(
-                            l10n.loginEmailLabel,
+                            l10n.loginIdentifierLabel,
                             style: GoogleFonts.poppins(
-                              fontSize: 12,
+                              fontSize: 11,
                               fontWeight: FontWeight.w600,
                               color: const Color(0xFF374151),
                             ),
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 6),
                           Container(
                             decoration: BoxDecoration(
                               color: const Color(0xFFF9FAFB),
-                              borderRadius: BorderRadius.circular(16),
+                              borderRadius: BorderRadius.circular(12),
                               border: Border.all(
                                 color: const Color(0xFFE5E7EB),
                               ),
                             ),
                             child: TextFormField(
                               controller: _emailController,
-                              keyboardType: TextInputType.emailAddress,
+                              keyboardType: TextInputType.text,
+                              autocorrect: false,
+                              textCapitalization: TextCapitalization.none,
+                              style: GoogleFonts.poppins(
+                                fontSize: 14,
+                                height: 1.2,
+                              ),
                               decoration: InputDecoration(
-                                hintText: l10n.loginEmailHint,
-                                prefixIcon: const Icon(Icons.email_outlined),
+                                isDense: true,
+                                hintText: l10n.loginIdentifierHint,
+                                hintStyle: GoogleFonts.poppins(
+                                  fontSize: 13,
+                                  color: const Color(0xFF9CA3AF),
+                                ),
+                                prefixIcon: const Icon(
+                                  Icons.alternate_email,
+                                  size: 20,
+                                ),
                                 prefixIconColor: const Color(0xFF6B7280),
+                                prefixIconConstraints: const BoxConstraints(
+                                  minWidth: 40,
+                                  minHeight: 38,
+                                ),
                                 contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 14,
-                                  vertical: 16,
+                                  horizontal: 12,
+                                  vertical: 10,
                                 ),
                                 border: InputBorder.none,
                               ),
                               validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return l10n.loginEmailRequired;
+                                switch (validateLoginIdentifier(value)) {
+                                  case LoginIdentifierValidationError.empty:
+                                    return l10n.loginIdentifierRequired;
+                                  case LoginIdentifierValidationError.invalidEmail:
+                                    return l10n.loginEmailInvalid;
+                                  case LoginIdentifierValidationError.phoneTooShort:
+                                    return l10n.loginPhoneInvalid;
+                                  case null:
+                                    return null;
                                 }
-                                if (!value.contains('@')) {
-                                  return l10n.loginEmailInvalid;
-                                }
-                                return null;
                               },
                             ),
                           ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 12),
                           Text(
                             l10n.loginPasswordLabel,
                             style: GoogleFonts.poppins(
-                              fontSize: 12,
+                              fontSize: 11,
                               fontWeight: FontWeight.w600,
                               color: const Color(0xFF374151),
                             ),
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 6),
                           Container(
                             decoration: BoxDecoration(
                               color: const Color(0xFFF9FAFB),
-                              borderRadius: BorderRadius.circular(16),
+                              borderRadius: BorderRadius.circular(12),
                               border: Border.all(
                                 color: const Color(0xFFE5E7EB),
                               ),
@@ -327,14 +399,33 @@ class _LoginScreenState extends State<LoginScreen> {
                             child: TextFormField(
                               controller: _passwordController,
                               obscureText: _obscurePassword,
+                              style: GoogleFonts.poppins(
+                                fontSize: 14,
+                                height: 1.2,
+                              ),
                               decoration: InputDecoration(
+                                isDense: true,
                                 hintText: l10n.loginPasswordHint,
-                                prefixIcon: const Icon(Icons.lock_outlined),
+                                hintStyle: GoogleFonts.poppins(
+                                  fontSize: 13,
+                                  color: const Color(0xFF9CA3AF),
+                                ),
+                                prefixIcon: const Icon(
+                                  Icons.lock_outlined,
+                                  size: 20,
+                                ),
                                 suffixIcon: IconButton(
+                                  constraints: const BoxConstraints(
+                                    minWidth: 40,
+                                    minHeight: 38,
+                                  ),
+                                  padding: EdgeInsets.zero,
+                                  visualDensity: VisualDensity.compact,
                                   icon: Icon(
                                     _obscurePassword
                                         ? Icons.visibility_outlined
                                         : Icons.visibility_off_outlined,
+                                    size: 20,
                                   ),
                                   onPressed: () {
                                     setState(() {
@@ -344,9 +435,13 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                                 prefixIconColor: const Color(0xFF6B7280),
                                 suffixIconColor: const Color(0xFF6B7280),
+                                prefixIconConstraints: const BoxConstraints(
+                                  minWidth: 40,
+                                  minHeight: 38,
+                                ),
                                 contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 14,
-                                  vertical: 16,
+                                  horizontal: 12,
+                                  vertical: 10,
                                 ),
                                 border: InputBorder.none,
                               ),
@@ -361,46 +456,100 @@ class _LoginScreenState extends State<LoginScreen> {
                               },
                             ),
                           ),
-                          const SizedBox(height: 20),
-                          SizedBox(
-                            height: 52,
-                            child: ElevatedButton(
-                              onPressed: _isLoading ? null : _login,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppTheme.primaryGreen,
-                                foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(14),
+                          const SizedBox(height: 12),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              SizedBox(
+                                height: 28,
+                                width: 28,
+                                child: Checkbox(
+                                  value: _rememberMe,
+                                  materialTapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
+                                  visualDensity: VisualDensity.compact,
+                                  activeColor: AppTheme.primaryGreen,
+                                  onChanged: _isLoading
+                                      ? null
+                                      : (v) {
+                                          if (v != null) _setRememberMe(v);
+                                        },
                                 ),
-                                elevation: 1,
                               ),
-                              child: _isLoading
-                                  ? const SizedBox(
-                                      height: 20,
-                                      width: 20,
-                                      child: CircularProgressIndicator(
-                                        color: Colors.white,
-                                        strokeWidth: 2,
-                                      ),
-                                    )
-                                  : Text(
-                                      l10n.loginSignIn,
+                              Expanded(
+                                child: GestureDetector(
+                                  behavior: HitTestBehavior.opaque,
+                                  onTap: _isLoading
+                                      ? null
+                                      : () => _setRememberMe(!_rememberMe),
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 6,
+                                    ),
+                                    child: Text(
+                                      l10n.loginRememberMe,
                                       style: GoogleFonts.poppins(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w700,
+                                        fontSize: 12,
+                                        color: const Color(0xFF374151),
                                       ),
                                     ),
-                            ),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 14),
+                          const SizedBox(height: 12),
+                          ElevatedButton(
+                            onPressed: _isLoading ? null : _login,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppTheme.primaryGreen,
+                              foregroundColor: Colors.white,
+                              elevation: 1,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 13,
+                              ),
+                              minimumSize: const Size(double.infinity, 48),
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              alignment: Alignment.center,
+                            ),
+                            child: _isLoading
+                                ? const SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : Text(
+                                    l10n.loginSignIn,
+                                    textAlign: TextAlign.center,
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w700,
+                                      height: 1.15,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                          ),
+                          const SizedBox(height: 8),
                           TextButton(
                             onPressed: () {
                               Navigator.pushNamed(context, '/register');
                             },
+                            style: TextButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 4),
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
                             child: Text(
                               l10n.loginNoAccount,
                               style: GoogleFonts.poppins(
-                                fontSize: 14,
+                                fontSize: 12,
                                 color: AppTheme.primaryGreen,
                                 fontWeight: FontWeight.w600,
                               ),

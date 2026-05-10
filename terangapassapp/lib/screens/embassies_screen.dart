@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../services/api_service.dart';
 import '../services/offline_pack_service.dart';
@@ -7,6 +8,7 @@ import '../widgets/offline_cache_snack.dart';
 import '../services/location_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/loading_placeholders.dart';
+import 'map_screen.dart';
 
 class EmbassiesScreen extends StatefulWidget {
   const EmbassiesScreen({super.key});
@@ -101,15 +103,31 @@ class _EmbassiesScreenState extends State<EmbassiesScreen> {
     }
   }
 
-  Future<void> _openMap(Map<String, dynamic> embassy) async {
+  void _openMap(Map<String, dynamic> embassy) {
     final lat = double.tryParse((embassy['latitude'] ?? '').toString());
     final lng = double.tryParse((embassy['longitude'] ?? '').toString());
-    final q = (embassy['address'] ?? embassy['name'] ?? 'Dakar').toString().trim();
-    final query = (lat != null && lng != null) ? '$lat,$lng' : q;
-    final uri = Uri.parse(
-      'https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(query)}',
-    );
-    await launchUrl(uri, mode: LaunchMode.externalApplication);
+    final name = (embassy['name'] ?? '').toString().trim();
+    final address = (embassy['address'] ?? '').toString().trim();
+    if (lat != null && lng != null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => MapScreen(
+            initialLatLng: LatLng(lat, lng),
+            focusedPlaceName: name,
+          ),
+        ),
+      );
+    } else {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => MapScreen(
+            initialQuery: address.isNotEmpty ? address : name,
+          ),
+        ),
+      );
+    }
   }
 
   Future<void> _call(String phone) async {

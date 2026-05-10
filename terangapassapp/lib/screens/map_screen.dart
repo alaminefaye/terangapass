@@ -1,6 +1,12 @@
+import 'dart:async';
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../l10n/app_localizations.dart';
@@ -17,8 +23,15 @@ enum _MapFilter { all, help, sites, hotels, restaurants, pharmacies, hospitals }
 
 class MapScreen extends StatefulWidget {
   final String? initialQuery;
+  final LatLng? initialLatLng;
+  final String? focusedPlaceName;
 
-  const MapScreen({super.key, this.initialQuery});
+  const MapScreen({
+    super.key,
+    this.initialQuery,
+    this.initialLatLng,
+    this.focusedPlaceName,
+  });
 
   @override
   State<MapScreen> createState() => _MapScreenState();
@@ -38,8 +51,36 @@ class _MapScreenState extends State<MapScreen> {
   List<Map<String, dynamic>> _pointsOfInterest = [];
   List<Map<String, dynamic>> _allPoints = [];
 
+  // Itinéraire vers le lieu ciblé
+  List<LatLng> _routePoints = [];
+  bool _isLoadingRoute = false;
+  String? _routeDistance;
+  String? _routeDuration;
+  String? _routeError;
+
+  // Navigation en temps réel
+  bool _isNavigating = false;
+  StreamSubscription<Position>? _navPositionSub;
+  List<Map<String, dynamic>> _navSteps = [];
+  int _currentStepIndex = 0;
+  String? _navInstruction;
+  String? _navRemainingDistance;
+  IconData _navIcon = Icons.straight_rounded;
+  bool _approachNotified = false;
+  bool _arrivalNotified = false;
+
+  // Simulation de navigation (bouton Test)
+  Timer? _simTimer;
+  int _simIndex = 0;
+
+  // Notifications locales
+  final FlutterLocalNotificationsPlugin _notificationsPlugin =
+      FlutterLocalNotificationsPlugin();
+
   @override
   void dispose() {
+    _navPositionSub?.cancel();
+    _simTimer?.cancel();
     _searchController.dispose();
     super.dispose();
   }
@@ -51,7 +92,18 @@ class _MapScreenState extends State<MapScreen> {
     if (initial.isNotEmpty) {
       _searchController.text = initial;
     }
-    _initLocationAndLoad();
+    // Si on arrive depuis un lieu précis, on pré-positionne la carte dessus.
+    if (widget.initialLatLng != null) {
+      _currentLat = widget.initialLatLng!.latitude;
+      _currentLng = widget.initialLatLng!.longitude;
+    }
+    _initNotifications();
+    _initLocationAndLoad().then((_) {
+      // Calcul automatique de l'itinéraire si on a un lieu ciblé.
+      if (widget.initialLatLng != null && mounted) {
+        _calculateRoute();
+      }
+    });
   }
 
   Future<void> _initLocationAndLoad() async {
@@ -68,6 +120,447 @@ class _MapScreenState extends State<MapScreen> {
     } finally {
       if (mounted) {
         _loadPointsOfInterest();
+      }
+    }
+  }
+
+  /// Calcule l'itinéraire depuis la position actuelle vers [widget.initialLatLng]
+  /// en utilisant l'API OSRM (OpenStreetMap routing, gratuit).
+  Future<void> _calculateRoute() async {
+    final dest = widget.initialLatLng;
+    if (dest == null) return;
+
+    final originLat = _currentLat ?? _fallbackLat;
+    final originLng = _currentLng ?? _fallbackLng;
+
+    setState(() {
+      _isLoadingRoute = true;
+      _routeError = null;
+      _routePoints = [];
+      _routeDistance = null;
+      _routeDuration = null;
+    });
+
+    try {
+      final url = Uri.parse(
+        'https://router.project-osrm.org/route/v1/driving/'
+        '$originLng,$originLat;${dest.longitude},${dest.latitude}'
+        '?overview=full&geometries=geojson&steps=true',
+      );
+      final response = await http.get(url).timeout(const Duration(seconds: 15));
+      if (!mounted) return;
+
+      if (response.statusCode != 200) {
+        setState(() {
+          _routeError = 'Erreur serveur (${response.statusCode})';
+          _isLoadingRoute = false;
+        });
+        return;
+      }
+
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      final routes = data['routes'] as List?;
+      if (routes == null || routes.isEmpty) {
+        setState(() {
+          _routeError = 'Aucun itinéraire trouvé';
+          _isLoadingRoute = false;
+        });
+        return;
+      }
+
+      final route = routes.first as Map<String, dynamic>;
+      final distanceM = (route['distance'] as num?)?.toDouble() ?? 0;
+      final durationS = (route['duration'] as num?)?.toDouble() ?? 0;
+      final coords = (route['geometry']?['coordinates'] as List?) ?? [];
+
+      final points = coords
+          .whereType<List>()
+          .map((c) => LatLng(
+                (c[1] as num).toDouble(),
+                (c[0] as num).toDouble(),
+              ))
+          .toList();
+
+      final distLabel = distanceM < 1000
+          ? '${distanceM.round()} m'
+          : '${(distanceM / 1000).toStringAsFixed(1)} km';
+      final durationMin = (durationS / 60).round();
+      final durLabel = durationMin < 60
+          ? '$durationMin min'
+          : '${durationMin ~/ 60} h ${durationMin % 60} min';
+
+      // Récupération des étapes de virage
+      final legs = (route['legs'] as List?) ?? [];
+      final steps = legs.isNotEmpty
+          ? ((legs.first as Map<String, dynamic>)['steps'] as List?) ?? []
+          : [];
+      final parsedSteps = steps
+          .whereType<Map<String, dynamic>>()
+          .toList();
+
+      setState(() {
+        _routePoints = points;
+        _routeDistance = distLabel;
+        _routeDuration = durLabel;
+        _navSteps = parsedSteps;
+        _isLoadingRoute = false;
+      });
+
+      // Ajuster la vue pour englober tout le trajet
+      if (points.length > 1) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          try {
+            final bounds = LatLngBounds.fromPoints(points);
+            _mapController.fitCamera(
+              CameraFit.bounds(
+                bounds: bounds,
+                padding: const EdgeInsets.fromLTRB(40, 120, 40, 320),
+              ),
+            );
+          } catch (_) {}
+        });
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _routeError = 'Impossible de calculer l\'itinéraire';
+        _isLoadingRoute = false;
+      });
+    }
+  }
+
+  /// Ouvre l'app de navigation native (Google Maps / Waze / geo) en mode direction.
+  Future<void> _startExternalNavigation() async {
+    final dest = widget.initialLatLng;
+    if (dest == null) return;
+
+    final lat = dest.latitude;
+    final lng = dest.longitude;
+    final label = Uri.encodeComponent(widget.focusedPlaceName ?? '');
+
+    // Schémas natifs : on tente via canLaunchUrl (déclarés dans le manifest).
+    final nativeCandidates = <Uri>[
+      Uri.parse('comgooglemaps://?daddr=$lat,$lng&directionsmode=driving'),
+      Uri.parse('waze://?ll=$lat,$lng&navigate=yes'),
+      Uri.parse('geo:$lat,$lng?q=$lat,$lng($label)'),
+    ];
+    for (final uri in nativeCandidates) {
+      try {
+        if (await canLaunchUrl(uri)) {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+          return;
+        }
+      } catch (_) {}
+    }
+
+    // Fallback web : on lance directement sans canLaunchUrl (toujours disponible).
+    final webUrl = Uri.parse(
+      'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng&travelmode=driving',
+    );
+    try {
+      await launchUrl(webUrl, mode: LaunchMode.externalApplication);
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Impossible d\'ouvrir la navigation',
+            style: GoogleFonts.poppins(),
+          ),
+          backgroundColor: AppTheme.primaryRed,
+        ),
+      );
+    }
+  }
+
+  Future<void> _initNotifications() async {
+    const android = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const ios = DarwinInitializationSettings();
+    await _notificationsPlugin.initialize(
+      const InitializationSettings(android: android, iOS: ios),
+    );
+    // Demande la permission sur Android 13+
+    await _notificationsPlugin
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>()
+        ?.requestNotificationsPermission();
+  }
+
+  Future<void> _sendNavNotification({
+    required int id,
+    required String title,
+    required String body,
+  }) async {
+    const androidDetails = AndroidNotificationDetails(
+      'nav_channel',
+      'Navigation Teranga Pass',
+      channelDescription: 'Notifications de navigation en temps réel',
+      importance: Importance.high,
+      priority: Priority.high,
+      playSound: true,
+      enableVibration: true,
+    );
+    const iosDetails = DarwinNotificationDetails();
+    await _notificationsPlugin.show(
+      id,
+      title,
+      body,
+      const NotificationDetails(android: androidDetails, iOS: iosDetails),
+    );
+  }
+
+  /// Lance la simulation de navigation le long de la route (pour tester).
+  void _startSimulation() {
+    if (_routePoints.length < 2) return;
+    _simIndex = 0;
+    setState(() {
+      _isNavigating = true;
+      _currentStepIndex = 0;
+      _approachNotified = false;
+      _arrivalNotified = false;
+      _navInstruction = _navSteps.isNotEmpty
+          ? _frenchInstruction(_navSteps.first)
+          : 'Simulation en cours…';
+      _navIcon = _navSteps.isNotEmpty
+          ? _iconForInstruction(_navSteps.first)
+          : Icons.straight_rounded;
+      _navRemainingDistance = _routeDistance;
+    });
+
+    _simTimer?.cancel();
+    _simTimer = Timer.periodic(const Duration(milliseconds: 600), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      if (_simIndex >= _routePoints.length) {
+        timer.cancel();
+        _stopNavigation();
+        return;
+      }
+
+      final pt = _routePoints[_simIndex];
+      // Calcul du cap vers le prochain point
+      double heading = 0;
+      if (_simIndex < _routePoints.length - 1) {
+        final next = _routePoints[_simIndex + 1];
+        heading = Geolocator.bearingBetween(
+          pt.latitude, pt.longitude,
+          next.latitude, next.longitude,
+        );
+      }
+
+      // Simuler une Position
+      final fakePos = Position(
+        latitude: pt.latitude,
+        longitude: pt.longitude,
+        timestamp: DateTime.now(),
+        accuracy: 5,
+        altitude: 0,
+        altitudeAccuracy: 0,
+        heading: heading,
+        headingAccuracy: 0,
+        speed: 10,
+        speedAccuracy: 0,
+      );
+      _onNavPositionUpdate(fakePos);
+      _simIndex++;
+    });
+  }
+
+  void _stopSimulation() {
+    _simTimer?.cancel();
+    _simTimer = null;
+  }
+
+  /// Convertit un step OSRM en instruction de navigation en français.
+  String _frenchInstruction(Map<String, dynamic> step) {
+    final type = (step['maneuver']?['type'] ?? '').toString().toLowerCase();
+    final modifier = (step['maneuver']?['modifier'] ?? '').toString().toLowerCase();
+    final name = (step['name'] ?? '').toString().trim();
+
+    final modifierFr = switch (modifier) {
+      'uturn' => 'faire demi-tour',
+      'sharp right' => 'tourner fortement à droite',
+      'right' => 'tourner à droite',
+      'slight right' => 'légèrement à droite',
+      'straight' => 'tout droit',
+      'slight left' => 'légèrement à gauche',
+      'left' => 'tourner à gauche',
+      'sharp left' => 'tourner fortement à gauche',
+      _ => '',
+    };
+
+    return switch (type) {
+      'depart' => 'Partez${name.isNotEmpty ? " sur $name" : ""}',
+      'arrive' => 'Vous êtes arrivé à destination',
+      'turn' => '${modifierFr.isNotEmpty ? modifierFr.substring(0, 1).toUpperCase() + modifierFr.substring(1) : "Continuez"}${name.isNotEmpty ? " sur $name" : ""}',
+      'continue' || 'new name' => 'Continuez${name.isNotEmpty ? " sur $name" : " tout droit"}',
+      'merge' => 'Rejoignez${name.isNotEmpty ? " $name" : " la route"}',
+      'on ramp' => 'Prenez la bretelle${name.isNotEmpty ? " vers $name" : ""}',
+      'off ramp' => 'Prenez la sortie${name.isNotEmpty ? " vers $name" : ""}',
+      'fork' => modifier.contains('right')
+          ? 'Restez à droite${name.isNotEmpty ? " sur $name" : ""}'
+          : 'Restez à gauche${name.isNotEmpty ? " sur $name" : ""}',
+      'roundabout' || 'rotary' => 'Prenez le rond-point',
+      'exit roundabout' || 'exit rotary' => 'Sortez du rond-point',
+      _ => name.isNotEmpty ? 'Continuez sur $name' : 'Continuez',
+    };
+  }
+
+  IconData _iconForInstruction(Map<String, dynamic> step) {
+    final modifier = (step['maneuver']?['modifier'] ?? '').toString().toLowerCase();
+    final type = (step['maneuver']?['type'] ?? '').toString().toLowerCase();
+    if (type == 'arrive') return Icons.flag_rounded;
+    if (type == 'roundabout' || type == 'rotary') return Icons.roundabout_left_rounded;
+    return switch (modifier) {
+      'right' || 'sharp right' => Icons.turn_right_rounded,
+      'slight right' => Icons.turn_slight_right_rounded,
+      'left' || 'sharp left' => Icons.turn_left_rounded,
+      'slight left' => Icons.turn_slight_left_rounded,
+      'uturn' => Icons.u_turn_left_rounded,
+      _ => Icons.straight_rounded,
+    };
+  }
+
+  void _startInAppNavigation() {
+    if (_routePoints.isEmpty) return;
+    setState(() {
+      _isNavigating = true;
+      _currentStepIndex = 0;
+      _approachNotified = false;
+      _arrivalNotified = false;
+      _navInstruction = _navSteps.isNotEmpty
+          ? _frenchInstruction(_navSteps.first)
+          : 'Suivez la route';
+      _navIcon = _navSteps.isNotEmpty
+          ? _iconForInstruction(_navSteps.first)
+          : Icons.straight_rounded;
+      _navRemainingDistance = _routeDistance;
+    });
+
+    _navPositionSub = Geolocator.getPositionStream(
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.high,
+        distanceFilter: 8,
+      ),
+    ).listen(_onNavPositionUpdate);
+
+    // Centrer immédiatement sur la position actuelle
+    if (_currentLat != null && _currentLng != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          try {
+            _mapController.moveAndRotate(
+              LatLng(_currentLat!, _currentLng!), 17, 0,
+            );
+          } catch (_) {}
+        }
+      });
+    }
+  }
+
+  void _stopNavigation() {
+    _navPositionSub?.cancel();
+    _navPositionSub = null;
+    _stopSimulation();
+    if (!mounted) return;
+    setState(() {
+      _isNavigating = false;
+      _navInstruction = null;
+      _navRemainingDistance = null;
+      _approachNotified = false;
+      _arrivalNotified = false;
+    });
+    // Remettre la carte à l'orientation nord
+    try {
+      _mapController.rotate(0);
+    } catch (_) {}
+  }
+
+  void _onNavPositionUpdate(Position pos) {
+    if (!mounted) return;
+    setState(() {
+      _currentLat = pos.latitude;
+      _currentLng = pos.longitude;
+    });
+
+    // Recentrer la carte + orienter selon la direction de déplacement
+    final heading = pos.heading;
+    try {
+      _mapController.moveAndRotate(
+        LatLng(pos.latitude, pos.longitude),
+        17,
+        -heading, // map tourne pour que la direction soit toujours vers le haut
+      );
+    } catch (_) {}
+
+    // Avancer à l'étape suivante si on est à moins de 40 m du prochain virage
+    if (_currentStepIndex < _navSteps.length - 1) {
+      final nextStep = _navSteps[_currentStepIndex + 1];
+      final loc = nextStep['maneuver']?['location'];
+      if (loc is List && loc.length >= 2) {
+        final stepLat = (loc[1] as num).toDouble();
+        final stepLng = (loc[0] as num).toDouble();
+        final dist = Geolocator.distanceBetween(
+          pos.latitude, pos.longitude, stepLat, stepLng,
+        );
+        if (dist < 40) {
+          setState(() {
+            _currentStepIndex++;
+            _navInstruction = _frenchInstruction(_navSteps[_currentStepIndex]);
+            _navIcon = _iconForInstruction(_navSteps[_currentStepIndex]);
+          });
+        }
+      }
+    }
+
+    // Distance restante + notifications de proximité et d'arrivée
+    final dest = widget.initialLatLng;
+    if (dest != null) {
+      final remaining = Geolocator.distanceBetween(
+        pos.latitude, pos.longitude, dest.latitude, dest.longitude,
+      );
+      setState(() {
+        _navRemainingDistance = remaining < 1000
+            ? '${remaining.round()} m'
+            : '${(remaining / 1000).toStringAsFixed(1)} km';
+      });
+
+      // Notification d'approche (200 m)
+      if (remaining <= 200 && !_approachNotified) {
+        _approachNotified = true;
+        _sendNavNotification(
+          id: 1,
+          title: 'Vous approchez !',
+          body: 'Votre destination est à ${remaining.round()} mètres.',
+        );
+        if (mounted) {
+          setState(() {
+            _navInstruction = 'Dans ${remaining.round()} m : arrivée à destination';
+            _navIcon = Icons.flag_rounded;
+          });
+        }
+      }
+
+      // Arrivée à destination (30 m)
+      if (remaining <= 30 && !_arrivalNotified) {
+        _arrivalNotified = true;
+        _sendNavNotification(
+          id: 2,
+          title: 'Vous êtes arrivé !',
+          body: 'Vous avez atteint votre destination : ${widget.focusedPlaceName ?? ""}',
+        );
+        if (mounted) {
+          setState(() {
+            _navInstruction = '🎉 Vous êtes arrivé à destination !';
+            _navIcon = Icons.flag_rounded;
+          });
+        }
+        Future.delayed(const Duration(seconds: 4), () {
+          if (mounted) _stopNavigation();
+        });
       }
     }
   }
@@ -351,7 +844,7 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   List<Marker> _buildMarkers() {
-    return _pointsOfInterest
+    final markers = _pointsOfInterest
         .map((point) {
           final lat = _toDouble(point['latitude'] ?? point['lat']);
           final lng = _toDouble(
@@ -374,6 +867,40 @@ class _MapScreenState extends State<MapScreen> {
         })
         .whereType<Marker>()
         .toList();
+
+    // Marqueur spécial pour le lieu ciblé depuis "À proximité".
+    final focused = widget.initialLatLng;
+    if (focused != null) {
+      markers.add(
+        Marker(
+          width: 56,
+          height: 56,
+          point: focused,
+          child: Tooltip(
+            message: widget.focusedPlaceName ?? '',
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE07B39).withValues(alpha: 0.2),
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const Icon(
+                  Icons.location_on_rounded,
+                  color: Color(0xFFE07B39),
+                  size: 46,
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+    return markers;
   }
 
   void _syncMapToPoints() {
@@ -479,22 +1006,42 @@ class _MapScreenState extends State<MapScreen> {
                 child: FlutterMap(
                   mapController: _mapController,
                   options: MapOptions(
-                    initialCenter: LatLng(
-                      _currentLat ?? 14.7167,
-                      _currentLng ?? -17.4677,
-                    ),
-                    initialZoom: 12,
+                    initialCenter: widget.initialLatLng ??
+                        LatLng(
+                          _currentLat ?? 14.7167,
+                          _currentLng ?? -17.4677,
+                        ),
+                    initialZoom: widget.initialLatLng != null ? 16 : 12,
                   ),
                   children: [
                     TerangaOsmTileLayer(
                       onTileLoadFailure: () =>
                           showTerangaMapTilesIssueSnackBar(context),
                     ),
+                    if (_routePoints.length > 1)
+                      PolylineLayer(
+                        polylines: [
+                          Polyline(
+                            points: _routePoints,
+                            strokeWidth: 5,
+                            color: const Color(0xFF2E8B57),
+                          ),
+                        ],
+                      ),
                     MarkerLayer(markers: _buildMarkers()),
                   ],
                 ),
               ),
             ),
+            // HUD de navigation affiché en haut quand la navigation est active
+            if (_isNavigating)
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: _buildNavHud(),
+              ),
+            if (!_isNavigating)
             Positioned(
               top: 10,
               left: 16,
@@ -556,6 +1103,7 @@ class _MapScreenState extends State<MapScreen> {
                 ],
               ),
             ),
+            if (!_isNavigating)
             Positioned(
               top: 68,
               left: 16,
@@ -601,6 +1149,15 @@ class _MapScreenState extends State<MapScreen> {
                 ),
               ),
             ),
+            // Panneau itinéraire — visible uniquement quand on arrive depuis un lieu ciblé.
+            if (widget.initialLatLng != null)
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: _buildDestinationPanel(context),
+              ),
+            if (widget.initialLatLng == null)
             DraggableScrollableSheet(
               initialChildSize: 0.30,
               minChildSize: 0.20,
@@ -687,6 +1244,259 @@ class _MapScreenState extends State<MapScreen> {
               },
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDestinationPanel(BuildContext context) {
+    final name = widget.focusedPlaceName ?? '';
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+        boxShadow: [
+          BoxShadow(color: Colors.black12, blurRadius: 12, offset: Offset(0, -2)),
+        ],
+      ),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 42,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(99),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE07B39).withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.location_on_rounded,
+                  color: Color(0xFFE07B39),
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name.isEmpty ? 'Destination' : name,
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                        color: const Color(0xFF1A1F2E),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (_routeDistance != null && _routeDuration != null)
+                      Text(
+                        '$_routeDistance · $_routeDuration en voiture',
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          color: AppTheme.textSecondary,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          if (_routeError != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Text(
+                _routeError!,
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  color: AppTheme.primaryRed,
+                ),
+              ),
+            ),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: _isLoadingRoute ? null : _calculateRoute,
+                  icon: _isLoadingRoute
+                      ? const SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.alt_route_rounded, size: 18),
+                  label: Text(
+                    _routePoints.isNotEmpty ? 'Recalculer' : 'Voir l\'itinéraire',
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF2E8B57),
+                    side: const BorderSide(color: Color(0xFF2E8B57)),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    textStyle: GoogleFonts.poppins(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: _isLoadingRoute
+                      ? null
+                      : () async {
+                          if (_routePoints.isEmpty) {
+                            await _calculateRoute();
+                          }
+                          if (mounted && _routePoints.isNotEmpty) {
+                            _startInAppNavigation();
+                          }
+                        },
+                  icon: _isLoadingRoute
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Icon(Icons.navigation_rounded, size: 18),
+                  label: const Text('Démarrer'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF2E8B57),
+                    foregroundColor: Colors.white,
+                    disabledBackgroundColor: Colors.grey.shade300,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    textStyle: GoogleFonts.poppins(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 0,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              TextButton.icon(
+                onPressed: _startExternalNavigation,
+                icon: const Icon(Icons.open_in_new_rounded, size: 14),
+                label: const Text('Google Maps'),
+                style: TextButton.styleFrom(
+                  foregroundColor: AppTheme.textSecondary,
+                  textStyle: GoogleFonts.poppins(fontSize: 12),
+                ),
+              ),
+              const SizedBox(width: 8),
+              TextButton.icon(
+                onPressed: _routePoints.isNotEmpty ? _startSimulation : null,
+                icon: const Icon(Icons.science_rounded, size: 14),
+                label: const Text('Tester'),
+                style: TextButton.styleFrom(
+                  foregroundColor: const Color(0xFF7B2FBE),
+                  textStyle: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNavHud() {
+    return Container(
+      color: const Color(0xFF1A1F2E),
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF2E8B57),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Icon(_navIcon, color: Colors.white, size: 28),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      _navInstruction ?? 'Calculer l\'itinéraire',
+                      style: GoogleFonts.poppins(
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  GestureDetector(
+                    onTap: _stopNavigation,
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.close_rounded, color: Colors.white, size: 20),
+                    ),
+                  ),
+                ],
+              ),
+              if (_navRemainingDistance != null) ...[
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    const Icon(Icons.flag_rounded, color: Color(0xFFE07B39), size: 16),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Distance restante : $_navRemainingDistance',
+                      style: GoogleFonts.poppins(
+                        color: Colors.white70,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ],
+          ),
         ),
       ),
     );

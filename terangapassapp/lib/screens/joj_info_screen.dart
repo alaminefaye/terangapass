@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:latlong2/latlong.dart';
 import '../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 import '../services/api_service.dart';
@@ -8,6 +8,7 @@ import '../services/offline_pack_service.dart';
 import '../widgets/loading_placeholders.dart';
 import '../widgets/offline_cache_snack.dart';
 import 'currency_converter_screen.dart';
+import 'map_screen.dart';
 
 class JOJInfoScreen extends StatefulWidget {
   const JOJInfoScreen({super.key});
@@ -638,30 +639,19 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
     );
   }
 
-  Future<void> _openEventInMaps(Map<String, dynamic> event) async {
+  void _openEventInMaps(Map<String, dynamic> event) {
     final query = [
       (event['title'] ?? '').toString().trim(),
       (event['location'] ?? '').toString().trim(),
-      'Dakar',
     ].where((e) => e.isNotEmpty).join(' ');
-    final encoded = Uri.encodeComponent(query.isEmpty ? 'Dakar' : query);
-    final web = Uri.parse(
-      'https://www.google.com/maps/search/?api=1&query=$encoded',
-    );
-    try {
-      await launchUrl(web, mode: LaunchMode.externalApplication);
-    } catch (_) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            AppLocalizations.of(context)!.openMapError,
-            style: GoogleFonts.poppins(),
-          ),
-          backgroundColor: AppTheme.primaryRed,
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => MapScreen(
+          initialQuery: query.isEmpty ? 'Dakar' : query,
         ),
-      );
-    }
+      ),
+    );
   }
 
   Widget _buildSportsTab() {
@@ -949,8 +939,7 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
     );
   }
 
-  Future<void> _openSiteInMaps(Map<String, dynamic> site) async {
-    final l10n = AppLocalizations.of(context)!;
+  void _openSiteInMaps(Map<String, dynamic> site) {
     double? toDouble(Object? v) {
       if (v == null) return null;
       if (v is num) return v.toDouble();
@@ -961,55 +950,30 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
 
     final lat = toDouble(site['latitude'] ?? site['lat']);
     final lng = toDouble(site['longitude'] ?? site['lng']);
-
-    final name = site['name']?.toString().trim();
-    final location = site['location']?.toString().trim();
+    final name = (site['name'] ?? '').toString().trim();
+    final location = (site['location'] ?? '').toString().trim();
     final query = [
-      if (name != null && name.isNotEmpty) name,
-      if (location != null && location.isNotEmpty) location,
+      if (name.isNotEmpty) name,
+      if (location.isNotEmpty) location,
     ].join(' ');
 
-    try {
-      if (lat != null && lng != null) {
-        final label = Uri.encodeComponent(
-          query.isEmpty ? l10n.jojDestinationFallback : query,
-        );
-        final googleApp = Uri.parse(
-          'comgooglemaps://?q=$lat,$lng($label)&center=$lat,$lng&zoom=16',
-        );
-        final geo = Uri.parse('geo:$lat,$lng?q=$lat,$lng($label)');
-        final web = Uri.parse(
-          'https://www.google.com/maps/search/?api=1&query=$lat,$lng',
-        );
-
-        if (await canLaunchUrl(googleApp)) {
-          await launchUrl(googleApp, mode: LaunchMode.externalApplication);
-          return;
-        }
-        if (await canLaunchUrl(geo)) {
-          await launchUrl(geo, mode: LaunchMode.externalApplication);
-          return;
-        }
-        await launchUrl(web, mode: LaunchMode.externalApplication);
-        return;
-      }
-
-      final q = Uri.encodeComponent(
-        query.isEmpty ? l10n.jojDefaultLocation : query,
-      );
-      final googleWeb = Uri.parse(
-        'https://www.google.com/maps/search/?api=1&query=$q',
-      );
-      await launchUrl(googleWeb, mode: LaunchMode.externalApplication);
-    } catch (_) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            AppLocalizations.of(context)!.openMapError,
-            style: GoogleFonts.poppins(),
+    if (lat != null && lng != null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => MapScreen(
+            initialLatLng: LatLng(lat, lng),
+            focusedPlaceName: name.isNotEmpty ? name : null,
           ),
-          backgroundColor: AppTheme.primaryRed,
+        ),
+      );
+    } else {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => MapScreen(
+            initialQuery: query.isEmpty ? 'Dakar' : query,
+          ),
         ),
       );
     }

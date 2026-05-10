@@ -19,6 +19,15 @@ class AppConstants {
   static const String userDataKey = 'user_data';
   static const String languageKey = 'language';
 
+  /// Si `false` après connexion, la session n’est pas restaurée au prochain lancement (app fermée).
+  static const String authPersistSessionKey = 'auth_persist_session';
+
+  /// Préférence de la case « Se souvenir de moi » sur l’écran de connexion.
+  static const String loginRememberMePrefKey = 'login_remember_me_pref';
+
+  /// Email prérempli lorsque l’utilisateur s’est connecté avec « Se souvenir de moi ».
+  static const String loginSavedEmailKey = 'login_saved_email';
+
   static final ValueNotifier<Locale?> localeNotifier = ValueNotifier<Locale?>(
     null,
   );

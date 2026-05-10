@@ -76,12 +76,6 @@ class ApiService {
     await prefs.setString(_cookiePrefsKey, trimmed);
   }
 
-  Future<void> _clearCookie() async {
-    _cookieHeader = null;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_cookiePrefsKey);
-  }
-
   String? _extractCookieHeaderFromResponse(Headers headers) {
     final setCookies = headers.map['set-cookie'];
     if (setCookies == null || setCookies.isEmpty) return null;
@@ -439,6 +433,8 @@ class ApiService {
 
   /// Réinitialise tout stockage local d’auth (jeton + cookie) sans appeler l’API.
   Future<void> clearLocalAuth() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(AppConstants.authPersistSessionKey);
     await _clearToken();
   }
 
@@ -471,12 +467,15 @@ class ApiService {
 
   // ==================== AUTHENTIFICATION ====================
 
-  /// Connexion
-  Future<Map<String, dynamic>> login(String email, String password) async {
+  /// Connexion (identifiant = email ou numéro, envoyé dans le champ `email` pour l’API).
+  Future<Map<String, dynamic>> login(
+    String emailOrPhone,
+    String password,
+  ) async {
     try {
       final response = await _dio.post(
         'auth/login',
-        data: {'email': email, 'password': password},
+        data: {'email': emailOrPhone, 'password': password},
       );
 
       final data = response.data;
@@ -614,8 +613,7 @@ class ApiService {
     } catch (e) {
       // Même en cas d'erreur, on supprime le token local
     } finally {
-      await _clearToken();
-      await _clearCookie();
+      await clearLocalAuth();
     }
   }
 

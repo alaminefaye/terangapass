@@ -25,6 +25,8 @@ import 'notifications_screen.dart';
 import 'ai_assistant_screen.dart';
 import 'embassies_screen.dart';
 import 'currency_converter_screen.dart';
+import 'esim_coming_screen.dart';
+import 'nearby_screen.dart';
 import '../widgets/loading_placeholders.dart';
 import '../widgets/map_legend_strip.dart';
 import '../widgets/offline_cache_snack.dart';
@@ -521,6 +523,11 @@ class _HomeScreenState extends State<HomeScreen>
                       const SizedBox(height: 14),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: _buildFeaturedBoxes(context),
+                      ),
+                      const SizedBox(height: 14),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: _buildPillarsSection(context),
                       ),
                       const SizedBox(height: 14),
@@ -890,6 +897,49 @@ class _HomeScreenState extends State<HomeScreen>
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildFeaturedBoxes(BuildContext context) {
+    return GridView.count(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      crossAxisCount: 2,
+      mainAxisSpacing: 10,
+      crossAxisSpacing: 10,
+      childAspectRatio: 1.3,
+      children: [
+        _buildQuickSupportBox(
+          context: context,
+          icon: Icons.sim_card_rounded,
+          iconColor: const Color(0xFF7B2FBE),
+          title: 'eSIM',
+          subtitle: 'Connectez-vous',
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const EsimComingScreen(),
+              ),
+            );
+          },
+        ),
+        _buildQuickSupportBox(
+          context: context,
+          icon: Icons.near_me_rounded,
+          iconColor: const Color(0xFFE07B39),
+          title: 'À proximité',
+          subtitle: 'Autour de moi',
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const NearbyScreen(),
+              ),
+            );
+          },
+        ),
+      ],
     );
   }
 

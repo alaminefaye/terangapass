@@ -117,6 +117,14 @@ class _AuthWrapperState extends State<AuthWrapper> {
     try {
       final prefs = await SharedPreferences.getInstance();
       var token = prefs.getString('auth_token');
+      // Session « sans souvenir » : ne pas garder la connexion après fermeture de l’app.
+      final persistSession = prefs.getBool(AppConstants.authPersistSessionKey);
+      if (token != null &&
+          token.isNotEmpty &&
+          persistSession == false) {
+        await ApiService().clearLocalAuth();
+        token = null;
+      }
       // Un cookie HTTP seul ne prouve pas un compte API Teranga Pass (sessions hébergés / WAF).
       if (token != null && token.isNotEmpty) {
         await ApiService().validateStoredSession();

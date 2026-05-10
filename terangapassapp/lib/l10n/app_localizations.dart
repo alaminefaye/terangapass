@@ -206,6 +206,30 @@ abstract class AppLocalizations {
   /// **'Email invalide'**
   String get loginEmailInvalid;
 
+  /// No description provided for @loginIdentifierLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Email ou numéro'**
+  String get loginIdentifierLabel;
+
+  /// No description provided for @loginIdentifierHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'vous@email.com ou 77 123 45 67'**
+  String get loginIdentifierHint;
+
+  /// No description provided for @loginIdentifierRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Veuillez entrer votre email ou votre numéro'**
+  String get loginIdentifierRequired;
+
+  /// No description provided for @loginPhoneInvalid.
+  ///
+  /// In fr, this message translates to:
+  /// **'Numéro invalide (au moins 9 chiffres)'**
+  String get loginPhoneInvalid;
+
   /// No description provided for @loginPasswordLabel.
   ///
   /// In fr, this message translates to:
@@ -235,6 +259,12 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Se connecter'**
   String get loginSignIn;
+
+  /// No description provided for @loginRememberMe.
+  ///
+  /// In fr, this message translates to:
+  /// **'Se souvenir de moi'**
+  String get loginRememberMe;
 
   /// No description provided for @loginNoAccount.
   ///

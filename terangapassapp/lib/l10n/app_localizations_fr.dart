@@ -64,6 +64,19 @@ class AppLocalizationsFr extends AppLocalizations {
   String get loginEmailInvalid => 'Email invalide';
 
   @override
+  String get loginIdentifierLabel => 'Email ou numéro';
+
+  @override
+  String get loginIdentifierHint => 'vous@email.com ou 77 123 45 67';
+
+  @override
+  String get loginIdentifierRequired =>
+      'Veuillez entrer votre email ou votre numéro';
+
+  @override
+  String get loginPhoneInvalid => 'Numéro invalide (au moins 9 chiffres)';
+
+  @override
   String get loginPasswordLabel => 'Mot de passe';
 
   @override
@@ -78,6 +91,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get loginSignIn => 'Se connecter';
+
+  @override
+  String get loginRememberMe => 'Se souvenir de moi';
 
   @override
   String get loginNoAccount => 'Pas de compte ? S’inscrire';

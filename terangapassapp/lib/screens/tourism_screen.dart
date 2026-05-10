@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../theme/app_theme.dart';
 import '../services/api_service.dart';
@@ -9,6 +10,7 @@ import '../services/offline_pack_service.dart';
 import '../widgets/loading_placeholders.dart';
 import '../widgets/offline_cache_snack.dart';
 import 'embassies_screen.dart';
+import 'map_screen.dart';
 import 'nearby_screen.dart';
 
 class TourismScreen extends StatefulWidget {
@@ -1274,18 +1276,32 @@ class _TourismScreenState extends State<TourismScreen>
     );
   }
 
-  Future<void> _openInMaps(Map<String, dynamic> point) async {
+  void _openInMaps(Map<String, dynamic> point) {
     final name = point['name']?.toString().trim() ?? '';
     final address = point['address']?.toString().trim() ?? '';
-    final query = address.isNotEmpty ? address : name;
-    final finalQuery = query.isEmpty ? 'Dakar' : query;
-    final encoded = Uri.encodeComponent(finalQuery);
-    final uri = Uri.parse(
-      'https://www.google.com/maps/search/?api=1&query=$encoded',
-    );
-    try {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } catch (_) {}
+    final lat = _toDouble(point['latitude'] ?? point['lat']);
+    final lng = _toDouble(point['longitude'] ?? point['lng']);
+    if (lat != null && lng != null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => MapScreen(
+            initialLatLng: LatLng(lat, lng),
+            focusedPlaceName: name,
+          ),
+        ),
+      );
+    } else {
+      final query = address.isNotEmpty ? address : name;
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => MapScreen(
+            initialQuery: query.isEmpty ? 'Dakar' : query,
+          ),
+        ),
+      );
+    }
   }
 
   Future<void> _callPhone(String phone) async {

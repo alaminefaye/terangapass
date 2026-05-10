@@ -13,6 +13,7 @@ import '../services/offline_pack_service.dart';
 import '../services/offline_nearby_builder.dart';
 import '../widgets/offline_cache_snack.dart';
 import '../widgets/teranga_osm_tile_layer.dart';
+import 'map_screen.dart';
 
 class NearbyScreen extends StatefulWidget {
   const NearbyScreen({super.key});
@@ -473,6 +474,13 @@ class _PlaceCard extends StatelessWidget {
   final Map<String, dynamic> place;
   final String? Function(Object? phone) phoneUriBuilder;
 
+  double? _toDouble(Object? value) {
+    if (value == null) return null;
+    if (value is num) return value.toDouble();
+    if (value is String) return double.tryParse(value.trim());
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -485,93 +493,147 @@ class _PlaceCard extends StatelessWidget {
     final sponsor = place['is_sponsor'] == true;
     final phoneUri = phoneUriBuilder(place['phone']);
 
+    final lat = _toDouble(place['latitude']);
+    final lng = _toDouble(place['longitude']);
+    final hasCoords = lat != null && lng != null;
+
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
       elevation: 0,
       color: Colors.white,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(14),
-        onTap: phoneUri == null
-            ? null
-            : () async {
-                final u = Uri.parse(phoneUri);
-                if (await canLaunchUrl(u)) await launchUrl(u);
-              },
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Text(
+                    name,
+                    style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
+                      color: const Color(0xFF1A1F2E),
+                    ),
+                  ),
+                ),
+                if (sponsor)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                     child: Text(
-                      name,
+                      l10n.nearbySponsorBadge,
                       style: GoogleFonts.poppins(
+                        fontSize: 10,
                         fontWeight: FontWeight.w700,
-                        fontSize: 15,
-                        color: const Color(0xFF1A1F2E),
+                        color: Colors.amber[900],
                       ),
                     ),
                   ),
-                  if (sponsor)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.amber.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        l10n.nearbySponsorBadge,
-                        style: GoogleFonts.poppins(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.amber[900],
-                        ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '$category · $distance',
+              style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.textSecondary),
+            ),
+            if (address.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              Text(address, style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.textPrimary)),
+            ],
+            if (openingHours.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Icon(
+                    Icons.schedule_rounded,
+                    size: 14,
+                    color: isOpenNow == true
+                        ? Colors.green[700]
+                        : (isOpenNow == false ? Colors.red[700] : AppTheme.textSecondary),
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      '${isOpenNow == true ? "Ouvert" : (isOpenNow == false ? "Fermé" : "Horaires")} · $openingHours',
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        color: isOpenNow == true
+                            ? Colors.green[700]
+                            : (isOpenNow == false ? Colors.red[700] : AppTheme.textSecondary),
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
+                  ),
                 ],
               ),
-              const SizedBox(height: 4),
-              Text(
-                '$category · $distance',
-                style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.textSecondary),
-              ),
-              if (address.isNotEmpty) ...[
-                const SizedBox(height: 6),
-                Text(address, style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.textPrimary)),
-              ],
-              if (openingHours.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.schedule_rounded,
-                      size: 14,
-                      color: isOpenNow == true
-                          ? Colors.green[700]
-                          : (isOpenNow == false ? Colors.red[700] : AppTheme.textSecondary),
-                    ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        '${isOpenNow == true ? "Ouvert" : (isOpenNow == false ? "Fermé" : "Horaires")} · $openingHours',
-                        style: GoogleFonts.poppins(
+            ],
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                if (hasCoords)
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => MapScreen(
+                              initialLatLng: LatLng(lat, lng),
+                              focusedPlaceName: name,
+                            ),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.map_rounded, size: 16),
+                      label: const Text('Voir sur la carte'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFF2E8B57),
+                        side: const BorderSide(color: Color(0xFF2E8B57)),
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        textStyle: GoogleFonts.poppins(
                           fontSize: 12,
-                          color: isOpenNow == true
-                              ? Colors.green[700]
-                              : (isOpenNow == false ? Colors.red[700] : AppTheme.textSecondary),
-                          fontWeight: FontWeight.w500,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
                         ),
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                if (hasCoords && phoneUri != null) const SizedBox(width: 8),
+                if (phoneUri != null)
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () async {
+                        final u = Uri.parse(phoneUri);
+                        if (await canLaunchUrl(u)) await launchUrl(u);
+                      },
+                      icon: const Icon(Icons.phone_rounded, size: 16),
+                      label: const Text('Appeler'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFF3A7CA5),
+                        side: const BorderSide(color: Color(0xFF3A7CA5)),
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        textStyle: GoogleFonts.poppins(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                    ),
+                  ),
               ],
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

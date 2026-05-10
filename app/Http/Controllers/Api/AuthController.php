@@ -127,12 +127,13 @@ class AuthController extends Controller
 
     public function login(Request $request)
     {
-        $email = EmailNormalizer::normalize((string) $request->input('email', ''));
-        $request->merge(['email' => $email]);
+        $rawLogin = trim((string) $request->input('email', ''));
 
         $validator = Validator::make($request->all(), [
-            'email' => 'required|email',
+            'email' => 'required|string|min:3|max:255',
             'password' => 'required',
+        ], [
+            'email.required' => 'L’identifiant est requis.',
         ]);
 
         if ($validator->fails()) {
@@ -143,7 +144,35 @@ class AuthController extends Controller
             ], 422);
         }
 
-        $user = User::whereRaw('LOWER(email) = ?', [$email])->first();
+        $user = null;
+
+        if (str_contains($rawLogin, '@')) {
+            $email = EmailNormalizer::normalize($rawLogin);
+            if (! filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Adresse email invalide.',
+                    'errors' => [
+                        'email' => ['Adresse email invalide.'],
+                    ],
+                ], 422);
+            }
+            $user = User::whereRaw('LOWER(email) = ?', [$email])->first();
+        } else {
+            $countryRaw = trim((string) $request->input('country', 'SN'));
+            $country = strtoupper($countryRaw === '' ? 'SN' : $countryRaw);
+            $phone = PhoneNormalizer::normalize($rawLogin, $country);
+            if ($phone === null) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Numéro de téléphone invalide.',
+                    'errors' => [
+                        'email' => ['Numéro de téléphone invalide.'],
+                    ],
+                ], 422);
+            }
+            $user = User::where('phone', $phone)->first();
+        }
 
         if (!$user || !Hash::check($request->password, $user->password)) {
             return response()->json([
