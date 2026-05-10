@@ -1,12 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
+
+import '../l10n/app_localizations.dart';
 import '../services/api_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/loading_placeholders.dart';
 import 'incident_tracking_screen.dart';
 
+/// Signalements + SOS + alertes médicales (même liste, tri par date).
 class IncidentHistoryScreen extends StatefulWidget {
   const IncidentHistoryScreen({super.key});
+
+  static const String _kindIncident = 'incident';
+  static const String _kindSos = 'alert_sos';
+  static const String _kindMedical = 'alert_medical';
 
   @override
   State<IncidentHistoryScreen> createState() => _IncidentHistoryScreenState();
@@ -15,36 +23,95 @@ class IncidentHistoryScreen extends StatefulWidget {
 class _IncidentHistoryScreenState extends State<IncidentHistoryScreen> {
   bool _isLoading = true;
   String? _error;
-  List<Map<String, dynamic>> _incidents = [];
+  List<Map<String, dynamic>> _entries = [];
 
   @override
   void initState() {
     super.initState();
-    _loadIncidents();
+    _loadAll();
   }
 
-  Future<void> _loadIncidents() async {
+  Future<void> _loadAll() async {
     setState(() {
       _isLoading = true;
       _error = null;
     });
+
+    final merged = <Map<String, dynamic>>[];
+    Object? firstError;
+
     try {
-      final data = await ApiService().getIncidentsHistory();
-      if (!mounted) return;
-      setState(() {
-        _incidents = data.map((e) => e as Map<String, dynamic>).toList();
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _error = e.toString().replaceAll('Exception: ', ''));
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
+      final raw = await ApiService().getIncidentsHistory();
+      for (final e in raw) {
+        if (e is Map<String, dynamic>) {
+          merged.add({...e, '_historyKind': IncidentHistoryScreen._kindIncident});
+        } else if (e is Map) {
+          merged.add({
+            ...Map<String, dynamic>.from(e),
+            '_historyKind': IncidentHistoryScreen._kindIncident,
+          });
+        }
       }
+    } catch (e) {
+      firstError = e;
     }
+
+    try {
+      final raw = await ApiService().getAlertsHistory();
+      for (final e in raw) {
+        Map<String, dynamic> m;
+        if (e is Map<String, dynamic>) {
+          m = Map<String, dynamic>.from(e);
+        } else if (e is Map) {
+          m = Map<String, dynamic>.from(e);
+        } else {
+          continue;
+        }
+        final t = (m['type'] ?? '').toString().toLowerCase().trim();
+        final kind = t == 'medical'
+            ? IncidentHistoryScreen._kindMedical
+            : IncidentHistoryScreen._kindSos;
+        m['_historyKind'] = kind;
+        merged.add(m);
+      }
+    } catch (e) {
+      firstError ??= e;
+    }
+
+    merged.sort((a, b) {
+      final da = _entrySortDate(a);
+      final db = _entrySortDate(b);
+      if (da == null && db == null) return 0;
+      if (da == null) return 1;
+      if (db == null) return -1;
+      return db.compareTo(da);
+    });
+
+    if (!mounted) return;
+
+    if (merged.isEmpty && firstError != null) {
+      setState(() {
+        _entries = [];
+        _error = firstError.toString().replaceAll('Exception: ', '');
+        _isLoading = false;
+      });
+      return;
+    }
+
+    setState(() {
+      _entries = merged;
+      _error = null;
+      _isLoading = false;
+    });
   }
 
-  int? _parseIncidentId(dynamic raw) {
+  DateTime? _entrySortDate(Map<String, dynamic> m) {
+    final s =
+        (m['created_at'] ?? m['createdAt'] ?? m['updated_at'] ?? '').toString();
+    return DateTime.tryParse(s.trim());
+  }
+
+  int? _parseId(dynamic raw) {
     if (raw == null) return null;
     if (raw is int) return raw;
     if (raw is num) return raw.toInt();
@@ -57,13 +124,16 @@ class _IncidentHistoryScreenState extends State<IncidentHistoryScreen> {
         return 'En traitement';
       case 'resolved':
       case 'closed':
-        return 'Traite';
+        return 'Traité';
       case 'validated':
         return 'Validé';
       case 'rejected':
         return 'Refusé';
       case 'pending':
         return 'En attente';
+      case 'cancelled':
+      case 'canceled':
+        return 'Annulé';
       default:
         return 'En attente';
     }
@@ -78,14 +148,223 @@ class _IncidentHistoryScreenState extends State<IncidentHistoryScreen> {
       case 'validated':
         return AppTheme.primaryGreen;
       case 'rejected':
+      case 'cancelled':
+      case 'canceled':
         return AppTheme.textSecondary;
       default:
         return const Color(0xFFC73E1D);
     }
   }
 
+  String _kindLabel(AppLocalizations l10n, String kind) {
+    switch (kind) {
+      case IncidentHistoryScreen._kindSos:
+        return l10n.historyKindSos;
+      case IncidentHistoryScreen._kindMedical:
+        return l10n.historyKindMedical;
+      default:
+        return l10n.historyKindReport;
+    }
+  }
+
+  IconData _kindIcon(String kind) {
+    switch (kind) {
+      case IncidentHistoryScreen._kindSos:
+        return Icons.emergency_rounded;
+      case IncidentHistoryScreen._kindMedical:
+        return Icons.medical_services_rounded;
+      default:
+        return Icons.report_problem_rounded;
+    }
+  }
+
+  String? _medicalEmergencyLabel(AppLocalizations l10n, String? code) {
+    final c = (code ?? '').trim().toLowerCase();
+    switch (c) {
+      case 'accident':
+        return l10n.medicalTypeAccident;
+      case 'fainting':
+      case 'malaise':
+        return l10n.medicalTypeFainting;
+      case 'injury':
+      case 'blessure':
+        return l10n.medicalTypeInjury;
+      case 'other':
+      case 'autre':
+        return l10n.medicalTypeOther;
+      default:
+        return code?.trim().isEmpty ?? true ? null : code;
+    }
+  }
+
+  String _entryTitle(AppLocalizations l10n, Map<String, dynamic> e) {
+    final kind = (e['_historyKind'] ?? IncidentHistoryScreen._kindIncident)
+        .toString();
+    final id = _parseId(e['id']);
+    final prefix = _kindLabel(l10n, kind);
+    if (kind == IncidentHistoryScreen._kindIncident) {
+      final t = (e['type'] ?? '').toString();
+      return '#${id ?? '-'} · $t';
+    }
+    return '#${id ?? '-'} · $prefix';
+  }
+
+  String _entrySubtitleLine(AppLocalizations l10n, Map<String, dynamic> e) {
+    final kind = (e['_historyKind'] ?? '').toString();
+    if (kind == IncidentHistoryScreen._kindMedical) {
+      final et = _medicalEmergencyLabel(
+        l10n,
+        (e['emergency_type'] ?? e['emergencyType'])?.toString(),
+      );
+      if (et != null && et.isNotEmpty) return et;
+    }
+    final addr = (e['address'] ?? '').toString().trim();
+    if (addr.isNotEmpty) return addr;
+    final desc = (e['description'] ?? '').toString().trim();
+    if (desc.isNotEmpty) return desc;
+    return '';
+  }
+
+  void _openAlertDetail(BuildContext context, Map<String, dynamic> e) {
+    final l10n = AppLocalizations.of(context)!;
+    final status = (e['status'] ?? 'pending').toString();
+    final addr = (e['address'] ?? '').toString().trim();
+    final dt = _entrySortDate(e);
+    final lat = e['latitude'];
+    final lon = e['longitude'];
+    final kind = (e['_historyKind'] ?? '').toString();
+    final et = kind == IncidentHistoryScreen._kindMedical
+        ? _medicalEmergencyLabel(
+            l10n,
+            (e['emergency_type'] ?? e['emergencyType'])?.toString(),
+          )
+        : null;
+
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+      ),
+      builder: (ctx) {
+        return Padding(
+          padding: EdgeInsets.only(
+            left: 20,
+            right: 20,
+            top: 8,
+            bottom: MediaQuery.paddingOf(ctx).bottom + 20,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                l10n.historyAlertDetailTitle,
+                style: GoogleFonts.poppins(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 17,
+                  color: AppTheme.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                _kindLabel(l10n, kind),
+                style: GoogleFonts.poppins(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                  color: AppTheme.primaryGreen,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                _statusLabel(status),
+                style: GoogleFonts.poppins(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: _statusColor(status),
+                ),
+              ),
+              if (et != null && et.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                Text(
+                  et,
+                  style: GoogleFonts.poppins(
+                    fontSize: 13,
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
+              ],
+              if (addr.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                Text(
+                  '${l10n.historyFieldAddress}:',
+                  style: GoogleFonts.poppins(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
+                Text(
+                  addr,
+                  style: GoogleFonts.poppins(fontSize: 13),
+                ),
+              ],
+              if (dt != null) ...[
+                const SizedBox(height: 10),
+                Text(
+                  '${l10n.historyFieldDate}:',
+                  style: GoogleFonts.poppins(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
+                Text(
+                  DateFormat(
+                    'd MMM yyyy, HH:mm',
+                    Localizations.localeOf(ctx).languageCode,
+                  ).format(dt.toLocal()),
+                  style: GoogleFonts.poppins(fontSize: 13),
+                ),
+              ],
+              if (lat != null && lon != null) ...[
+                const SizedBox(height: 10),
+                Text(
+                  '${l10n.historyFieldCoords}:',
+                  style: GoogleFonts.poppins(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
+                Text(
+                  '${lat.toString()}, ${lon.toString()}',
+                  style: GoogleFonts.poppins(fontSize: 13),
+                ),
+              ],
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.of(ctx).pop(),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryGreen,
+                  ),
+                  child: Text(l10n.close, style: GoogleFonts.poppins()),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF4F1EA),
       body: SafeArea(
@@ -107,7 +386,8 @@ class _IncidentHistoryScreenState extends State<IncidentHistoryScreen> {
                   ),
                   const Spacer(),
                   Text(
-                    'Historique des incidents',
+                    l10n.historyUnifiedTitle,
+                    textAlign: TextAlign.center,
                     style: GoogleFonts.poppins(
                       color: const Color(0xFF1A1F2E),
                       fontWeight: FontWeight.w600,
@@ -133,26 +413,29 @@ class _IncidentHistoryScreenState extends State<IncidentHistoryScreen> {
                         ),
                       ),
                     )
-                  : _incidents.isEmpty
+                  : _entries.isEmpty
                   ? Center(
                       child: Text(
-                        'Aucun signalement',
+                        l10n.historyUnifiedEmpty,
+                        textAlign: TextAlign.center,
                         style: GoogleFonts.poppins(color: AppTheme.textSecondary),
                       ),
                     )
                   : RefreshIndicator(
-                      onRefresh: _loadIncidents,
+                      onRefresh: _loadAll,
+                      color: AppTheme.primaryGreen,
                       child: ListView.builder(
                         padding: const EdgeInsets.fromLTRB(14, 4, 14, 14),
-                        itemCount: _incidents.length,
+                        itemCount: _entries.length,
                         itemBuilder: (context, index) {
-                          final incident = _incidents[index];
-                          final id = _parseIncidentId(incident['id']);
-                          final type = (incident['type'] ?? 'incident').toString();
-                          final status = (incident['status'] ?? 'pending').toString();
-                          final description = (incident['description'] ?? '')
-                              .toString()
-                              .trim();
+                          final e = _entries[index];
+                          final kind = (e['_historyKind'] ??
+                                  IncidentHistoryScreen._kindIncident)
+                              .toString();
+                          final status =
+                              (e['status'] ?? 'pending').toString();
+                          final id = _parseId(e['id']);
+                          final sub = _entrySubtitleLine(l10n, e);
 
                           return Container(
                             margin: const EdgeInsets.only(bottom: 12),
@@ -169,17 +452,18 @@ class _IncidentHistoryScreenState extends State<IncidentHistoryScreen> {
                                 width: 38,
                                 height: 38,
                                 decoration: BoxDecoration(
-                                  color: _statusColor(status).withValues(alpha: 0.12),
+                                  color: _statusColor(status)
+                                      .withValues(alpha: 0.12),
                                   shape: BoxShape.circle,
                                 ),
                                 child: Icon(
-                                  Icons.report_problem_rounded,
+                                  _kindIcon(kind),
                                   color: _statusColor(status),
                                   size: 20,
                                 ),
                               ),
                               title: Text(
-                                '#${id ?? '-'} · $type',
+                                _entryTitle(l10n, e),
                                 style: GoogleFonts.poppins(
                                   fontWeight: FontWeight.w700,
                                   fontSize: 14,
@@ -198,10 +482,10 @@ class _IncidentHistoryScreenState extends State<IncidentHistoryScreen> {
                                       color: _statusColor(status),
                                     ),
                                   ),
-                                  if (description.isNotEmpty) ...[
+                                  if (sub.isNotEmpty) ...[
                                     const SizedBox(height: 2),
                                     Text(
-                                      description,
+                                      sub,
                                       maxLines: 2,
                                       overflow: TextOverflow.ellipsis,
                                       style: GoogleFonts.poppins(
@@ -212,16 +496,25 @@ class _IncidentHistoryScreenState extends State<IncidentHistoryScreen> {
                                   ],
                                 ],
                               ),
-                              trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
+                              trailing: const Icon(
+                                Icons.arrow_forward_ios_rounded,
+                                size: 14,
+                              ),
                               onTap: () {
-                                if (id == null) return;
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        IncidentTrackingScreen(incidentId: id),
-                                  ),
-                                );
+                                if (kind == IncidentHistoryScreen._kindIncident) {
+                                  if (id == null) return;
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          IncidentTrackingScreen(
+                                        incidentId: id,
+                                      ),
+                                    ),
+                                  );
+                                } else {
+                                  _openAlertDetail(context, e);
+                                }
                               },
                             ),
                           );
@@ -235,4 +528,3 @@ class _IncidentHistoryScreenState extends State<IncidentHistoryScreen> {
     );
   }
 }
-

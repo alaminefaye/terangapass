@@ -632,6 +632,33 @@ class AppLocalizationsFr extends AppLocalizations {
   String get profileDefaultReportTitle => 'Signalement';
 
   @override
+  String get historyUnifiedTitle => 'Historique SOS & signalements';
+
+  @override
+  String get historyUnifiedEmpty => 'Aucun SOS, alerte médicale ni signalement';
+
+  @override
+  String get historyKindSos => 'SOS';
+
+  @override
+  String get historyKindMedical => 'Alerte médicale';
+
+  @override
+  String get historyKindReport => 'Signalement';
+
+  @override
+  String get historyAlertDetailTitle => 'Détail de l’alerte';
+
+  @override
+  String get historyFieldAddress => 'Adresse';
+
+  @override
+  String get historyFieldDate => 'Date';
+
+  @override
+  String get historyFieldCoords => 'Coordonnées';
+
+  @override
   String get privacyPersonalDataTitle => 'Données personnelles';
 
   @override

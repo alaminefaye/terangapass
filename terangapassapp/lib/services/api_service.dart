@@ -675,7 +675,17 @@ class ApiService {
   Future<List<dynamic>> getAlertsHistory() async {
     try {
       final response = await _dio.get('alerts/history');
-      return response.data['data'] ?? [];
+      final body = response.data;
+      if (body is Map<String, dynamic>) {
+        final d = body['data'];
+        if (d is List<dynamic>) {
+          return d;
+        }
+        if (d is List) {
+          return List<dynamic>.from(d);
+        }
+      }
+      return [];
     } on DioException catch (e) {
       throw _handleError(e);
     }

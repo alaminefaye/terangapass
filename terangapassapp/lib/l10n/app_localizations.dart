@@ -1268,6 +1268,60 @@ abstract class AppLocalizations {
   /// **'Signalement'**
   String get profileDefaultReportTitle;
 
+  /// No description provided for @historyUnifiedTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Historique SOS & signalements'**
+  String get historyUnifiedTitle;
+
+  /// No description provided for @historyUnifiedEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun SOS, alerte médicale ni signalement'**
+  String get historyUnifiedEmpty;
+
+  /// No description provided for @historyKindSos.
+  ///
+  /// In fr, this message translates to:
+  /// **'SOS'**
+  String get historyKindSos;
+
+  /// No description provided for @historyKindMedical.
+  ///
+  /// In fr, this message translates to:
+  /// **'Alerte médicale'**
+  String get historyKindMedical;
+
+  /// No description provided for @historyKindReport.
+  ///
+  /// In fr, this message translates to:
+  /// **'Signalement'**
+  String get historyKindReport;
+
+  /// No description provided for @historyAlertDetailTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Détail de l’alerte'**
+  String get historyAlertDetailTitle;
+
+  /// No description provided for @historyFieldAddress.
+  ///
+  /// In fr, this message translates to:
+  /// **'Adresse'**
+  String get historyFieldAddress;
+
+  /// No description provided for @historyFieldDate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Date'**
+  String get historyFieldDate;
+
+  /// No description provided for @historyFieldCoords.
+  ///
+  /// In fr, this message translates to:
+  /// **'Coordonnées'**
+  String get historyFieldCoords;
+
   /// No description provided for @privacyPersonalDataTitle.
   ///
   /// In fr, this message translates to:

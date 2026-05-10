@@ -623,6 +623,33 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileDefaultReportTitle => 'Report';
 
   @override
+  String get historyUnifiedTitle => 'SOS, medical & reports';
+
+  @override
+  String get historyUnifiedEmpty => 'No SOS, medical alerts or reports yet';
+
+  @override
+  String get historyKindSos => 'SOS';
+
+  @override
+  String get historyKindMedical => 'Medical alert';
+
+  @override
+  String get historyKindReport => 'Report';
+
+  @override
+  String get historyAlertDetailTitle => 'Alert details';
+
+  @override
+  String get historyFieldAddress => 'Address';
+
+  @override
+  String get historyFieldDate => 'Date';
+
+  @override
+  String get historyFieldCoords => 'Coordinates';
+
+  @override
   String get privacyPersonalDataTitle => 'Personal data';
 
   @override
