@@ -5,6 +5,7 @@ namespace App\Models;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
 class Partner extends Model
@@ -39,6 +40,19 @@ class Partner extends Model
         'is_sponsor' => 'boolean',
         'is_active' => 'boolean',
     ];
+
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(PoiReview::class);
+    }
+
+    /** Recalcule et sauvegarde la note moyenne à partir des avis. */
+    public function refreshRating(): void
+    {
+        $avg = $this->reviews()->avg('rating');
+        $this->rating = $avg ? round($avg, 1) : null;
+        $this->saveQuietly();
+    }
 
     public function getIsOpenNowAttribute(): ?bool
     {

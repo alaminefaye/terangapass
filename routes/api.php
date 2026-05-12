@@ -93,6 +93,10 @@ Route::middleware(['api.user.active'])->prefix('v1')->group(function () {
     Route::get('/tourism/embassies', [TourismController::class, 'embassies']);
     Route::get('/nearby', [NearbyController::class, 'index']);
 
+    // Avis sur les lieux touristiques
+    Route::get('/tourism/points-of-interest/{id}/reviews', [TourismController::class, 'getReviews']);
+    Route::post('/tourism/points-of-interest/{id}/reviews', [TourismController::class, 'addReview']);
+
     // Assistant IA
     Route::post('/ai/chat', [AIChatController::class, 'chat']);
 

@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Partner;
+use App\Models\PoiReview;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class TourismController extends Controller
 {
@@ -96,6 +98,67 @@ class TourismController extends Controller
         });
 
         return response()->json(['data' => $embassies]);
+    }
+
+    /** GET /tourism/points-of-interest/{id}/reviews */
+    public function getReviews(int $id)
+    {
+        $partner = Partner::findOrFail($id);
+
+        $reviews = $partner->reviews()
+            ->with('user:id,name')
+            ->latest()
+            ->get()
+            ->map(fn ($r) => [
+                'id'         => $r->id,
+                'rating'     => $r->rating,
+                'comment'    => $r->comment,
+                'author'     => $r->user->name ?? 'Anonyme',
+                'created_at' => $r->created_at->toISOString(),
+            ]);
+
+        $average = $reviews->isNotEmpty()
+            ? round($reviews->avg('rating'), 1)
+            : null;
+
+        return response()->json([
+            'data'    => $reviews,
+            'average' => $average,
+            'count'   => $reviews->count(),
+        ]);
+    }
+
+    /** POST /tourism/points-of-interest/{id}/reviews */
+    public function addReview(int $id, Request $request)
+    {
+        $request->validate([
+            'rating'  => 'required|integer|min:1|max:5',
+            'comment' => 'nullable|string|max:1000',
+        ]);
+
+        $partner = Partner::findOrFail($id);
+        $user    = Auth::user();
+
+        // Upsert : remplace l'avis existant si l'utilisateur en a déjà un
+        $review = PoiReview::updateOrCreate(
+            ['partner_id' => $partner->id, 'user_id' => $user->id],
+            ['rating' => $request->rating, 'comment' => $request->comment]
+        );
+
+        // Recalcule la note moyenne du partenaire
+        $partner->refreshRating();
+
+        return response()->json([
+            'data' => [
+                'id'         => $review->id,
+                'rating'     => $review->rating,
+                'comment'    => $review->comment,
+                'author'     => $user->name,
+                'created_at' => $review->created_at->toISOString(),
+            ],
+            'average' => $partner->rating,
+            'count'   => $partner->reviews()->count(),
+        ], 201);
     }
 
     private function calculateDistanceMeters($lat1, $lon1, $lat2, $lon2): float

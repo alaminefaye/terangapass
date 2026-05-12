@@ -996,6 +996,38 @@ class ApiService {
     }
   }
 
+  /// Récupère les avis d'un point d'intérêt.
+  Future<Map<String, dynamic>> getPoiReviews(int partnerId) async {
+    try {
+      final response = await _dio.get(
+        'tourism/points-of-interest/$partnerId/reviews',
+      );
+      return Map<String, dynamic>.from(response.data as Map);
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  /// Soumet ou met à jour un avis sur un point d'intérêt.
+  Future<Map<String, dynamic>> addPoiReview(
+    int partnerId, {
+    required int rating,
+    String? comment,
+  }) async {
+    try {
+      final response = await _dio.post(
+        'tourism/points-of-interest/$partnerId/reviews',
+        data: {
+          'rating': rating,
+          if (comment != null && comment.isNotEmpty) 'comment': comment,
+        },
+      );
+      return Map<String, dynamic>.from(response.data as Map);
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
   /// Récupère la liste des ambassades (catégorie dédiée).
   Future<List<dynamic>> getEmbassies() async {
     try {
