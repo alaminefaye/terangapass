@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../services/api_service.dart';
 import '../theme/app_theme.dart';
@@ -43,33 +45,98 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
     return int.tryParse(id.toString());
   }
 
+  // ── Clé SharedPreferences pour les avis locaux ──────────────────────────
+  String get _localKey {
+    final name = (widget.point['name'] as String? ?? '').trim().toLowerCase();
+    return 'poi_reviews_${Uri.encodeComponent(name)}';
+  }
+
+  Future<List<Map<String, dynamic>>> _loadLocalReviews() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_localKey);
+      if (raw == null) return [];
+      return (jsonDecode(raw) as List).cast<Map<String, dynamic>>();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<void> _saveLocalReview(int rating, String comment) async {
+    final prefs = await SharedPreferences.getInstance();
+    final existing = await _loadLocalReviews();
+    existing.insert(0, {
+      'rating': rating,
+      'comment': comment.trim(),
+      'author': 'Moi',
+      'created_at': DateTime.now().toIso8601String(),
+      'local': true,
+    });
+    await prefs.setString(_localKey, jsonEncode(existing));
+  }
+
   Future<void> _loadReviews() async {
     final id = _partnerId;
+    setState(() => _reviewsLoading = true);
+
+    // Toujours charger d'abord les avis locaux
+    final localReviews = await _loadLocalReviews();
+
     if (id == null) {
-      setState(() => _reviewsLoaded = true);
+      if (mounted) {
+        setState(() {
+          _reviews = localReviews;
+          _reviewsLoaded = true;
+          _reviewsLoading = false;
+          _reviewCount = localReviews.length;
+          if (localReviews.isNotEmpty) {
+            _averageRating = localReviews
+                    .map((r) => (r['rating'] as num).toDouble())
+                    .reduce((a, b) => a + b) /
+                localReviews.length;
+          }
+        });
+      }
       return;
     }
-    setState(() => _reviewsLoading = true);
+
     try {
+      // Essaie le backend
       final result = await _api.getPoiReviews(id);
-      final list = (result['data'] as List?)
+      final serverList = (result['data'] as List?)
               ?.map((e) => Map<String, dynamic>.from(e as Map))
               .toList() ??
           [];
+
+      // Fusionne : avis locaux non encore synchronisés en tête
+      final merged = [
+        ...localReviews.where((l) => l['local'] == true),
+        ...serverList,
+      ];
+
       if (mounted) {
         setState(() {
-          _reviews = list;
+          _reviews = merged;
           _averageRating = (result['average'] as num?)?.toDouble();
-          _reviewCount = (result['count'] as num?)?.toInt() ?? list.length;
+          _reviewCount = (result['count'] as num?)?.toInt() ?? serverList.length;
           _reviewsLoaded = true;
           _reviewsLoading = false;
         });
       }
     } catch (_) {
+      // Backend indisponible → affiche les avis locaux
       if (mounted) {
         setState(() {
+          _reviews = localReviews;
           _reviewsLoaded = true;
           _reviewsLoading = false;
+          _reviewCount = localReviews.length;
+          if (localReviews.isNotEmpty) {
+            _averageRating = localReviews
+                    .map((r) => (r['rating'] as num).toDouble())
+                    .reduce((a, b) => a + b) /
+                localReviews.length;
+          }
         });
       }
     }
@@ -316,30 +383,41 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                                 ? null
                                 : () async {
                                     setD(() => submitting = true);
+                                    bool savedToServer = false;
                                     try {
                                       await _api.addPoiReview(
                                         id,
                                         rating: selectedRating,
                                         comment: commentController.text.trim(),
                                       );
-                                      if (dialogContext.mounted) {
-                                        Navigator.of(dialogContext).pop();
-                                      }
-                                      _loadReviews();
-                                    } catch (e) {
-                                      setD(() => submitting = false);
-                                      if (dialogContext.mounted) {
+                                      savedToServer = true;
+                                    } catch (_) {
+                                      // Backend indisponible → fallback local
+                                    }
+
+                                    if (!savedToServer) {
+                                      await _saveLocalReview(
+                                        selectedRating,
+                                        commentController.text.trim(),
+                                      );
+                                    }
+
+                                    if (dialogContext.mounted) {
+                                      Navigator.of(dialogContext).pop();
+                                      if (!savedToServer) {
                                         ScaffoldMessenger.of(dialogContext)
                                             .showSnackBar(SnackBar(
                                           content: Text(
-                                            'Erreur : impossible de publier l\'avis.',
+                                            'Avis sauvegardé localement (synchronisation automatique dès que le serveur est disponible).',
                                             style: GoogleFonts.poppins(
-                                                fontSize: 13),
+                                                fontSize: 12),
                                           ),
-                                          backgroundColor: Colors.red,
+                                          backgroundColor: Colors.orange,
+                                          duration: const Duration(seconds: 4),
                                         ));
                                       }
                                     }
+                                    _loadReviews();
                                   },
                             child: Container(
                               padding:
@@ -387,6 +465,25 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
           },
         );
       },
+    );
+  }
+
+  Widget _coverFallback(Color color) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [color, color.withValues(alpha: 0.55)],
+        ),
+      ),
+      child: Center(
+        child: Icon(
+          widget.icon,
+          color: Colors.white.withValues(alpha: 0.35),
+          size: 72,
+        ),
+      ),
     );
   }
 
@@ -470,83 +567,121 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
     // Utilise la note backend si disponible, sinon celle du point
     final displayRating = _averageRating ?? _toDouble(point['rating']);
 
+    // Photo de couverture : première photo si dispo, sinon iconUrl
+    final coverUrl = (photos.isNotEmpty ? photos.first : null) ?? iconUrl;
+
+    final topPadding = MediaQuery.of(context).padding.top;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
-      body: CustomScrollView(
-        slivers: [
-          // ── App bar avec dégradé ──────────────────────────────────────
-          SliverAppBar(
-            expandedHeight: 180,
-            pinned: true,
-            backgroundColor: color,
-            leading: IconButton(
-              icon: Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.25),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.arrow_back_ios_new_rounded,
-                    color: Colors.white, size: 16),
-              ),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-            flexibleSpace: FlexibleSpaceBar(
-              background: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      color,
-                      color.withValues(alpha: 0.75),
-                    ],
-                  ),
-                ),
-                child: SafeArea(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
+      // Bouton retour flottant — toujours visible, jamais de barre colorée
+      body: Stack(
+        children: [
+          CustomScrollView(
+            slivers: [
+              // ── Cover photo — simple image fixe, aucun SliverAppBar ──
+              SliverToBoxAdapter(
+                child: SizedBox(
+                  height: 280 + topPadding,
+                  child: Stack(
+                    fit: StackFit.expand,
                     children: [
-                      const SizedBox(height: 40),
-                      Container(
-                        width: 72,
-                        height: 72,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(20),
+                      coverUrl != null
+                          ? Image.network(
+                              coverUrl,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  _coverFallback(color),
+                            )
+                          : _coverFallback(color),
+                      // dégradé bas
+                      Positioned(
+                        left: 0, right: 0, bottom: 0, height: 120,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.bottomCenter,
+                              end: Alignment.topCenter,
+                              colors: [
+                                Colors.black.withValues(alpha: 0.55),
+                                Colors.transparent,
+                              ],
+                            ),
+                          ),
                         ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(20),
-                          child: iconUrl != null
-                              ? Image.network(
-                                  iconUrl,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) =>
-                                      Icon(widget.icon,
-                                          color: Colors.white, size: 36),
-                                )
-                              : Icon(widget.icon,
-                                  color: Colors.white, size: 36),
+                      ),
+                      // dégradé haut (derrière status bar)
+                      Positioned(
+                        left: 0, right: 0, top: 0, height: topPadding + 60,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                Colors.black.withValues(alpha: 0.4),
+                                Colors.transparent,
+                              ],
+                            ),
+                          ),
                         ),
                       ),
                     ],
                   ),
                 ),
               ),
-            ),
-          ),
 
-          // ── Contenu ───────────────────────────────────────────────────
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Name + category + rating
-                  Row(
+              // ── Contenu ──────────────────────────────────────────────
+              SliverToBoxAdapter(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Carte identité : avatar + nom + catégorie + note
+                Container(
+                  color: Colors.white,
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+                  child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // Avatar arrondi
+                      Container(
+                        width: 64,
+                        height: 64,
+                        decoration: BoxDecoration(
+                          color: color.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: Colors.white,
+                            width: 3,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.1),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(13),
+                          child: iconUrl != null
+                              ? Image.network(
+                                  iconUrl,
+                                  fit: BoxFit.cover,
+                                  errorBuilder:
+                                      (context, error, stackTrace) =>
+                                          Center(
+                                    child: Icon(widget.icon,
+                                        color: color, size: 30),
+                                  ),
+                                )
+                              : Center(
+                                  child: Icon(widget.icon,
+                                      color: color, size: 30),
+                                ),
+                        ),
+                      ),
+                      const SizedBox(width: 14),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -554,12 +689,12 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                             Text(
                               name,
                               style: GoogleFonts.poppins(
-                                fontSize: 20,
+                                fontSize: 19,
                                 fontWeight: FontWeight.bold,
                                 color: AppTheme.textPrimary,
                               ),
                             ),
-                            const SizedBox(height: 6),
+                            const SizedBox(height: 5),
                             Container(
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 10, vertical: 4),
@@ -570,7 +705,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                               child: Text(
                                 category,
                                 style: GoogleFonts.poppins(
-                                  fontSize: 12,
+                                  fontSize: 11,
                                   fontWeight: FontWeight.w600,
                                   color: color,
                                 ),
@@ -582,10 +717,10 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                       if (displayRating != null)
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 8),
+                              horizontal: 10, vertical: 7),
                           decoration: BoxDecoration(
                             color: Colors.amber.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(12),
                           ),
                           child: Column(
                             children: [
@@ -593,12 +728,12 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   const Icon(Icons.star_rounded,
-                                      size: 18, color: Colors.amber),
-                                  const SizedBox(width: 4),
+                                      size: 16, color: Colors.amber),
+                                  const SizedBox(width: 3),
                                   Text(
                                     displayRating.toStringAsFixed(1),
                                     style: GoogleFonts.poppins(
-                                      fontSize: 15,
+                                      fontSize: 14,
                                       fontWeight: FontWeight.bold,
                                       color: Colors.amber.shade700,
                                     ),
@@ -609,7 +744,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                                 Text(
                                   '$_reviewCount avis',
                                   style: GoogleFonts.poppins(
-                                    fontSize: 10,
+                                    fontSize: 9,
                                     color: AppTheme.textSecondary,
                                   ),
                                 ),
@@ -618,6 +753,13 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                         ),
                     ],
                   ),
+                ),
+                const SizedBox(height: 8),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
 
                   // Tags
                   if (tags.isNotEmpty) ...[
@@ -1113,6 +1255,31 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                     ),
                   const SizedBox(height: 40),
                 ],
+              ),
+            ),
+          ],
+        ),
+        ),
+            ],
+          ),
+          // ── Bouton retour flottant ──────────────────────────────────
+          Positioned(
+            top: topPadding + 8,
+            left: 12,
+            child: GestureDetector(
+              onTap: () => Navigator.of(context).pop(),
+              child: Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.4),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.arrow_back_ios_new_rounded,
+                  color: Colors.white,
+                  size: 16,
+                ),
               ),
             ),
           ),
