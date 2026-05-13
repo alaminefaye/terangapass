@@ -5,11 +5,34 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Partner;
 use App\Models\PoiReview;
+use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 
 class TourismController extends Controller
 {
+    /**
+     * Même convention que AuthController (/auth/login) : Bearer base64(userId|timestamp|email).
+     */
+    private function userFromBearer(Request $request): ?User
+    {
+        $token = $request->bearerToken();
+        if ($token === null || $token === '') {
+            return null;
+        }
+
+        $decoded = base64_decode($token, true);
+        if ($decoded === false || $decoded === '') {
+            return null;
+        }
+
+        $parts = explode('|', $decoded);
+        if (count($parts) < 3) {
+            return null;
+        }
+
+        return User::query()->find((int) $parts[0]);
+    }
+
     public function pointsOfInterest(Request $request)
     {
         $query = Partner::where('is_active', true);
@@ -137,7 +160,21 @@ class TourismController extends Controller
         ]);
 
         $partner = Partner::findOrFail($id);
-        $user    = Auth::user();
+        $user    = $this->userFromBearer($request);
+
+        if ($user === null) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Connectez-vous pour laisser un avis.',
+            ], 401);
+        }
+
+        if ($user->isBlockedAccount()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ce compte est suspendu.',
+            ], 403);
+        }
 
         // Upsert : remplace l'avis existant si l'utilisateur en a déjà un
         $review = PoiReview::updateOrCreate(

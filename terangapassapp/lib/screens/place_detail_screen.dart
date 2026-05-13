@@ -404,18 +404,29 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
 
                                     if (dialogContext.mounted) {
                                       Navigator.of(dialogContext).pop();
-                                      if (!savedToServer) {
-                                        ScaffoldMessenger.of(dialogContext)
-                                            .showSnackBar(SnackBar(
+                                    }
+                                    // Utiliser le contexte de la page (pas celui du dialog fermé).
+                                    if (mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
                                           content: Text(
-                                            'Avis sauvegardé localement (synchronisation automatique dès que le serveur est disponible).',
-                                            style: GoogleFonts.poppins(
-                                                fontSize: 12),
+                                            savedToServer
+                                                ? 'Avis publié.'
+                                                : 'Avis sauvegardé sur cet appareil. '
+                                                    'Pour le partager à tous les utilisateurs, '
+                                                    'connectez-vous et réessayez.',
+                                            style:
+                                                GoogleFonts.poppins(fontSize: 12),
                                           ),
-                                          backgroundColor: Colors.orange,
-                                          duration: const Duration(seconds: 4),
-                                        ));
-                                      }
+                                          backgroundColor: savedToServer
+                                              ? AppTheme.primaryGreen
+                                              : Colors.orange.shade700,
+                                          duration: Duration(
+                                            seconds:
+                                                savedToServer ? 2 : 5,
+                                          ),
+                                        ),
+                                      );
                                     }
                                     _loadReviews();
                                   },
