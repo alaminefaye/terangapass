@@ -11,7 +11,7 @@ class MapConstants {
 
   /// Clé API (également dans AndroidManifest + iOS AppDelegate).
   static const String googleMapsApiKey =
-      'AIzaSyCdC7hueXmRNhu4A-DANUCl383QbQ0h56k';
+      'AIzaSyCN1MyOGuAiD1EE7WSp74lSMHX2scGHn-A';
 
   /// Identifiant package (restrictions clé Google Cloud).
   static const String tileUserAgentPackageName = 'com.terangapass.app';

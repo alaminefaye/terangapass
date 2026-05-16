@@ -19,6 +19,7 @@ import '../widgets/loading_placeholders.dart';
 import '../widgets/map_legend_strip.dart';
 import '../services/offline_pack_service.dart';
 import '../widgets/offline_cache_snack.dart';
+import 'place_detail_screen.dart';
 
 enum _MapFilter { all, help, sites, hotels, restaurants, pharmacies, hospitals }
 
@@ -51,6 +52,10 @@ class _MapScreenState extends State<MapScreen> {
   final TextEditingController _searchController = TextEditingController();
   List<Map<String, dynamic>> _pointsOfInterest = [];
   List<Map<String, dynamic>> _allPoints = [];
+
+  // Lieu choisi depuis la liste « à proximité » (navigation in-app)
+  LatLng? _selectedDestination;
+  String? _selectedPlaceName;
 
   // Itinéraire vers le lieu ciblé
   List<LatLng> _routePoints = [];
@@ -89,6 +94,12 @@ class _MapScreenState extends State<MapScreen> {
     super.dispose();
   }
 
+  LatLng? get _destination => widget.initialLatLng ?? _selectedDestination;
+
+  String? get _destinationName => widget.focusedPlaceName ?? _selectedPlaceName;
+
+  bool get _hasDestination => _destination != null;
+
   @override
   void initState() {
     super.initState();
@@ -105,7 +116,7 @@ class _MapScreenState extends State<MapScreen> {
     _initTts();
     _initLocationAndLoad().then((_) {
       // Calcul automatique de l'itinéraire si on a un lieu ciblé.
-      if (widget.initialLatLng != null && mounted) {
+      if (_hasDestination && mounted) {
         _calculateRoute();
       }
     });
@@ -131,7 +142,7 @@ class _MapScreenState extends State<MapScreen> {
 
   /// Itinéraire Google Directions (km / durée réalistes), secours OSRM.
   Future<void> _calculateRoute() async {
-    final dest = widget.initialLatLng;
+    final dest = _destination;
     if (dest == null) return;
 
     final origin = LatLng(
@@ -497,7 +508,7 @@ class _MapScreenState extends State<MapScreen> {
     }
 
     // Distance restante + notifications de proximité et d'arrivée
-    final dest = widget.initialLatLng;
+    final dest = _destination;
     if (dest != null) {
       final remaining = Geolocator.distanceBetween(
         pos.latitude, pos.longitude, dest.latitude, dest.longitude,
@@ -533,7 +544,7 @@ class _MapScreenState extends State<MapScreen> {
         _sendNavNotification(
           id: 2,
           title: 'Vous êtes arrivé !',
-          body: 'Vous avez atteint votre destination : ${widget.focusedPlaceName ?? ""}',
+          body: 'Vous avez atteint votre destination : ${_destinationName ?? ""}',
         );
         if (mounted) {
           const arrivalText = 'Vous êtes arrivé à destination';
@@ -854,9 +865,9 @@ class _MapScreenState extends State<MapScreen> {
       index++;
     }
 
-    final focused = widget.initialLatLng;
+    final focused = _destination;
     if (focused != null) {
-      final label = widget.focusedPlaceName ?? '';
+      final label = _destinationName ?? '';
       markers.add(
         Marker(
           markerId: const MarkerId('focused_destination'),
@@ -885,14 +896,14 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   CameraPosition get _initialCameraPosition {
-    final center = widget.initialLatLng ??
+    final center = _destination ??
         LatLng(
           _currentLat ?? 14.7167,
           _currentLng ?? -17.4677,
         );
     return CameraPosition(
       target: center,
-      zoom: widget.initialLatLng != null ? 16 : 12,
+      zoom: _hasDestination ? 16 : 12,
     );
   }
 
@@ -1116,14 +1127,14 @@ class _MapScreenState extends State<MapScreen> {
               ),
             ),
             // Panneau itinéraire — visible uniquement quand on arrive depuis un lieu ciblé.
-            if (widget.initialLatLng != null)
+            if (_hasDestination)
               Positioned(
                 left: 0,
                 right: 0,
                 bottom: 0,
                 child: _buildDestinationPanel(context),
               ),
-            if (widget.initialLatLng == null)
+            if (!_hasDestination)
             DraggableScrollableSheet(
               initialChildSize: 0.30,
               minChildSize: 0.20,
@@ -1215,8 +1226,69 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
+  void _focusPointOnMap(Map<String, dynamic> point) {
+    final name = (point['name'] ?? '').toString().trim();
+    final lat = point['latitude'] ?? point['lat'];
+    final lng = point['longitude'] ?? point['lng'] ?? point['lon'];
+    final latitude = lat is num ? lat.toDouble() : double.tryParse('$lat');
+    final longitude = lng is num ? lng.toDouble() : double.tryParse('$lng');
+
+    if (latitude == null || longitude == null) {
+      _openPlaceDetail(point);
+      return;
+    }
+
+    final target = LatLng(latitude, longitude);
+    if (_isNavigating) {
+      _stopNavigation();
+    }
+    setState(() {
+      _selectedDestination = target;
+      _selectedPlaceName = name.isEmpty ? null : name;
+      _routePoints = [];
+      _routeDistance = null;
+      _routeDuration = null;
+      _routeError = null;
+    });
+
+    GoogleMapsHelpers.animateTo(_mapController, target, zoom: 15);
+    _calculateRoute();
+  }
+
+  void _openPlaceDetail(Map<String, dynamic> point) {
+    final category = (point['category'] ?? '').toString().trim();
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PlaceDetailScreen(
+          point: point,
+          color: _colorForCategory(category),
+          icon: _iconForCategory(category),
+        ),
+      ),
+    );
+  }
+
+  void _dismissDestination() {
+    if (widget.initialLatLng != null) {
+      Navigator.maybePop(context);
+      return;
+    }
+    if (_isNavigating) {
+      _stopNavigation();
+    }
+    setState(() {
+      _selectedDestination = null;
+      _selectedPlaceName = null;
+      _routePoints = [];
+      _routeDistance = null;
+      _routeDuration = null;
+      _routeError = null;
+    });
+  }
+
   Widget _buildDestinationPanel(BuildContext context) {
-    final name = widget.focusedPlaceName ?? '';
+    final name = _destinationName ?? '';
 
     // Pendant la navigation : pas de second « Démarrer », uniquement arrêter.
     if (_isNavigating) {
@@ -1277,6 +1349,11 @@ class _MapScreenState extends State<MapScreen> {
                         ),
                     ],
                   ),
+                ),
+                IconButton(
+                  onPressed: _dismissDestination,
+                  icon: const Icon(Icons.close_rounded, color: AppTheme.textSecondary),
+                  tooltip: 'Fermer',
                 ),
               ],
             ),
@@ -1370,6 +1447,11 @@ class _MapScreenState extends State<MapScreen> {
                       ),
                   ],
                 ),
+              ),
+              IconButton(
+                onPressed: _dismissDestination,
+                icon: const Icon(Icons.close_rounded, color: AppTheme.textSecondary),
+                tooltip: 'Fermer',
               ),
             ],
           ),
@@ -1591,22 +1673,13 @@ class _MapScreenState extends State<MapScreen> {
     final name = (point['name'] ?? '').toString().trim();
     final category = (point['category'] ?? '').toString().trim();
     final distanceLabel = _distanceLabelForPoint(point, category);
-    final lat = point['latitude'] ?? point['lat'];
-    final lng = point['longitude'] ?? point['lng'] ?? point['lon'];
     final phone = (point['phone'] ?? '').toString().trim();
-    final latitude = lat is num ? lat.toDouble() : double.tryParse('$lat');
-    final longitude = lng is num ? lng.toDouble() : double.tryParse('$lng');
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: () {
-          if (latitude != null && longitude != null) {
-            _openInMaps(latitude: latitude, longitude: longitude);
-            return;
-          }
-          _openInMaps(query: name);
-        },
+        onTap: () => _focusPointOnMap(point),
+        onLongPress: () => _openPlaceDetail(point),
         borderRadius: BorderRadius.circular(12),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
@@ -1743,72 +1816,4 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
-  Future<void> _openInMaps({
-    String? query,
-    double? latitude,
-    double? longitude,
-  }) async {
-    final l10n = AppLocalizations.of(context)!;
-    final resolvedQuery = query?.trim().isNotEmpty == true
-        ? query!.trim()
-        : l10n.jojDefaultLocation;
-    final encodedQuery = Uri.encodeComponent(resolvedQuery);
-
-    final universalHttps = <Uri>[
-      if (latitude != null && longitude != null) ...[
-        Uri.parse(
-          'https://www.google.com/maps/search/?api=1&query=$latitude,$longitude',
-        ),
-        Uri.parse('https://maps.apple.com/?ll=$latitude,$longitude&q=$encodedQuery'),
-        Uri.parse(
-          'https://www.openstreetmap.org/?mlat=$latitude&mlon=$longitude#map=15/$latitude/$longitude',
-        ),
-      ] else ...[
-        Uri.parse(
-          'https://www.google.com/maps/search/?api=1&query=$encodedQuery',
-        ),
-        Uri.parse('https://www.openstreetmap.org/search?query=$encodedQuery'),
-      ],
-    ];
-
-    for (final uri in universalHttps) {
-      try {
-        final ok = await launchUrl(
-          uri,
-          mode: LaunchMode.externalApplication,
-        );
-        if (ok) return;
-      } catch (_) {}
-    }
-
-    final candidates = <Uri>[
-      if (latitude != null && longitude != null) ...[
-        Uri.parse('comgooglemaps://?q=$latitude,$longitude'),
-        Uri.parse('geo:$latitude,$longitude?q=$latitude,$longitude'),
-      ] else ...[
-        Uri.parse('comgooglemaps://?q=$encodedQuery'),
-        Uri.parse('geo:0,0?q=$encodedQuery'),
-      ],
-    ];
-
-    for (final uri in candidates) {
-      try {
-        if (await canLaunchUrl(uri)) {
-          final ok = await launchUrl(
-            uri,
-            mode: LaunchMode.externalApplication,
-          );
-          if (ok) return;
-        }
-      } catch (_) {}
-    }
-
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(l10n.openMapError, style: GoogleFonts.poppins()),
-        backgroundColor: AppTheme.primaryRed,
-      ),
-    );
-  }
 }

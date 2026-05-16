@@ -44,7 +44,7 @@
             android:value="teranga_pass_channel" />
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="AIzaSyCdC7hueXmRNhu4A-DANUCl383QbQ0h56k" />
+            android:value="AIzaSyCN1MyOGuAiD1EE7WSp74lSMHX2scGHn-A" />
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and
