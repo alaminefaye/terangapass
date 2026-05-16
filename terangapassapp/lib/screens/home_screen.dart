@@ -129,26 +129,38 @@ class _HomeScreenState extends State<HomeScreen>
     );
     _aiPulseController.repeat(reverse: true);
     _bindOfficialPlayerListeners();
-    // Parallèle : moins d’attente au premier affichage de l’accueil.
-    Future.microtask(() async {
-      unawaited(TerangaPushMessaging.registerDeviceTokenIfAuthed());
-      await Future.wait<void>([
-        _loadOfficialAnnouncement(),
-        _loadCompetitionSites(),
-        _loadUnreadNotificationsCount(),
-        _loadJojCountdown(),
-      ]);
-      // Manifeste pack hors ligne : sync en arrière-plan (throttle dans [OfflinePackService]).
-      unawaited(OfflinePackService().refreshIfStale(ApiService()));
-      if (mounted) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) {
-            unawaited(OfflinePackService().maybeShowPackUpdatedToast(context));
-          }
-        });
-      }
-    });
+    Future.microtask(_refreshHomeData);
   }
+
+  /// Recharge annonces, sites JOJ, notifications et compte à rebours.
+  Future<void> _refreshHomeData({bool forceOfflinePack = false}) async {
+    unawaited(TerangaPushMessaging.registerDeviceTokenIfAuthed());
+    await Future.wait<void>([
+      _loadOfficialAnnouncement(force: true),
+      _loadCompetitionSites(force: true),
+      _loadUnreadNotificationsCount(),
+      _loadJojCountdown(),
+    ]);
+    final api = ApiService();
+    if (forceOfflinePack) {
+      try {
+        await OfflinePackService().refresh(api);
+      } catch (e, st) {
+        debugPrint('[Home] offline pack refresh: $e\n$st');
+      }
+    } else {
+      unawaited(OfflinePackService().refreshIfStale(api));
+    }
+    if (mounted && !forceOfflinePack) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          unawaited(OfflinePackService().maybeShowPackUpdatedToast(context));
+        }
+      });
+    }
+  }
+
+  Future<void> _onPullToRefresh() => _refreshHomeData(forceOfflinePack: true);
 
   @override
   void dispose() {
@@ -162,22 +174,7 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      Future.microtask(() async {
-        await Future.wait<void>([
-          _loadOfficialAnnouncement(),
-          _loadCompetitionSites(),
-          _loadUnreadNotificationsCount(),
-          _loadJojCountdown(),
-        ]);
-        unawaited(OfflinePackService().refreshIfStale(ApiService()));
-        if (mounted) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) {
-              unawaited(OfflinePackService().maybeShowPackUpdatedToast(context));
-            }
-          });
-        }
-      });
+      Future.microtask(_refreshHomeData);
     }
   }
 
@@ -203,8 +200,8 @@ class _HomeScreenState extends State<HomeScreen>
     }
   }
 
-  Future<void> _loadOfficialAnnouncement() async {
-    if (_isLoadingOfficialAnnouncement) return;
+  Future<void> _loadOfficialAnnouncement({bool force = false}) async {
+    if (!force && _isLoadingOfficialAnnouncement) return;
     setState(() {
       _isLoadingOfficialAnnouncement = true;
     });
@@ -267,8 +264,8 @@ class _HomeScreenState extends State<HomeScreen>
     }
   }
 
-  Future<void> _loadCompetitionSites() async {
-    if (_isLoadingCompetitionSites) return;
+  Future<void> _loadCompetitionSites({bool force = false}) async {
+    if (!force && _isLoadingCompetitionSites) return;
     setState(() {
       _isLoadingCompetitionSites = true;
       _competitionSitesError = null;
@@ -492,53 +489,67 @@ class _HomeScreenState extends State<HomeScreen>
     return Scaffold(
       backgroundColor: const Color(0xFFFAF7F0),
       body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                child: _buildMaquetteTopHeader(context),
-              ),
-              const SizedBox(height: 12),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: _buildHeroBanner(context),
-              ),
-              const SizedBox(height: 14),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: _buildQuickSearchBar(context),
-              ),
-              const SizedBox(height: 14),
-              Expanded(
-                child: SingleChildScrollView(
-                  child: Column(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: _buildJojCountdownStrip(context),
-                      ),
-                      const SizedBox(height: 14),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: _buildFeaturedBoxes(context),
-                      ),
-                      const SizedBox(height: 14),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: _buildPillarsSection(context),
-                      ),
-                      const SizedBox(height: 14),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: _buildQuickSupportBoxes(context),
-                      ),
-                      const SizedBox(height: 100),
-                    ],
-                  ),
+        child: RefreshIndicator(
+          color: AppTheme.primaryGreen,
+          backgroundColor: Colors.white,
+          displacement: 40,
+          onRefresh: _onPullToRefresh,
+          child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(
+              parent: BouncingScrollPhysics(),
+            ),
+            slivers: [
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                  child: _buildMaquetteTopHeader(context),
                 ),
               ),
-          ],
+              const SliverToBoxAdapter(child: SizedBox(height: 12)),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: _buildHeroBanner(context),
+                ),
+              ),
+              const SliverToBoxAdapter(child: SizedBox(height: 14)),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: _buildQuickSearchBar(context),
+                ),
+              ),
+              const SliverToBoxAdapter(child: SizedBox(height: 14)),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: _buildJojCountdownStrip(context),
+                ),
+              ),
+              const SliverToBoxAdapter(child: SizedBox(height: 14)),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: _buildFeaturedBoxes(context),
+                ),
+              ),
+              const SliverToBoxAdapter(child: SizedBox(height: 14)),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: _buildPillarsSection(context),
+                ),
+              ),
+              const SliverToBoxAdapter(child: SizedBox(height: 14)),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: _buildQuickSupportBoxes(context),
+                ),
+              ),
+              const SliverToBoxAdapter(child: SizedBox(height: 100)),
+            ],
+          ),
         ),
       ),
       bottomNavigationBar: _buildBottomNavigationBar(context),
