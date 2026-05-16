@@ -32,9 +32,11 @@ class _NearbyScreenState extends State<NearbyScreen> {
   double? _userLat;
   double? _userLng;
   String? _locationError;
+  List<Map<String, dynamic>> _allPlaces = [];
   List<Map<String, dynamic>> _places = [];
   Map<String, int> _categoryCounts = const {};
   bool _loading = true;
+  bool _fallbackOutOfRadius = false;
   String? _apiError;
   int _chipIndex = 0;
 
@@ -132,52 +134,46 @@ class _NearbyScreenState extends State<NearbyScreen> {
         return;
       }
 
-      final chips = _chips(AppLocalizations.of(context)!);
-      final selectedCat = chips[_chipIndex.clamp(0, chips.length - 1)].categoryKey;
-
-      // On récupère d'abord tous les lieux pour calculer les compteurs par catégorie.
-      List<Map<String, dynamic>> inRadiusPlaces;
+      List<Map<String, dynamic>> allPlaces;
       var usedOffline = false;
+      var fallbackOutOfRadius = false;
+      Map<String, int> counts = const {};
       try {
-        final allRaw = await ApiService().getNearby(
+        final result = await ApiService().getNearby(
           latitude: lat,
           longitude: lng,
           radiusMeters: _radiusM,
+          limit: 80,
         );
-        final allPlaces =
-            allRaw.map((e) => e as Map<String, dynamic>).toList();
-        inRadiusPlaces = allPlaces.where((p) {
-          final d = _distanceMetersForPlace(p);
-          return d != null && d <= _radiusM;
-        }).toList();
+        allPlaces = result.data
+            .map((e) => Map<String, dynamic>.from(e as Map))
+            .toList();
+        fallbackOutOfRadius = result.fallbackOutOfRadius;
+        counts = result.categoryCounts.isNotEmpty
+            ? result.categoryCounts
+            : _computeCategoryCounts(allPlaces);
       } catch (_) {
         final offline = await OfflinePackService().readOfflinePoiList();
         if (offline.isEmpty) rethrow;
-        inRadiusPlaces = OfflineNearbyBuilder.build(
+        allPlaces = OfflineNearbyBuilder.build(
           userLat: lat,
           userLng: lng,
           radiusMeters: _radiusM,
           poi: offline,
         );
+        counts = _computeCategoryCounts(allPlaces);
         usedOffline = true;
       }
-      final counts = _computeCategoryCounts(inRadiusPlaces);
-      final placesForSelection = selectedCat == null
-          ? inRadiusPlaces
-          : inRadiusPlaces
-                .where((p) {
-                  final key = _normalizeCategory(p['category_key'] ?? p['category']);
-                  return key == selectedCat;
-                })
-                .toList();
 
       if (!mounted) return;
       setState(() {
         _userLat = lat;
         _userLng = lng;
         _locationError = null;
+        _allPlaces = allPlaces;
         _categoryCounts = counts;
-        _places = placesForSelection;
+        _fallbackOutOfRadius = fallbackOutOfRadius;
+        _places = _filterPlacesForChip(_chipIndex);
         _loading = false;
       });
       if (usedOffline) {
@@ -194,10 +190,25 @@ class _NearbyScreenState extends State<NearbyScreen> {
     }
   }
 
-  Future<void> _onChipSelected(int i) async {
+  void _onChipSelected(int i) {
     if (_chipIndex == i) return;
-    setState(() => _chipIndex = i);
-    await _refresh();
+    setState(() {
+      _chipIndex = i;
+      _places = _filterPlacesForChip(i);
+    });
+  }
+
+  List<Map<String, dynamic>> _filterPlacesForChip(int chipIndex) {
+    final chips = _chips(AppLocalizations.of(context)!);
+    final selectedCat =
+        chips[chipIndex.clamp(0, chips.length - 1)].categoryKey;
+    if (selectedCat == null) return List<Map<String, dynamic>>.from(_allPlaces);
+    return _allPlaces
+        .where((p) {
+          final key = _normalizeCategory(p['category_key'] ?? p['category']);
+          return key == selectedCat;
+        })
+        .toList();
   }
 
   String? _phoneUri(Object? phone) {
@@ -212,10 +223,6 @@ class _NearbyScreenState extends State<NearbyScreen> {
     if (value is num) return value.toDouble();
     if (value is String) return double.tryParse(value.trim());
     return null;
-  }
-
-  double? _distanceMetersForPlace(Map<String, dynamic> place) {
-    return _toDouble(place['distance_meters']);
   }
 
   String _normalizeCategory(Object? value) =>
@@ -424,6 +431,23 @@ class _NearbyScreenState extends State<NearbyScreen> {
       child: ListView(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
         children: [
+          if (_fallbackOutOfRadius)
+            Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFF8E6),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFE8C547)),
+              ),
+              child: Text(
+                'Aucun lieu dans un rayon de $_radiusM m. Voici les plus proches.',
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  color: const Color(0xFF5C4A00),
+                ),
+              ),
+            ),
           ClipRRect(
             borderRadius: BorderRadius.circular(16),
             child: SizedBox(

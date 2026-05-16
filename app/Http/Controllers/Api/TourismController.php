@@ -2,14 +2,18 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Api\Concerns\FormatsPartnerForApi;
 use App\Http\Controllers\Controller;
 use App\Models\Partner;
 use App\Models\PoiReview;
 use App\Models\User;
+use App\Support\GeoQuery;
 use Illuminate\Http\Request;
 
 class TourismController extends Controller
 {
+    use FormatsPartnerForApi;
+
     /**
      * Même convention que AuthController (/auth/login) : Bearer base64(userId|timestamp|email).
      */
@@ -35,67 +39,71 @@ class TourismController extends Controller
 
     public function pointsOfInterest(Request $request)
     {
-        $query = Partner::where('is_active', true);
+        $request->validate([
+            'category' => 'sometimes|nullable|string|in:hotel,restaurant,pharmacy,hospital,embassy,consulate,bank,gas_station,shop,notary,lawyer,doctor,clinic,government,school,university,media,professional_service,religious_site,other',
+            'latitude' => 'sometimes|nullable|numeric|between:-90,90',
+            'longitude' => 'sometimes|nullable|numeric|between:-180,180',
+            'limit' => 'sometimes|integer|min:1|max:200',
+            'radius' => 'sometimes|integer|min:100|max:500000',
+        ]);
 
-        if ($request->has('category')) {
-            $query->where('category', $request->category);
+        $limit = min((int) $request->input('limit', 80), 200);
+        $hasCoordinates = $request->filled('latitude') && $request->filled('longitude');
+        $lat = $hasCoordinates ? (float) $request->latitude : null;
+        $lng = $hasCoordinates ? (float) $request->longitude : null;
+        $radius = (int) $request->input('radius', 100_000);
+
+        $baseQuery = Partner::query()
+            ->where('is_active', true)
+            ->whereNotNull('latitude')
+            ->whereNotNull('longitude');
+
+        if ($request->filled('category')) {
+            $baseQuery->where('category', $request->category);
         }
 
-        $hasCoordinates = $request->filled('latitude') && $request->filled('longitude');
+        $totalActive = (clone $baseQuery)->count();
 
-        $partners = $query->get();
+        $categoryCountsRaw = Partner::query()
+            ->where('is_active', true)
+            ->whereNotNull('latitude')
+            ->whereNotNull('longitude')
+            ->selectRaw('category, COUNT(*) as aggregate')
+            ->groupBy('category')
+            ->pluck('aggregate', 'category');
 
-        // Formater les données
-        $points = $partners->map(function ($partner) use ($request, $hasCoordinates) {
-            $distance = 'N/A';
-            $distanceMeters = null;
-            if ($hasCoordinates && $partner->latitude && $partner->longitude) {
-                $distanceMeters = $this->calculateDistanceMeters(
-                    $request->latitude,
-                    $request->longitude,
-                    $partner->latitude,
-                    $partner->longitude
-                );
-                $distance = $this->formatDistance($distanceMeters);
-            }
-
-            $iconUrl = $this->normalizeUrl($partner->resolvedLogoUrl());
-
-            $photos = array_values(array_filter(array_map(
-                fn ($u) => $this->normalizeUrl($u),
-                $partner->resolvedPhotoUrls()
-            )));
-
-            return [
-                'id' => $partner->id,
-                'name' => $partner->name,
-                'category' => $this->getCategoryName($partner->category),
-                'category_key' => $partner->category,
-                'is_sponsor' => (bool) $partner->is_sponsor,
-                'distance' => $distance,
-                'address' => $partner->address,
-                'phone' => $partner->phone,
-                'rating' => $partner->rating,
-                'opening_hours' => $partner->opening_hours,
-                'google_place_id' => $partner->google_place_id,
-                'description' => $partner->description,
-                'email' => $partner->email,
-                'website' => $partner->website,
-                'latitude' => $partner->latitude,
-                'longitude' => $partner->longitude,
-                'distance_meters' => $distanceMeters,
-                'icon_url' => $iconUrl,
-                'photos' => $photos,
-            ];
-        });
+        $categoryCounts = [];
+        foreach ($categoryCountsRaw as $key => $count) {
+            $label = $this->getCategoryLabel((string) $key);
+            $categoryCounts[$label] = ($categoryCounts[$label] ?? 0) + (int) $count;
+        }
 
         if ($hasCoordinates) {
-            $points = $points
-                ->sortBy(fn ($point) => $point['distance_meters'] ?? INF)
-                ->values();
+            $query = GeoQuery::orderByDistance(clone $baseQuery, $lat, $lng);
+            if ($request->has('radius')) {
+                $query->havingRaw('distance_m <= ?', [$radius]);
+            }
+            $partners = $query->limit($limit)->get();
+        } else {
+            $partners = (clone $baseQuery)->orderBy('name')->limit($limit)->get();
         }
 
-        return response()->json(['data' => $points]);
+        $points = $partners->map(function (Partner $partner) use ($lat, $lng) {
+            $distanceMeters = $this->partnerDistanceMeters($partner, $lat, $lng);
+
+            return $this->formatPartnerPoint($partner, $distanceMeters, includeExtendedFields: true);
+        })->values();
+
+        return response()->json([
+            'data' => $points,
+            'meta' => [
+                'total' => $totalActive,
+                'returned' => $points->count(),
+                'limit' => $limit,
+                'sorted_by_distance' => $hasCoordinates,
+                'category_counts' => $categoryCounts,
+            ],
+        ]);
     }
 
     public function embassies(Request $request)
@@ -199,88 +207,4 @@ class TourismController extends Controller
         ], 201);
     }
 
-    private function calculateDistanceMeters($lat1, $lon1, $lat2, $lon2): float
-    {
-        $earthRadius = 6371; // km
-
-        $dLat = deg2rad($lat2 - $lat1);
-        $dLon = deg2rad($lon2 - $lon1);
-
-        $a = sin($dLat / 2) * sin($dLat / 2) +
-             cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
-             sin($dLon / 2) * sin($dLon / 2);
-
-        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
-        $distanceKm = $earthRadius * $c;
-
-        return $distanceKm * 1000;
-    }
-
-    private function formatDistance(float $distanceMeters): string
-    {
-        if ($distanceMeters < 1000) {
-            return round($distanceMeters).' m';
-        }
-
-        return round($distanceMeters / 1000, 1).' km';
-    }
-
-    private function getCategoryName($category)
-    {
-        $categories = [
-            'hotel' => 'Hôtels',
-            'restaurant' => 'Restaurants',
-            'pharmacy' => 'Pharmacies',
-            'hospital' => 'Hôpitaux',
-            'embassy' => 'Ambassades',
-            'consulate' => 'Consulats',
-            'bank' => 'Banques & DAB',
-            'gas_station' => 'Stations-service',
-            'shop' => 'Boutiques',
-            'notary' => 'Notaires',
-            'lawyer' => 'Avocats',
-            'doctor' => 'Médecins',
-            'clinic' => 'Cliniques',
-            'government' => 'Services publics',
-            'school' => 'Écoles',
-            'university' => 'Universités',
-            'media' => 'Médias & culture',
-            'professional_service' => 'Services professionnels',
-            'religious_site' => 'Lieux de culte',
-            'other' => 'Autres',
-        ];
-
-        return $categories[$category] ?? 'Autres';
-    }
-
-    private function normalizeUrl($value): ?string
-    {
-        if (! $value) {
-            return null;
-        }
-
-        $value = (string) $value;
-        if ($value === '') {
-            return null;
-        }
-
-        $appUrl = config('app.url');
-        $useHttps = is_string($appUrl) && str_starts_with($appUrl, 'https://');
-
-        if (str_starts_with($value, 'http://')) {
-            return ($useHttps || request()->isSecure()) ? preg_replace('/^http:\\/\\//', 'https://', $value) : $value;
-        }
-
-        if (str_starts_with($value, 'https://')) {
-            return $value;
-        }
-
-        if (str_starts_with($value, '/')) {
-            return ($useHttps || request()->isSecure()) ? secure_url($value) : url($value);
-        }
-
-        $value = '/'.ltrim($value, '/');
-
-        return ($useHttps || request()->isSecure()) ? secure_url($value) : url($value);
-    }
 }

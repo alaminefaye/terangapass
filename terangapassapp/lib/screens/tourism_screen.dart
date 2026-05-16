@@ -32,6 +32,8 @@ class _TourismScreenState extends State<TourismScreen>
   ];
 
   List<Map<String, dynamic>> _pointsOfInterest = [];
+  int? _poiTotal;
+  Map<String, int> _categoryLabelCounts = const {};
   bool _isLoading = true;
   String? _errorMessage;
   double? _userLatitude;
@@ -81,9 +83,10 @@ class _TourismScreenState extends State<TourismScreen>
         locationServiceDisabled = msg.contains('désactivés');
       }
 
-      final points = await apiService.getPointsOfInterest(
+      final result = await apiService.getPointsOfInterest(
         latitude: latitude,
         longitude: longitude,
+        limit: 100,
       );
       if (!mounted) return;
       setState(() {
@@ -92,7 +95,9 @@ class _TourismScreenState extends State<TourismScreen>
         _locationError = locationError;
         _locationDeniedForever = locationDeniedForever;
         _locationServiceDisabled = locationServiceDisabled;
-        _pointsOfInterest = points
+        _poiTotal = result.total;
+        _categoryLabelCounts = result.categoryCounts;
+        _pointsOfInterest = result.data
             .map((p) => p as Map<String, dynamic>)
             .toList();
       });
@@ -516,8 +521,8 @@ class _TourismScreenState extends State<TourismScreen>
                           .map(
                             (cat) => Tab(
                               text: cat == 'Tous'
-                                  ? 'Tous (${_pointsOfInterest.length})'
-                                  : '$cat (${_getFiltered(cat).length})',
+                                  ? 'Tous (${_poiTotal ?? _pointsOfInterest.length})'
+                                  : '$cat (${_categoryLabelCounts[cat] ?? _getFiltered(cat).length})',
                             ),
                           )
                           .toList(),
@@ -580,6 +585,9 @@ class _TourismScreenState extends State<TourismScreen>
 
   Widget _buildCategoryTab(String category) {
     final points = _getFiltered(category);
+    final showLimitedHint = category == 'Tous' &&
+        _poiTotal != null &&
+        _poiTotal! > _pointsOfInterest.length;
 
     if (points.isEmpty) {
       return Center(
@@ -624,15 +632,33 @@ class _TourismScreenState extends State<TourismScreen>
     }
 
     final showBanner = _locationError != null;
+    final extraHeaders = (showBanner ? 1 : 0) + (showLimitedHint ? 1 : 0);
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
-      itemCount: points.length + (showBanner ? 1 : 0),
+      itemCount: points.length + extraHeaders,
       itemBuilder: (context, index) {
         if (showBanner && index == 0) {
           return _buildLocationBanner();
         }
+        if (showLimitedHint && index == (showBanner ? 1 : 0)) {
+          return Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFE8F5EE),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              '${_pointsOfInterest.length} lieux les plus proches affichés sur $_poiTotal au total.',
+              style: GoogleFonts.poppins(
+                fontSize: 12,
+                color: const Color(0xFF1D603D),
+              ),
+            ),
+          );
+        }
 
-        final point = points[index - (showBanner ? 1 : 0)];
+        final point = points[index - extraHeaders];
         final cat = (point['category'] ?? '').toString().trim();
         final icon = _getCategoryIcon(cat);
         final color = _getCategoryColor(cat);

@@ -51,6 +51,7 @@ class _MapScreenState extends State<MapScreen> {
   GoogleMapController? _mapController;
   final TextEditingController _searchController = TextEditingController();
   List<Map<String, dynamic>> _pointsOfInterest = [];
+  List<Map<String, dynamic>> _nearbyListPoints = [];
   List<Map<String, dynamic>> _allPoints = [];
 
   // Lieu choisi depuis la liste « à proximité » (navigation in-app)
@@ -634,11 +635,21 @@ class _MapScreenState extends State<MapScreen> {
       final lat = _currentLat;
       final lng = _currentLng;
 
-      final points = await apiService.getPointsOfInterest(
-        category: null,
-        latitude: lat,
-        longitude: lng,
-      );
+      const mapPoiLimit = 100;
+      const nearbySheetLimit = 40;
+      List<dynamic> points;
+      if (lat != null && lng != null) {
+        final nearby = await apiService.getNearby(
+          latitude: lat,
+          longitude: lng,
+          radiusMeters: 10000,
+          limit: mapPoiLimit,
+        );
+        points = nearby.data;
+      } else {
+        final poi = await apiService.getPointsOfInterest(limit: mapPoiLimit);
+        points = poi.data;
+      }
 
       List<dynamic> sites = const [];
       try {
@@ -706,11 +717,15 @@ class _MapScreenState extends State<MapScreen> {
           (a, b) => _sortDistanceMeters(a).compareTo(_sortDistanceMeters(b)),
         );
 
-      final filtered = merged.where(_matchesCurrentFilter).toList();
+      final capped = merged.length > mapPoiLimit + 30
+          ? merged.take(mapPoiLimit + 30).toList()
+          : merged;
+      final filtered = capped.where(_matchesCurrentFilter).toList();
       if (!mounted) return;
       setState(() {
-        _allPoints = merged;
+        _allPoints = capped;
         _pointsOfInterest = filtered;
+        _nearbyListPoints = filtered.take(nearbySheetLimit).toList();
       });
       _syncMapToPoints();
     } catch (e) {
@@ -766,10 +781,12 @@ class _MapScreenState extends State<MapScreen> {
             (a, b) =>
                 _sortDistanceMeters(a).compareTo(_sortDistanceMeters(b)),
           );
+        const nearbySheetLimit = 40;
         final filtered = merged.where(_matchesCurrentFilter).toList();
         setState(() {
           _allPoints = merged;
           _pointsOfInterest = filtered;
+          _nearbyListPoints = filtered.take(nearbySheetLimit).toList();
           _pointsErrorMessage = null;
         });
         _syncMapToPoints();
@@ -780,6 +797,7 @@ class _MapScreenState extends State<MapScreen> {
         setState(() {
           _allPoints = [];
           _pointsOfInterest = [];
+          _nearbyListPoints = [];
           _pointsErrorMessage = e.toString().replaceAll('Exception: ', '');
         });
       }
@@ -827,8 +845,11 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   void _applyLocalFilters() {
+    const nearbySheetLimit = 40;
+    final filtered = _allPoints.where(_matchesCurrentFilter).toList();
     setState(() {
-      _pointsOfInterest = _allPoints.where(_matchesCurrentFilter).toList();
+      _pointsOfInterest = filtered;
+      _nearbyListPoints = filtered.take(nearbySheetLimit).toList();
     });
     _syncMapToPoints();
   }
@@ -1193,7 +1214,7 @@ class _MapScreenState extends State<MapScreen> {
                                   textAlign: TextAlign.center,
                                 ),
                               )
-                            : _pointsOfInterest.isEmpty
+                            : _nearbyListPoints.isEmpty
                             ? Center(
                                 child: Text(
                                   l10n.mapNoPoints,
@@ -1205,12 +1226,12 @@ class _MapScreenState extends State<MapScreen> {
                               )
                             : ListView.separated(
                                 controller: scrollController,
-                                itemCount: _pointsOfInterest.length,
+                                itemCount: _nearbyListPoints.length,
                                 separatorBuilder: (context, index) =>
                                     const SizedBox(height: 8),
                                 itemBuilder: (context, index) {
                                   return _buildPointOfInterestFromData(
-                                    _pointsOfInterest[index],
+                                    _nearbyListPoints[index],
                                   );
                                 },
                               ),

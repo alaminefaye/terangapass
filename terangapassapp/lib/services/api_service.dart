@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../constants/api_constants.dart';
 import '../constants/app_constants.dart';
+import '../models/poi_api_result.dart';
 import 'api_error_messages.dart';
 
 class ApiService {
@@ -930,22 +931,25 @@ class ApiService {
   // ==================== TOURISME ====================
 
   /// Lieux à proximité (rayon en mètres, défaut 2000).
-  Future<List<dynamic>> getNearby({
+  Future<NearbyApiResult> getNearby({
     required double latitude,
     required double longitude,
     int radiusMeters = 2000,
+    int limit = 60,
     String? category,
   }) async {
     final params = {
       'latitude': latitude,
       'longitude': longitude,
       'radius': radiusMeters,
+      'limit': limit,
       if (category != null && category.isNotEmpty) 'category': category,
     };
 
     try {
       final response = await _dio.get('nearby', queryParameters: params);
-      return response.data['data'] ?? [];
+      final body = _decodeMapResponse(response.data);
+      return _parseNearbyResponse(body);
     } on DioException catch (e) {
       final status = e.response?.statusCode;
       final data = e.response?.data;
@@ -962,11 +966,17 @@ class ApiService {
       // mais gardent l'endpoint tourisme plus ancien.
       if (status == 404 || routeMissing) {
         try {
-          final fallback = await _dio.get(
-            'tourism/points-of-interest',
-            queryParameters: params,
+          final poi = await getPointsOfInterest(
+            latitude: latitude,
+            longitude: longitude,
+            limit: limit,
+            category: category,
           );
-          return fallback.data['data'] ?? [];
+          return NearbyApiResult(
+            data: poi.data,
+            fallbackOutOfRadius: true,
+            categoryCounts: _categoryCountsFromPoiList(poi.data),
+          );
         } on DioException {
           // On laisse ensuite remonter l'erreur d'origine pour garder le contexte.
         }
@@ -975,22 +985,111 @@ class ApiService {
     }
   }
 
+  NearbyApiResult _parseNearbyResponse(Map<String, dynamic> body) {
+    final meta = body['meta'];
+    final counts = <String, int>{};
+    var fallback = false;
+    int? inRadiusTotal;
+
+    if (meta is Map) {
+      fallback = meta['fallback_out_of_radius'] == true;
+      final rawCounts = meta['category_counts'];
+      if (rawCounts is Map) {
+        rawCounts.forEach((key, value) {
+          final k = key.toString();
+          if (value is num) {
+            counts[k] = value.toInt();
+          }
+        });
+      }
+      final rawInRadius = meta['in_radius_total'];
+      if (rawInRadius is num) {
+        inRadiusTotal = rawInRadius.toInt();
+      }
+    }
+
+    if (counts.isEmpty) {
+      final data = body['data'] is List ? body['data'] as List : const [];
+      return NearbyApiResult(
+        data: data,
+        fallbackOutOfRadius: fallback,
+        categoryCounts: _categoryCountsFromPoiList(data),
+        inRadiusTotal: inRadiusTotal,
+      );
+    }
+
+    return NearbyApiResult(
+      data: body['data'] is List ? body['data'] as List : const [],
+      fallbackOutOfRadius: fallback,
+      categoryCounts: counts,
+      inRadiusTotal: inRadiusTotal,
+    );
+  }
+
+  Map<String, int> _categoryCountsFromPoiList(List<dynamic> items) {
+    final counts = <String, int>{};
+    for (final item in items) {
+      if (item is! Map) continue;
+      final key = (item['category_key'] ?? item['category'] ?? '')
+          .toString()
+          .trim()
+          .toLowerCase();
+      if (key.isEmpty) continue;
+      counts[key] = (counts[key] ?? 0) + 1;
+    }
+    return counts;
+  }
+
   /// Récupère les points d'intérêt (hôtels, restaurants, etc.)
-  Future<List<dynamic>> getPointsOfInterest({
+  Future<PointsOfInterestApiResult> getPointsOfInterest({
     String? category,
     double? latitude,
     double? longitude,
+    int limit = 80,
   }) async {
     try {
       final response = await _dio.get(
         'tourism/points-of-interest',
         queryParameters: {
+          'limit': limit,
           if (category != null) 'category': category,
           if (latitude != null) 'latitude': latitude,
           if (longitude != null) 'longitude': longitude,
         },
       );
-      return response.data['data'] ?? [];
+      final body = _decodeMapResponse(response.data);
+      final meta = body['meta'];
+      final counts = <String, int>{};
+      int? total;
+      int? returned;
+      int? responseLimit;
+
+      if (meta is Map) {
+        final rawTotal = meta['total'];
+        if (rawTotal is num) total = rawTotal.toInt();
+        final rawReturned = meta['returned'];
+        if (rawReturned is num) returned = rawReturned.toInt();
+        final rawLimit = meta['limit'];
+        if (rawLimit is num) responseLimit = rawLimit.toInt();
+        final rawCounts = meta['category_counts'];
+        if (rawCounts is Map) {
+          rawCounts.forEach((key, value) {
+            if (value is num) {
+              counts[key.toString()] = value.toInt();
+            }
+          });
+        }
+      }
+
+      final data = body['data'] is List ? body['data'] as List : const [];
+
+      return PointsOfInterestApiResult(
+        data: data,
+        total: total,
+        returned: returned,
+        limit: responseLimit ?? limit,
+        categoryCounts: counts,
+      );
     } on DioException catch (e) {
       throw _handleError(e);
     }
