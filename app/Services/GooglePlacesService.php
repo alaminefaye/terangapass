@@ -115,15 +115,26 @@ class GooglePlacesService
      */
     public function textQueriesForZone(string $zoneName): array
     {
+        $label = $this->sanitizeZoneNameForQuery($zoneName);
         $queries = [];
         foreach (self::TEXT_SEARCH_TEMPLATES as $tpl) {
             $queries[] = [
-                'query' => sprintf($tpl['template'], $zoneName),
+                'query' => sprintf($tpl['template'], $label),
                 'category' => $tpl['category'],
             ];
         }
 
         return $queries;
+    }
+
+    /** Nettoie un libellé de zone pour les requêtes Text Search (évite « / », espaces multiples). */
+    public function sanitizeZoneNameForQuery(string $zoneName): string
+    {
+        $name = trim($zoneName);
+        $name = preg_replace('/\s*\/\s*/', ' ', $name) ?? $name;
+        $name = preg_replace('/\s+/', ' ', $name) ?? $name;
+
+        return $name;
     }
 
     /**
@@ -385,25 +396,29 @@ class GooglePlacesService
         array &$stats,
         ?callable $log
     ): void {
+        $query = $this->sanitizeZoneNameForQuery($query);
+        if ($query === '') {
+            $stats['skipped']++;
+
+            return;
+        }
+
         $pageToken = null;
 
         do {
-            $params = [
-                'query' => $query,
-                'location' => "{$centerLat},{$centerLng}",
-                'radius' => min($radiusMeters, 50000),
-                'key' => $this->apiKey,
-                'language' => 'fr',
-            ];
             if ($pageToken) {
-                $params = [
-                    'pagetoken' => $pageToken,
-                    'key' => $this->apiKey,
-                ];
                 sleep(2);
+                $payload = $this->requestTextSearchPage(null, null, null, 0, $pageToken);
+            } else {
+                $payload = $this->requestTextSearchPage(
+                    $query,
+                    $centerLat,
+                    $centerLng,
+                    $radiusMeters,
+                    null
+                );
             }
 
-            $payload = $this->request('textsearch/json', $params);
             if ($payload === null) {
                 $stats['errors']++;
                 $stats['error_messages'] = array_merge(
@@ -420,6 +435,73 @@ class GooglePlacesService
 
             $pageToken = $payload['next_page_token'] ?? null;
         } while ($pageToken !== null && $pageToken !== '');
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function requestTextSearchPage(
+        ?string $query,
+        ?float $centerLat,
+        ?float $centerLng,
+        int $radiusMeters,
+        ?string $pageToken
+    ): ?array {
+        if ($pageToken !== null && $pageToken !== '') {
+            return $this->request('textsearch/json', [
+                'pagetoken' => $pageToken,
+                'key' => $this->apiKey,
+            ]);
+        }
+
+        if ($query === null || $query === '') {
+            return null;
+        }
+
+        $params = [
+            'query' => $query,
+            'location' => "{$centerLat},{$centerLng}",
+            'radius' => min($radiusMeters, 50000),
+            'key' => $this->apiKey,
+            'language' => 'fr',
+        ];
+
+        $payload = $this->requestWithTextSearchFallback($params);
+        if ($payload !== null) {
+            return $payload;
+        }
+
+        $this->recordError("textsearch/json : échec pour « {$query} »");
+
+        return null;
+    }
+
+    /**
+     * @param  array<string, string|int|float>  $params
+     * @return array<string, mixed>|null
+     */
+    private function requestWithTextSearchFallback(array $params): ?array
+    {
+        $errorsBefore = count($this->diagnosticErrors);
+        $payload = $this->request('textsearch/json', $params);
+        if ($payload !== null) {
+            return $payload;
+        }
+
+        $lastError = $this->diagnosticErrors[$errorsBefore] ?? '';
+        if (! str_contains($lastError, 'INVALID_REQUEST') || ! isset($params['query'])) {
+            return null;
+        }
+
+        array_splice($this->diagnosticErrors, $errorsBefore);
+
+        $simple = [
+            'query' => (string) $params['query'],
+            'key' => $this->apiKey,
+            'language' => 'fr',
+        ];
+
+        return $this->request('textsearch/json', $simple);
     }
 
     /**
@@ -746,10 +828,16 @@ class GooglePlacesService
             default => '',
         };
 
+        $queryHint = '';
+        if ($endpoint === 'textsearch/json' && isset($params['query'])) {
+            $queryHint = ' [requête: '.Str::limit((string) $params['query'], 80).']';
+        }
+
         $this->recordError(
             "{$endpoint} : {$status}"
             .($googleMessage !== '' ? " — {$googleMessage}" : '')
             .$hint
+            .$queryHint
         );
 
         return $body;

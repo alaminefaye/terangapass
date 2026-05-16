@@ -7,14 +7,14 @@
  */
 return [
     ['id' => 'dakar', 'name' => 'Dakar', 'lat' => 14.7167, 'lng' => -17.4677],
-    ['id' => 'pikine', 'name' => 'Pikine / Guédiawaye', 'lat' => 14.7645, 'lng' => -17.3907],
-    ['id' => 'rufisque', 'name' => 'Rufisque / Bargny', 'lat' => 14.7162, 'lng' => -17.2736],
+    ['id' => 'pikine', 'name' => 'Pikine', 'lat' => 14.7645, 'lng' => -17.3907],
+    ['id' => 'rufisque', 'name' => 'Rufisque', 'lat' => 14.7162, 'lng' => -17.2736],
     ['id' => 'thies', 'name' => 'Thiès', 'lat' => 14.7886, 'lng' => -16.9260],
-    ['id' => 'mbour', 'name' => 'Mbour / Saly', 'lat' => 14.4167, 'lng' => -16.9667],
+    ['id' => 'mbour', 'name' => 'Mbour', 'lat' => 14.4167, 'lng' => -16.9667],
     ['id' => 'saint_louis', 'name' => 'Saint-Louis', 'lat' => 16.0179, 'lng' => -16.4896],
     ['id' => 'louga', 'name' => 'Louga', 'lat' => 15.6167, 'lng' => -16.2167],
     ['id' => 'diourbel', 'name' => 'Diourbel', 'lat' => 14.6550, 'lng' => -16.2314],
-    ['id' => 'touba', 'name' => 'Touba / Bambey', 'lat' => 14.8667, 'lng' => -15.8833],
+    ['id' => 'touba', 'name' => 'Touba', 'lat' => 14.8667, 'lng' => -15.8833],
     ['id' => 'kaolack', 'name' => 'Kaolack', 'lat' => 14.1519, 'lng' => -16.0726],
     ['id' => 'fatick', 'name' => 'Fatick', 'lat' => 14.3390, 'lng' => -16.4111],
     ['id' => 'foundiougne', 'name' => 'Foundiougne', 'lat' => 14.1333, 'lng' => -16.4667],
