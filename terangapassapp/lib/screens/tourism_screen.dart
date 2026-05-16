@@ -24,6 +24,7 @@ class TourismScreen extends StatefulWidget {
 
 class _TourismScreenState extends State<TourismScreen> {
   final TextEditingController _searchController = TextEditingController();
+  final ScrollController _filterScrollController = ScrollController();
   Timer? _searchDebounce;
 
   List<Map<String, dynamic>> _pointsOfInterest = [];
@@ -38,6 +39,8 @@ class _TourismScreenState extends State<TourismScreen> {
   bool _locationDeniedForever = false;
   bool _locationServiceDisabled = false;
   int _chipIndex = 0;
+  String? _searchHintMessage;
+  bool _isServerSearchActive = false;
 
   @override
   void initState() {
@@ -49,16 +52,29 @@ class _TourismScreenState extends State<TourismScreen> {
   @override
   void dispose() {
     _searchDebounce?.cancel();
+    _filterScrollController.dispose();
     _searchController.dispose();
     super.dispose();
   }
 
   void _onSearchChanged() {
-    setState(() {});
-    _searchDebounce?.cancel();
-    _searchDebounce = Timer(const Duration(milliseconds: 450), () {
-      if (mounted) _loadPointsOfInterest();
-    });
+    setState(() => _searchHintMessage = null);
+    if (_searchController.text.trim().isEmpty && _isServerSearchActive) {
+      _isServerSearchActive = false;
+      _loadPointsOfInterest();
+    }
+  }
+
+  Future<void> _runServerSearch() async {
+    final query = _searchController.text.trim();
+    if (query.length < 2) {
+      setState(() {
+        _searchHintMessage = 'Saisissez au moins 2 caractères pour chercher.';
+      });
+      return;
+    }
+    FocusScope.of(context).unfocus();
+    await _loadPointsOfInterest(serverSearch: true);
   }
 
   List<PoiCategoryFilter> _filters(AppLocalizations l10n) =>
@@ -88,46 +104,53 @@ class _TourismScreenState extends State<TourismScreen> {
     }).toList();
   }
 
-  Future<void> _loadPointsOfInterest() async {
+  Future<void> _loadPointsOfInterest({bool serverSearch = false}) async {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
+      if (!serverSearch) _searchHintMessage = null;
     });
 
     try {
       final apiService = ApiService();
-      String? locationError;
-      bool locationDeniedForever = false;
-      bool locationServiceDisabled = false;
-      double? latitude;
-      double? longitude;
-      try {
-        final position = await LocationService().getPositionForListings();
-        if (position != null) {
-          latitude = position.latitude;
-          longitude = position.longitude;
+      String? locationError = _locationError;
+      var locationDeniedForever = _locationDeniedForever;
+      var locationServiceDisabled = _locationServiceDisabled;
+      var latitude = _userLatitude;
+      var longitude = _userLongitude;
+
+      if (latitude == null || longitude == null) {
+        try {
+          final position = await LocationService().getPositionForListings();
+          if (position != null) {
+            latitude = position.latitude;
+            longitude = position.longitude;
+          }
+        } catch (e) {
+          latitude = null;
+          longitude = null;
+          locationError = e.toString().replaceAll('Exception: ', '').trim();
+          final msg = locationError.toLowerCase();
+          locationDeniedForever = msg.contains('définitivement');
+          locationServiceDisabled = msg.contains('désactivés');
         }
-      } catch (e) {
-        latitude = null;
-        longitude = null;
-        locationError = e.toString().replaceAll('Exception: ', '').trim();
-        final msg = locationError.toLowerCase();
-        locationDeniedForever = msg.contains('définitivement');
-        locationServiceDisabled = msg.contains('désactivés');
       }
 
       if (!mounted) return;
       final l10n = AppLocalizations.of(context)!;
       final filters = _filters(l10n);
       final chip = filters[_chipIndex.clamp(0, filters.length - 1)];
-      final apiCategory = PoiCategoryFilters.partnerCategoryKey(chip.categoryKey);
+      final apiCategory = serverSearch
+          ? null
+          : PoiCategoryFilters.partnerCategoryKey(chip.categoryKey);
+      final query = serverSearch ? _searchController.text.trim() : null;
 
       final result = await apiService.getPointsOfInterest(
         latitude: latitude,
         longitude: longitude,
-        limit: 100,
+        limit: serverSearch ? 80 : 100,
         category: apiCategory,
-        query: _searchController.text,
+        query: query,
       );
       if (!mounted) return;
       setState(() {
@@ -142,9 +165,21 @@ class _TourismScreenState extends State<TourismScreen> {
         _pointsOfInterest = result.data
             .map((p) => p as Map<String, dynamic>)
             .toList();
+        _isServerSearchActive = serverSearch;
+        _searchHintMessage = serverSearch && _pointsOfInterest.isEmpty
+            ? 'Aucun lieu trouvé pour cette recherche.'
+            : null;
       });
     } catch (e) {
       if (!mounted) return;
+      if (serverSearch) {
+        setState(() {
+          _searchHintMessage =
+              'Recherche indisponible pour le moment. Les résultats affichés restent visibles.';
+          _isServerSearchActive = false;
+        });
+        return;
+      }
       final offline = await OfflinePackService().readOfflinePoiList();
       if (offline.isNotEmpty) {
         setState(() {
@@ -362,10 +397,157 @@ class _TourismScreenState extends State<TourismScreen> {
     );
   }
 
-  void _onChipSelected(int index) {
+  void _onCategoryTap(int index) {
     if (_chipIndex == index) return;
     setState(() => _chipIndex = index);
     _loadPointsOfInterest();
+  }
+
+  Widget _buildCategoryFilters(List<PoiCategoryFilter> filters) {
+    return Container(
+      margin: const EdgeInsets.only(left: 16, right: 16, bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(26),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+      child: SingleChildScrollView(
+        controller: _filterScrollController,
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: List.generate(filters.length, (i) {
+            final selected = _chipIndex == i;
+            final chip = filters[i];
+            return Padding(
+              padding: EdgeInsets.only(right: i < filters.length - 1 ? 4 : 0),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => _onCategoryTap(i),
+                  borderRadius: BorderRadius.circular(22),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 9,
+                    ),
+                    decoration: BoxDecoration(
+                      color: selected ? Colors.white : Colors.transparent,
+                      borderRadius: BorderRadius.circular(22),
+                      boxShadow: selected
+                          ? [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.08),
+                                blurRadius: 8,
+                                offset: const Offset(0, 3),
+                              ),
+                            ]
+                          : null,
+                    ),
+                    child: Text(
+                      '${chip.label} (${_chipCount(chip)})',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontWeight:
+                            selected ? FontWeight.w700 : FontWeight.w500,
+                        fontSize: 12,
+                        color: selected
+                            ? const Color(0xFF2E8B57)
+                            : Colors.white.withValues(alpha: 0.92),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSearchField() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          TextField(
+            controller: _searchController,
+            textInputAction: TextInputAction.search,
+            onSubmitted: (_) => _runServerSearch(),
+            style: GoogleFonts.poppins(
+              color: AppTheme.textPrimary,
+              fontSize: 14,
+            ),
+            decoration: InputDecoration(
+              hintText: 'Rechercher un lieu, une adresse…',
+              hintStyle: GoogleFonts.poppins(
+                color: AppTheme.textSecondary,
+                fontSize: 13,
+              ),
+              prefixIcon: IconButton(
+                icon: const Icon(
+                  Icons.search_rounded,
+                  color: Color(0xFF2E8B57),
+                ),
+                onPressed: _runServerSearch,
+              ),
+              suffixIcon: _searchController.text.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear_rounded),
+                      onPressed: () {
+                        _searchController.clear();
+                        setState(() {
+                          _searchHintMessage = null;
+                          _isServerSearchActive = false;
+                        });
+                        _loadPointsOfInterest();
+                      },
+                    )
+                  : null,
+          filled: true,
+          fillColor: Colors.white,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 14,
+            vertical: 12,
+          ),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: const BorderSide(color: Color(0xFFECE6DC)),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: const BorderSide(color: Color(0xFFECE6DC)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: const BorderSide(color: Color(0xFF2E8B57), width: 1.5),
+          ),
+            ),
+          ),
+          if (_searchHintMessage != null) ...[
+            const SizedBox(height: 6),
+            Text(
+              _searchHintMessage!,
+              style: GoogleFonts.poppins(
+                fontSize: 11,
+                color: AppTheme.textSecondary,
+              ),
+            ),
+          ] else if (!_isServerSearchActive &&
+              _searchController.text.trim().isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text(
+              'Filtre local sur la liste · touchez 🔍 ou Entrée pour chercher dans toute la base',
+              style: GoogleFonts.poppins(
+                fontSize: 11,
+                color: AppTheme.textSecondary,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
   }
 
   @override
@@ -374,6 +556,7 @@ class _TourismScreenState extends State<TourismScreen> {
     final filters = _filters(l10n);
     final visiblePoints = _isLoading ? <Map<String, dynamic>>[] : _visiblePoints(l10n);
     final showLimitedHint = !_isLoading &&
+        !_isServerSearchActive &&
         _searchController.text.trim().isEmpty &&
         _chipIndex == 0 &&
         _poiTotal != null &&
@@ -492,73 +675,7 @@ class _TourismScreenState extends State<TourismScreen> {
                       ],
                     ),
                   ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                    child: TextField(
-                      controller: _searchController,
-                      style: GoogleFonts.poppins(
-                        color: AppTheme.textPrimary,
-                        fontSize: 14,
-                      ),
-                      decoration: InputDecoration(
-                        hintText: 'Rechercher un lieu, une adresse…',
-                        hintStyle: GoogleFonts.poppins(
-                          color: AppTheme.textSecondary,
-                          fontSize: 13,
-                        ),
-                        prefixIcon: const Icon(
-                          Icons.search_rounded,
-                          color: Color(0xFF2E8B57),
-                        ),
-                        suffixIcon: _searchController.text.isNotEmpty
-                            ? IconButton(
-                                icon: const Icon(Icons.clear_rounded),
-                                onPressed: () {
-                                  _searchController.clear();
-                                  _loadPointsOfInterest();
-                                },
-                              )
-                            : null,
-                        filled: true,
-                        fillColor: Colors.white,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 12,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
-                    ),
-                  ),
-                  SizedBox(
-                    height: 40,
-                    child: ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                      itemCount: filters.length,
-                      separatorBuilder: (_, __) => const SizedBox(width: 8),
-                      itemBuilder: (context, i) {
-                        final selected = _chipIndex == i;
-                        final chip = filters[i];
-                        return ChoiceChip(
-                          label: Text('${chip.label} (${_chipCount(chip)})'),
-                          selected: selected,
-                          onSelected: (_) => _onChipSelected(i),
-                          selectedColor: Colors.white,
-                          labelStyle: GoogleFonts.poppins(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: const Color(0xFF1D603D),
-                          ),
-                          backgroundColor: Colors.white.withValues(alpha: 0.92),
-                          side: BorderSide(color: Colors.white),
-                          showCheckmark: false,
-                        );
-                      },
-                    ),
-                  ),
+                  _buildCategoryFilters(filters),
                 ],
               ),
             ),
@@ -617,59 +734,66 @@ class _TourismScreenState extends State<TourismScreen> {
     required bool showLimitedHint,
   }) {
     if (points.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(40),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(30),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.05),
-                      blurRadius: 20,
-                      offset: const Offset(0, 10),
-                    ),
-                  ],
-                ),
-                child: Icon(
-                  Icons.search_off_rounded,
-                  size: 60,
-                  color: AppTheme.textSecondary,
-                ),
+      return ListView(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
+        children: [
+          if (_locationError != null) _buildLocationBanner(),
+          _buildSearchField(),
+          if (showLimitedHint)
+            Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFE8F5EE),
+                borderRadius: BorderRadius.circular(12),
               ),
-              const SizedBox(height: 20),
-              Text(
-                _searchController.text.trim().isNotEmpty
-                    ? 'Aucun lieu pour cette recherche'
-                    : 'Aucun résultat',
+              child: Text(
+                '${_pointsOfInterest.length} lieux les plus proches affichés sur $_poiTotal au total.',
                 style: GoogleFonts.poppins(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: AppTheme.textSecondary,
+                  fontSize: 12,
+                  color: const Color(0xFF1D603D),
                 ),
               ),
-            ],
+            ),
+          const SizedBox(height: 48),
+          Icon(
+            Icons.search_off_rounded,
+            size: 56,
+            color: AppTheme.textSecondary,
           ),
-        ),
+          const SizedBox(height: 16),
+          Text(
+            _searchController.text.trim().isNotEmpty
+                ? 'Aucun lieu pour cette recherche'
+                : 'Aucun résultat',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.poppins(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: AppTheme.textSecondary,
+            ),
+          ),
+        ],
       );
     }
 
     final showBanner = _locationError != null;
-    final extraHeaders = (showBanner ? 1 : 0) + (showLimitedHint ? 1 : 0);
+    final extraHeaders =
+        (showBanner ? 1 : 0) + 1 + (showLimitedHint ? 1 : 0);
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
       itemCount: points.length + extraHeaders,
       itemBuilder: (context, index) {
-        if (showBanner && index == 0) {
-          return _buildLocationBanner();
+        var headerIndex = 0;
+        if (showBanner) {
+          if (index == headerIndex++) {
+            return _buildLocationBanner();
+          }
         }
-        if (showLimitedHint && index == (showBanner ? 1 : 0)) {
+        if (index == headerIndex++) {
+          return _buildSearchField();
+        }
+        if (showLimitedHint && index == headerIndex++) {
           return Container(
             margin: const EdgeInsets.only(bottom: 12),
             padding: const EdgeInsets.all(12),
@@ -687,7 +811,7 @@ class _TourismScreenState extends State<TourismScreen> {
           );
         }
 
-        final point = points[index - extraHeaders];
+        final point = points[index - headerIndex];
         final icon = PoiCategoryFilters.iconForPoint(point);
         final color = PoiCategoryFilters.colorForPoint(point);
         final iconUrl = _getPointIconUrl(point);

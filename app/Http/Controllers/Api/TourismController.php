@@ -71,7 +71,7 @@ class TourismController extends Controller
             $baseQuery->where(function ($q) use ($term) {
                 $q->where('name', 'like', $term)
                     ->orWhere('address', 'like', $term)
-                    ->orWhere('city', 'like', $term);
+                    ->orWhere('description', 'like', $term);
             });
         }
 
