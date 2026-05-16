@@ -573,6 +573,13 @@ class GooglePlacesService
         }
 
         if ($existing) {
+            if ($this->isPlaceholderDescription($data['description'] ?? null)) {
+                unset($data['description']);
+            }
+            if ($this->isPlaceholderDescription($existing->description)) {
+                $data['description'] = null;
+            }
+
             $existing->fill($data);
             $existing->google_place_id = $placeId;
             $existing->save();
@@ -581,9 +588,13 @@ class GooglePlacesService
                 $log("  ↻ {$name}");
             }
         } else {
+            if ($this->isPlaceholderDescription($data['description'] ?? null)) {
+                $data['description'] = null;
+            }
+
             Partner::query()->create(array_merge($data, [
                 'google_place_id' => $placeId,
-                'description' => 'Importé depuis Google Places',
+                'description' => null,
                 'is_sponsor' => false,
                 'visit_count' => 0,
             ]));
@@ -663,13 +674,32 @@ class GooglePlacesService
             }
         }
 
-        $mapsUrl = $r['url'] ?? null;
-        if (is_string($mapsUrl) && $mapsUrl !== '') {
-            $desc = 'Importé depuis Google Places';
-            $out['description'] = $desc.' · '.Str::limit($mapsUrl, 200);
-        }
+        // Pas de description Google exploitable en API Legacy → on laisse vide.
 
         return $out;
+    }
+
+    private function isPlaceholderDescription(?string $description): bool
+    {
+        if ($description === null) {
+            return true;
+        }
+
+        $text = trim($description);
+        if ($text === '' || $text === '—' || $text === '-') {
+            return true;
+        }
+
+        if (str_starts_with($text, 'Importé depuis Google Places')) {
+            return true;
+        }
+
+        if (str_contains($text, 'maps.google.com/?cid=')
+            || str_contains($text, 'google.com/maps')) {
+            return true;
+        }
+
+        return false;
     }
 
     public function buildPhotoUrl(string $photoReference, int $maxWidth = 800): string

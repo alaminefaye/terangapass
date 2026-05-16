@@ -17,6 +17,10 @@ class SyncGooglePlacesCommand extends Command
 
     public function handle(GooglePlacesService $places): int
     {
+        if (! $this->assertMultiZoneConfigLoaded()) {
+            return self::FAILURE;
+        }
+
         if (! $places->isConfigured()) {
             $this->error('Définissez GOOGLE_MAPS_API_KEY dans .env (Places API activée sur Google Cloud).');
 
@@ -77,5 +81,31 @@ class SyncGooglePlacesCommand extends Command
         $this->info('Terminé. Les apps lisent /api/v1/tourism/points-of-interest et /api/v1/nearby.');
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Refuse l’import si le serveur n’a pas le code « tout le Sénégal » (24 zones).
+     */
+    private function assertMultiZoneConfigLoaded(): bool
+    {
+        $zones = config('google.places_sync_zones');
+        $path = config_path('google_places_zones.php');
+
+        if (! is_file($path)) {
+            $this->error('Fichier manquant : config/google_places_zones.php');
+            $this->line('Mettez à jour le code sur le serveur (git pull / déploiement) puis relancez.');
+
+            return false;
+        }
+
+        if (! is_array($zones) || count($zones) < 10) {
+            $this->error('Configuration zones invalide (attendu ~24 villes/régions du Sénégal).');
+            $this->line('Votre serveur utilise encore l’ancienne version « Dakar seule ».');
+            $this->line('Commandes après mise à jour : php artisan config:clear && php artisan places:list-zones');
+
+            return false;
+        }
+
+        return true;
     }
 }

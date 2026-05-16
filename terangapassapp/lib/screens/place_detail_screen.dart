@@ -184,6 +184,19 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
     return double.tryParse(v.toString());
   }
 
+  /// Masque les textes techniques laissés par l’import Google (pas une vraie description).
+  String? _meaningfulDescription(String? raw) {
+    if (raw == null) return null;
+    final text = raw.trim();
+    if (text.isEmpty) return null;
+    final lower = text.toLowerCase();
+    if (lower.startsWith('importé depuis google places')) return null;
+    if (lower.contains('maps.google.com') || lower.contains('google.com/maps')) {
+      return null;
+    }
+    return text;
+  }
+
   void _openPhotoPreview(List<String> photos, int initialIndex) {
     if (photos.isEmpty) return;
     final safe = initialIndex.clamp(0, photos.length - 1);
@@ -559,7 +572,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
     final category = (point['category'] as String? ?? '').trim();
     final address = point['address'] as String?;
     final phone = point['phone'] as String?;
-    final description = point['description'] as String?;
+    final description = _meaningfulDescription(point['description'] as String?);
     final openingHours = point['opening_hours'] as String?;
     final website = point['website'] as String?;
     final transport = point['transport'] as String?;
