@@ -1046,6 +1046,7 @@ class ApiService {
     double? latitude,
     double? longitude,
     int limit = 80,
+    String? query,
   }) async {
     try {
       final response = await _dio.get(
@@ -1055,11 +1056,13 @@ class ApiService {
           if (category != null) 'category': category,
           if (latitude != null) 'latitude': latitude,
           if (longitude != null) 'longitude': longitude,
+          if (query != null && query.trim().isNotEmpty) 'q': query.trim(),
         },
       );
       final body = _decodeMapResponse(response.data);
       final meta = body['meta'];
       final counts = <String, int>{};
+      final countsByKey = <String, int>{};
       int? total;
       int? returned;
       int? responseLimit;
@@ -1079,6 +1082,14 @@ class ApiService {
             }
           });
         }
+        final rawCountsByKey = meta['category_counts_by_key'];
+        if (rawCountsByKey is Map) {
+          rawCountsByKey.forEach((key, value) {
+            if (value is num) {
+              countsByKey[key.toString()] = value.toInt();
+            }
+          });
+        }
       }
 
       final data = body['data'] is List ? body['data'] as List : const [];
@@ -1089,6 +1100,7 @@ class ApiService {
         returned: returned,
         limit: responseLimit ?? limit,
         categoryCounts: counts,
+        categoryCountsByKey: countsByKey,
       );
     } on DioException catch (e) {
       throw _handleError(e);

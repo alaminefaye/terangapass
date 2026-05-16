@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../constants/poi_category_filters.dart';
 import '../l10n/app_localizations.dart';
 import '../services/api_service.dart';
 import '../services/location_service.dart';
@@ -20,12 +21,6 @@ class NearbyScreen extends StatefulWidget {
   State<NearbyScreen> createState() => _NearbyScreenState();
 }
 
-class _ChipDef {
-  const _ChipDef(this.label, this.categoryKey);
-  final String label;
-  final String? categoryKey;
-}
-
 class _NearbyScreenState extends State<NearbyScreen> {
   static const int _radiusM = 2000;
 
@@ -40,26 +35,8 @@ class _NearbyScreenState extends State<NearbyScreen> {
   String? _apiError;
   int _chipIndex = 0;
 
-  List<_ChipDef> _chips(AppLocalizations l10n) => [
-    _ChipDef(l10n.nearbyAll, null),
-    const _ChipDef('Restos', 'restaurant'),
-    const _ChipDef('Banques', 'bank'),
-    const _ChipDef('Stations', 'gas_station'),
-    _ChipDef(l10n.nearbyChipHotels, 'hotel'),
-    const _ChipDef('Pharmacies', 'pharmacy'),
-    _ChipDef(l10n.nearbyChipHospitals, 'hospital'),
-    _ChipDef(l10n.nearbyChipClinics, 'clinic'),
-    _ChipDef(l10n.nearbyChipNotaries, 'notary'),
-    _ChipDef(l10n.nearbyChipLawyers, 'lawyer'),
-    _ChipDef(l10n.nearbyChipDoctors, 'doctor'),
-    _ChipDef(l10n.nearbyChipGovernment, 'government'),
-    _ChipDef(l10n.nearbyChipSchools, 'school'),
-    _ChipDef(l10n.nearbyChipUniversities, 'university'),
-    _ChipDef(l10n.nearbyChipMedia, 'media'),
-    _ChipDef(l10n.nearbyChipProfessionalServices, 'professional_service'),
-    _ChipDef(l10n.nearbyChipReligiousSites, 'religious_site'),
-    const _ChipDef('Boutiques', 'shop'),
-  ];
+  List<PoiCategoryFilter> _chips(AppLocalizations l10n) =>
+      PoiCategoryFilters.standard(l10n);
 
   @override
   void initState() {
@@ -202,12 +179,8 @@ class _NearbyScreenState extends State<NearbyScreen> {
     final chips = _chips(AppLocalizations.of(context)!);
     final selectedCat =
         chips[chipIndex.clamp(0, chips.length - 1)].categoryKey;
-    if (selectedCat == null) return List<Map<String, dynamic>>.from(_allPlaces);
     return _allPlaces
-        .where((p) {
-          final key = _normalizeCategory(p['category_key'] ?? p['category']);
-          return key == selectedCat;
-        })
+        .where((p) => PoiCategoryFilters.matchesCategory(p, selectedCat))
         .toList();
   }
 
@@ -238,11 +211,11 @@ class _NearbyScreenState extends State<NearbyScreen> {
     return counts;
   }
 
-  int _chipCount(String? categoryKey) {
-    if (categoryKey == null) {
+  int _chipCount(PoiCategoryFilter chip) {
+    if (chip.categoryKey == null) {
       return _categoryCounts.values.fold(0, (sum, c) => sum + c);
     }
-    return _categoryCounts[categoryKey] ?? 0;
+    return _categoryCounts[chip.categoryKey!] ?? 0;
   }
 
   String _friendlyLocationError(AppLocalizations l10n) {
@@ -341,7 +314,7 @@ class _NearbyScreenState extends State<NearbyScreen> {
                           return Padding(
                             padding: const EdgeInsets.only(right: 8),
                             child: ChoiceChip(
-                              label: Text('${chips[i].label} (${_chipCount(chips[i].categoryKey)})'),
+                              label: Text('${chips[i].label} (${_chipCount(chips[i])})'),
                               selected: selected,
                               onSelected: (_) => _onChipSelected(i),
                               selectedColor: const Color(0xFFE6F4EC),

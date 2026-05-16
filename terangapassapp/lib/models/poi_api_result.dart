@@ -19,6 +19,7 @@ class PointsOfInterestApiResult {
     this.returned,
     this.limit,
     this.categoryCounts = const {},
+    this.categoryCountsByKey = const {},
   });
 
   final List<dynamic> data;
@@ -26,4 +27,5 @@ class PointsOfInterestApiResult {
   final int? returned;
   final int? limit;
   final Map<String, int> categoryCounts;
+  final Map<String, int> categoryCountsByKey;
 }

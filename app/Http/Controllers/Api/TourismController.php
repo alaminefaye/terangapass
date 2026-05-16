@@ -45,9 +45,13 @@ class TourismController extends Controller
             'longitude' => 'sometimes|nullable|numeric|between:-180,180',
             'limit' => 'sometimes|integer|min:1|max:200',
             'radius' => 'sometimes|integer|min:100|max:500000',
+            'q' => 'sometimes|nullable|string|max:120',
         ]);
 
         $limit = min((int) $request->input('limit', 80), 200);
+        if ($request->filled('q')) {
+            $limit = min(max($limit, 60), 120);
+        }
         $hasCoordinates = $request->filled('latitude') && $request->filled('longitude');
         $lat = $hasCoordinates ? (float) $request->latitude : null;
         $lng = $hasCoordinates ? (float) $request->longitude : null;
@@ -62,20 +66,39 @@ class TourismController extends Controller
             $baseQuery->where('category', $request->category);
         }
 
-        $totalActive = (clone $baseQuery)->count();
+        if ($request->filled('q')) {
+            $term = '%'.addcslashes(trim((string) $request->q), '%_\\').'%';
+            $baseQuery->where(function ($q) use ($term) {
+                $q->where('name', 'like', $term)
+                    ->orWhere('address', 'like', $term)
+                    ->orWhere('city', 'like', $term);
+            });
+        }
 
-        $categoryCountsRaw = Partner::query()
+        $totalActive = Partner::query()
             ->where('is_active', true)
             ->whereNotNull('latitude')
             ->whereNotNull('longitude')
+            ->when($request->filled('category'), fn ($q) => $q->where('category', $request->category))
+            ->count();
+
+        $countsQuery = Partner::query()
+            ->where('is_active', true)
+            ->whereNotNull('latitude')
+            ->whereNotNull('longitude');
+
+        $categoryCountsRaw = (clone $countsQuery)
             ->selectRaw('category, COUNT(*) as aggregate')
             ->groupBy('category')
             ->pluck('aggregate', 'category');
 
         $categoryCounts = [];
+        $categoryCountsByKey = [];
         foreach ($categoryCountsRaw as $key => $count) {
-            $label = $this->getCategoryLabel((string) $key);
+            $keyStr = (string) $key;
+            $label = $this->getCategoryLabel($keyStr);
             $categoryCounts[$label] = ($categoryCounts[$label] ?? 0) + (int) $count;
+            $categoryCountsByKey[$keyStr] = ($categoryCountsByKey[$keyStr] ?? 0) + (int) $count;
         }
 
         if ($hasCoordinates) {
@@ -102,6 +125,8 @@ class TourismController extends Controller
                 'limit' => $limit,
                 'sorted_by_distance' => $hasCoordinates,
                 'category_counts' => $categoryCounts,
+                'category_counts_by_key' => $categoryCountsByKey,
+                'search' => $request->filled('q') ? trim((string) $request->q) : null,
             ],
         ]);
     }

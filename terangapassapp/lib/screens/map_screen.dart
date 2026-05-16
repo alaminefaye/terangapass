@@ -9,6 +9,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
+import '../constants/poi_category_filters.dart';
 import '../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 import '../utils/google_maps_helpers.dart';
@@ -21,7 +22,6 @@ import '../services/offline_pack_service.dart';
 import '../widgets/offline_cache_snack.dart';
 import 'place_detail_screen.dart';
 
-enum _MapFilter { all, help, sites, hotels, restaurants, pharmacies, hospitals }
 
 class MapScreen extends StatefulWidget {
   final String? initialQuery;
@@ -42,7 +42,7 @@ class MapScreen extends StatefulWidget {
 class _MapScreenState extends State<MapScreen> {
   static const double _fallbackLat = 14.6937; // Dakar centre fallback
   static const double _fallbackLng = -17.4441;
-  _MapFilter _selectedFilter = _MapFilter.all;
+  int _filterChipIndex = 0;
   bool _isLocating = false;
   double? _currentLat;
   double? _currentLng;
@@ -720,7 +720,10 @@ class _MapScreenState extends State<MapScreen> {
       final capped = merged.length > mapPoiLimit + 30
           ? merged.take(mapPoiLimit + 30).toList()
           : merged;
-      final filtered = capped.where(_matchesCurrentFilter).toList();
+      final l10n = AppLocalizations.of(context)!;
+      final filtered = capped
+          .where((p) => _matchesCurrentFilter(p, l10n))
+          .toList();
       if (!mounted) return;
       setState(() {
         _allPoints = capped;
@@ -782,7 +785,9 @@ class _MapScreenState extends State<MapScreen> {
                 _sortDistanceMeters(a).compareTo(_sortDistanceMeters(b)),
           );
         const nearbySheetLimit = 40;
-        final filtered = merged.where(_matchesCurrentFilter).toList();
+        final l10n = AppLocalizations.of(context)!;
+        final filtered =
+            merged.where((p) => _matchesCurrentFilter(p, l10n)).toList();
         setState(() {
           _allPoints = merged;
           _pointsOfInterest = filtered;
@@ -810,43 +815,27 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
-  bool _matchesCurrentFilter(Map<String, dynamic> point) {
-    final category = (point['category'] ?? '').toString().toLowerCase();
-    final q = _searchController.text.trim().toLowerCase();
+  String? _activeCategoryKey(AppLocalizations l10n) {
+    final filters = PoiCategoryFilters.forMap(l10n);
+    return filters[_filterChipIndex.clamp(0, filters.length - 1)]
+        .categoryKey;
+  }
 
-    final matchesQuery =
-        q.isEmpty ||
-        (point['name'] ?? '').toString().toLowerCase().contains(q) ||
-        (point['address'] ?? '').toString().toLowerCase().contains(q) ||
-        category.contains(q);
-
-    if (!matchesQuery) return false;
-
-    switch (_selectedFilter) {
-      case _MapFilter.all:
-        return true;
-      case _MapFilter.help:
-        return category.contains('hôpital') ||
-            category.contains('hopital') ||
-            category.contains('pharm') ||
-            category.contains('ambass') ||
-            category.contains('consul');
-      case _MapFilter.sites:
-        return category.contains('site') || category.contains('joj');
-      case _MapFilter.hotels:
-        return category.contains('hôtel') || category.contains('hotel');
-      case _MapFilter.restaurants:
-        return category.contains('restaurant');
-      case _MapFilter.pharmacies:
-        return category.contains('pharm');
-      case _MapFilter.hospitals:
-        return category.contains('hôpital') || category.contains('hopital');
+  bool _matchesCurrentFilter(Map<String, dynamic> point, AppLocalizations l10n) {
+    if (!PoiCategoryFilters.matchesSearch(point, _searchController.text)) {
+      return false;
     }
+    return PoiCategoryFilters.matchesCategory(
+      point,
+      _activeCategoryKey(l10n),
+    );
   }
 
   void _applyLocalFilters() {
     const nearbySheetLimit = 40;
-    final filtered = _allPoints.where(_matchesCurrentFilter).toList();
+    final l10n = AppLocalizations.of(context)!;
+    final filtered =
+        _allPoints.where((p) => _matchesCurrentFilter(p, l10n)).toList();
     setState(() {
       _pointsOfInterest = filtered;
       _nearbyListPoints = filtered.take(nearbySheetLimit).toList();
@@ -1107,29 +1096,19 @@ class _MapScreenState extends State<MapScreen> {
               left: 16,
               right: 16,
               child: SizedBox(
-                height: 34,
-                child: ListView(
+                height: 40,
+                child: ListView.separated(
                   scrollDirection: Axis.horizontal,
-                  children: [
-                    _buildFilterChip(_MapFilter.all, l10n),
-                    const SizedBox(width: 6),
-                    _buildFilterChip(_MapFilter.help, l10n),
-                    const SizedBox(width: 6),
-                    _buildFilterChip(_MapFilter.sites, l10n),
-                    const SizedBox(width: 6),
-                    _buildFilterChip(_MapFilter.hotels, l10n),
-                    const SizedBox(width: 6),
-                    _buildFilterChip(_MapFilter.restaurants, l10n),
-                    const SizedBox(width: 6),
-                    _buildFilterChip(_MapFilter.pharmacies, l10n),
-                    const SizedBox(width: 6),
-                    _buildFilterChip(_MapFilter.hospitals, l10n),
-                  ],
+                  itemCount: PoiCategoryFilters.forMap(l10n).length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 6),
+                  itemBuilder: (context, index) {
+                    return _buildFilterChip(index, l10n);
+                  },
                 ),
               ),
             ),
             Positioned(
-              top: 110,
+              top: 118,
               left: 16,
               right: 100,
               child: const MapLegendStrip.mapHint(),
@@ -1650,21 +1629,14 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
-  Widget _buildFilterChip(_MapFilter filter, AppLocalizations l10n) {
-    final isSelected = _selectedFilter == filter;
-    final label = switch (filter) {
-      _MapFilter.all => l10n.mapFilterAll,
-      _MapFilter.help => l10n.mapFilterHelp,
-      _MapFilter.sites => l10n.mapFilterSites,
-      _MapFilter.hotels => l10n.mapFilterHotels,
-      _MapFilter.restaurants => l10n.mapFilterRestaurants,
-      _MapFilter.pharmacies => l10n.mapFilterPharmacies,
-      _MapFilter.hospitals => l10n.mapFilterHospitals,
-    };
+  Widget _buildFilterChip(int index, AppLocalizations l10n) {
+    final filters = PoiCategoryFilters.forMap(l10n);
+    final filter = filters[index];
+    final isSelected = _filterChipIndex == index;
 
     return ChoiceChip(
       label: Text(
-        label,
+        filter.label,
         style: GoogleFonts.poppins(
           fontWeight: FontWeight.w600,
           fontSize: 11,
@@ -1674,7 +1646,7 @@ class _MapScreenState extends State<MapScreen> {
       selected: isSelected,
       onSelected: (_) {
         setState(() {
-          _selectedFilter = filter;
+          _filterChipIndex = index;
         });
         _applyLocalFilters();
       },

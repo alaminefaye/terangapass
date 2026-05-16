@@ -1,6 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../constants/poi_category_filters.dart';
+import '../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 import '../services/api_service.dart';
 import '../services/location_service.dart';
@@ -18,22 +22,14 @@ class TourismScreen extends StatefulWidget {
   State<TourismScreen> createState() => _TourismScreenState();
 }
 
-class _TourismScreenState extends State<TourismScreen>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
-
-  final List<String> _categories = [
-    'Tous',
-    'Hôtels',
-    'Restaurants',
-    'Pharmacies',
-    'Hôpitaux',
-    'Ambassades',
-  ];
+class _TourismScreenState extends State<TourismScreen> {
+  final TextEditingController _searchController = TextEditingController();
+  Timer? _searchDebounce;
 
   List<Map<String, dynamic>> _pointsOfInterest = [];
   int? _poiTotal;
   Map<String, int> _categoryLabelCounts = const {};
+  Map<String, int> _categoryKeyCounts = const {};
   bool _isLoading = true;
   String? _errorMessage;
   double? _userLatitude;
@@ -41,18 +37,55 @@ class _TourismScreenState extends State<TourismScreen>
   String? _locationError;
   bool _locationDeniedForever = false;
   bool _locationServiceDisabled = false;
+  int _chipIndex = 0;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: _categories.length, vsync: this);
+    _searchController.addListener(_onSearchChanged);
     _loadPointsOfInterest();
   }
 
   @override
   void dispose() {
-    _tabController.dispose();
+    _searchDebounce?.cancel();
+    _searchController.dispose();
     super.dispose();
+  }
+
+  void _onSearchChanged() {
+    setState(() {});
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 450), () {
+      if (mounted) _loadPointsOfInterest();
+    });
+  }
+
+  List<PoiCategoryFilter> _filters(AppLocalizations l10n) =>
+      PoiCategoryFilters.standard(l10n);
+
+  int _chipCount(PoiCategoryFilter filter) {
+    if (filter.categoryKey != null) {
+      final byKey = _categoryKeyCounts[filter.categoryKey!];
+      if (byKey != null) return byKey;
+    }
+    return PoiCategoryFilters.countForFilter(
+      filter,
+      _categoryLabelCounts,
+      _pointsOfInterest,
+      total: _poiTotal,
+    );
+  }
+
+  List<Map<String, dynamic>> _visiblePoints(AppLocalizations l10n) {
+    final filters = _filters(l10n);
+    final filter = filters[_chipIndex.clamp(0, filters.length - 1)];
+    return _pointsOfInterest.where((p) {
+      if (!PoiCategoryFilters.matchesCategory(p, filter.categoryKey)) {
+        return false;
+      }
+      return PoiCategoryFilters.matchesSearch(p, _searchController.text);
+    }).toList();
   }
 
   Future<void> _loadPointsOfInterest() async {
@@ -83,10 +116,18 @@ class _TourismScreenState extends State<TourismScreen>
         locationServiceDisabled = msg.contains('désactivés');
       }
 
+      if (!mounted) return;
+      final l10n = AppLocalizations.of(context)!;
+      final filters = _filters(l10n);
+      final chip = filters[_chipIndex.clamp(0, filters.length - 1)];
+      final apiCategory = PoiCategoryFilters.partnerCategoryKey(chip.categoryKey);
+
       final result = await apiService.getPointsOfInterest(
         latitude: latitude,
         longitude: longitude,
         limit: 100,
+        category: apiCategory,
+        query: _searchController.text,
       );
       if (!mounted) return;
       setState(() {
@@ -97,6 +138,7 @@ class _TourismScreenState extends State<TourismScreen>
         _locationServiceDisabled = locationServiceDisabled;
         _poiTotal = result.total;
         _categoryLabelCounts = result.categoryCounts;
+        _categoryKeyCounts = result.categoryCountsByKey;
         _pointsOfInterest = result.data
             .map((p) => p as Map<String, dynamic>)
             .toList();
@@ -125,13 +167,6 @@ class _TourismScreenState extends State<TourismScreen>
         });
       }
     }
-  }
-
-  List<Map<String, dynamic>> _getFiltered(String category) {
-    if (category == 'Tous') return _pointsOfInterest;
-    return _pointsOfInterest
-        .where((p) => p['category'].toString().trim() == category)
-        .toList();
   }
 
   String? _normalizeMediaUrl(Object? value) {
@@ -327,42 +362,23 @@ class _TourismScreenState extends State<TourismScreen>
     );
   }
 
-  IconData _getCategoryIcon(String category) {
-    switch (category) {
-      case 'Hôtels':
-        return Icons.hotel_rounded;
-      case 'Restaurants':
-        return Icons.restaurant_rounded;
-      case 'Pharmacies':
-        return Icons.local_pharmacy_rounded;
-      case 'Hôpitaux':
-        return Icons.local_hospital_rounded;
-      case 'Ambassades':
-        return Icons.account_balance_rounded;
-      default:
-        return Icons.place_rounded;
-    }
-  }
-
-  Color _getCategoryColor(String category) {
-    switch (category) {
-      case 'Hôtels':
-        return Colors.blue;
-      case 'Restaurants':
-        return Colors.orange;
-      case 'Pharmacies':
-        return Colors.purple;
-      case 'Hôpitaux':
-        return AppTheme.primaryRed;
-      case 'Ambassades':
-        return Colors.indigo;
-      default:
-        return AppTheme.primaryGreen;
-    }
+  void _onChipSelected(int index) {
+    if (_chipIndex == index) return;
+    setState(() => _chipIndex = index);
+    _loadPointsOfInterest();
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final filters = _filters(l10n);
+    final visiblePoints = _isLoading ? <Map<String, dynamic>>[] : _visiblePoints(l10n);
+    final showLimitedHint = !_isLoading &&
+        _searchController.text.trim().isEmpty &&
+        _chipIndex == 0 &&
+        _poiTotal != null &&
+        _poiTotal! > _pointsOfInterest.length;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF4F1EA),
       body: Column(
@@ -476,56 +492,71 @@ class _TourismScreenState extends State<TourismScreen>
                       ],
                     ),
                   ),
-                  Container(
-                    margin: const EdgeInsets.only(
-                      left: 16,
-                      right: 16,
-                      bottom: 12,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.14),
-                      borderRadius: BorderRadius.circular(26),
-                    ),
-                    child: TabBar(
-                      controller: _tabController,
-                      isScrollable: true,
-                      tabAlignment: TabAlignment.center,
-                      labelColor: const Color(0xFF2E8B57),
-                      unselectedLabelColor: Colors.white.withValues(alpha: 0.8),
-                      dividerColor: Colors.transparent,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 4,
-                        vertical: 4,
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                    child: TextField(
+                      controller: _searchController,
+                      style: GoogleFonts.poppins(
+                        color: AppTheme.textPrimary,
+                        fontSize: 14,
                       ),
-                      indicator: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(22),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.08),
-                            blurRadius: 8,
-                            offset: const Offset(0, 3),
+                      decoration: InputDecoration(
+                        hintText: 'Rechercher un lieu, une adresse…',
+                        hintStyle: GoogleFonts.poppins(
+                          color: AppTheme.textSecondary,
+                          fontSize: 13,
+                        ),
+                        prefixIcon: const Icon(
+                          Icons.search_rounded,
+                          color: Color(0xFF2E8B57),
+                        ),
+                        suffixIcon: _searchController.text.isNotEmpty
+                            ? IconButton(
+                                icon: const Icon(Icons.clear_rounded),
+                                onPressed: () {
+                                  _searchController.clear();
+                                  _loadPointsOfInterest();
+                                },
+                              )
+                            : null,
+                        filled: true,
+                        fillColor: Colors.white,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 12,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(
+                    height: 40,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                      itemCount: filters.length,
+                      separatorBuilder: (_, __) => const SizedBox(width: 8),
+                      itemBuilder: (context, i) {
+                        final selected = _chipIndex == i;
+                        final chip = filters[i];
+                        return ChoiceChip(
+                          label: Text('${chip.label} (${_chipCount(chip)})'),
+                          selected: selected,
+                          onSelected: (_) => _onChipSelected(i),
+                          selectedColor: Colors.white,
+                          labelStyle: GoogleFonts.poppins(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF1D603D),
                           ),
-                        ],
-                      ),
-                      labelStyle: GoogleFonts.plusJakartaSans(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 12,
-                      ),
-                      unselectedLabelStyle: GoogleFonts.plusJakartaSans(
-                        fontWeight: FontWeight.w500,
-                        fontSize: 12,
-                      ),
-                      indicatorSize: TabBarIndicatorSize.tab,
-                      tabs: _categories
-                          .map(
-                            (cat) => Tab(
-                              text: cat == 'Tous'
-                                  ? 'Tous (${_poiTotal ?? _pointsOfInterest.length})'
-                                  : '$cat (${_categoryLabelCounts[cat] ?? _getFiltered(cat).length})',
-                            ),
-                          )
-                          .toList(),
+                          backgroundColor: Colors.white.withValues(alpha: 0.92),
+                          side: BorderSide(color: Colors.white),
+                          showCheckmark: false,
+                        );
+                      },
                     ),
                   ),
                 ],
@@ -571,11 +602,9 @@ class _TourismScreenState extends State<TourismScreen>
                       ),
                     ),
                   )
-                : TabBarView(
-                    controller: _tabController,
-                    children: _categories
-                        .map((cat) => _buildCategoryTab(cat))
-                        .toList(),
+                : _buildPlacesList(
+                    visiblePoints,
+                    showLimitedHint: showLimitedHint,
                   ),
           ),
         ],
@@ -583,12 +612,10 @@ class _TourismScreenState extends State<TourismScreen>
     );
   }
 
-  Widget _buildCategoryTab(String category) {
-    final points = _getFiltered(category);
-    final showLimitedHint = category == 'Tous' &&
-        _poiTotal != null &&
-        _poiTotal! > _pointsOfInterest.length;
-
+  Widget _buildPlacesList(
+    List<Map<String, dynamic>> points, {
+    required bool showLimitedHint,
+  }) {
     if (points.isEmpty) {
       return Center(
         child: Padding(
@@ -611,14 +638,16 @@ class _TourismScreenState extends State<TourismScreen>
                   ],
                 ),
                 child: Icon(
-                  _getCategoryIcon(category),
+                  Icons.search_off_rounded,
                   size: 60,
                   color: AppTheme.textSecondary,
                 ),
               ),
               const SizedBox(height: 20),
               Text(
-                'Aucun résultat',
+                _searchController.text.trim().isNotEmpty
+                    ? 'Aucun lieu pour cette recherche'
+                    : 'Aucun résultat',
                 style: GoogleFonts.poppins(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
@@ -659,9 +688,8 @@ class _TourismScreenState extends State<TourismScreen>
         }
 
         final point = points[index - extraHeaders];
-        final cat = (point['category'] ?? '').toString().trim();
-        final icon = _getCategoryIcon(cat);
-        final color = _getCategoryColor(cat);
+        final icon = PoiCategoryFilters.iconForPoint(point);
+        final color = PoiCategoryFilters.colorForPoint(point);
         final iconUrl = _getPointIconUrl(point);
         final distanceLabel = _distanceLabelForPoint(point);
 
@@ -786,9 +814,8 @@ class _TourismScreenState extends State<TourismScreen>
     final d = _distanceLabelForPoint(point);
     if (d.isNotEmpty) enriched['distance'] = d;
 
-    final category = (point['category'] as String? ?? '').trim();
-    final color = _getCategoryColor(category);
-    final icon = _getCategoryIcon(category);
+    final color = PoiCategoryFilters.colorForPoint(point);
+    final icon = PoiCategoryFilters.iconForPoint(point);
 
     Navigator.push(
       context,
