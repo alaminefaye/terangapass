@@ -76,7 +76,9 @@ class TourismController extends Controller
                 'distance' => $distance,
                 'address' => $partner->address,
                 'phone' => $partner->phone,
-                'rating' => null, // À ajouter si nécessaire
+                'rating' => $partner->rating,
+                'opening_hours' => $partner->opening_hours,
+                'google_place_id' => $partner->google_place_id,
                 'description' => $partner->description,
                 'email' => $partner->email,
                 'website' => $partner->website,

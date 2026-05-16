@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Models\Partner;
+use App\Services\GooglePlacesService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -13,10 +14,6 @@ class TourismManagementController extends Controller
     public function index(Request $request)
     {
         $query = Partner::query();
-
-        // Filtrer uniquement les catégories de tourisme
-        $tourismCategories = ['hotel', 'restaurant', 'pharmacy', 'hospital', 'embassy', 'consulate'];
-        $query->whereIn('category', $tourismCategories);
 
         if ($request->filled('category')) {
             $query->where('category', $request->category);
@@ -32,8 +29,38 @@ class TourismManagementController extends Controller
         }
 
         $pointsOfInterest = $query->orderBy('name')->paginate(20);
+        $googlePlacesCount = Partner::query()->whereNotNull('google_place_id')->count();
 
-        return view('tourism.index', compact('pointsOfInterest'));
+        return view('tourism.index', compact('pointsOfInterest', 'googlePlacesCount'));
+    }
+
+    public function syncGooglePlaces(Request $request, GooglePlacesService $places)
+    {
+        if (! $places->isConfigured()) {
+            return redirect()
+                ->route('admin.tourism.index')
+                ->with('error', 'Ajoutez GOOGLE_MAPS_API_KEY dans le fichier .env du serveur (Places API activée).');
+        }
+
+        $radius = min(max((int) $request->input('radius', config('google.places_sync_radius', 50000)), 1000), 50000);
+
+        set_time_limit(600);
+
+        try {
+            $stats = $places->syncAll($radius);
+        } catch (\Throwable $e) {
+            return redirect()
+                ->route('admin.tourism.index')
+                ->with('error', 'Synchronisation échouée : '.$e->getMessage());
+        }
+
+        return redirect()
+            ->route('admin.tourism.index')
+            ->with('success', sprintf(
+                'Import Google Places terminé : %d créés, %d mis à jour.',
+                $stats['created'],
+                $stats['updated']
+            ));
     }
 
     public function create()

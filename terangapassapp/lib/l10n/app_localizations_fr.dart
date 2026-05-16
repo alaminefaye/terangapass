@@ -761,7 +761,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get mapPlaceholderTitle => 'Carte interactive';
 
   @override
-  String get mapPlaceholderSubtitle => 'Intégration Google Maps à venir';
+  String get mapPlaceholderSubtitle => 'Rechercher un lieu, une adresse…';
 
   @override
   String get mapOpenInGoogleMaps => 'Ouvrir dans Google Maps';

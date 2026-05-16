@@ -4,13 +4,36 @@
 
 @section('content')
 <div class="container-xxl flex-grow-1 container-p-y">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h4 class="fw-bold py-3 mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <h4 class="fw-bold py-3 mb-0">
             <span class="text-muted fw-light">Gestion /</span> Tourisme & Services Utiles
         </h4>
-        <a href="{{ route('admin.tourism.create') }}" class="btn btn-primary">
-            <i class="bx bx-plus me-2"></i> Créer un point d'intérêt
-        </a>
+        <div class="d-flex gap-2 flex-wrap">
+            <form action="{{ route('admin.tourism.sync-google-places') }}" method="POST" class="d-inline"
+                  onsubmit="return confirm('Importer les lieux Google Places (Dakar) ? Cela peut prendre plusieurs minutes.');">
+                @csrf
+                <input type="hidden" name="radius" value="50000">
+                <button type="submit" class="btn btn-outline-success">
+                    <i class="bx bx-cloud-download me-1"></i> Importer Google Places
+                </button>
+            </form>
+            <a href="{{ route('admin.tourism.create') }}" class="btn btn-primary">
+                <i class="bx bx-plus me-2"></i> Créer un point d'intérêt
+            </a>
+        </div>
+    </div>
+
+    @if(session('success'))
+        <div class="alert alert-success">{{ session('success') }}</div>
+    @endif
+    @if(session('error'))
+        <div class="alert alert-danger">{{ session('error') }}</div>
+    @endif
+
+    <div class="alert alert-info mb-4">
+        <strong>{{ $googlePlacesCount ?? 0 }}</strong> lieu(x) importé(s) depuis Google Places.
+        L’app lit la base via <code>/api/v1/tourism/points-of-interest</code> et <code>/nearby</code>.
+        CLI : <code>php artisan places:sync-google</code>
     </div>
 
     <!-- Filtres -->

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:latlong2/latlong.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../l10n/app_localizations.dart';
 import '../services/api_service.dart';
@@ -12,7 +11,6 @@ import '../widgets/map_legend_strip.dart';
 import '../services/offline_pack_service.dart';
 import '../services/offline_nearby_builder.dart';
 import '../widgets/offline_cache_snack.dart';
-import '../widgets/teranga_osm_tile_layer.dart';
 import 'map_screen.dart';
 
 class NearbyScreen extends StatefulWidget {
@@ -30,8 +28,6 @@ class _ChipDef {
 
 class _NearbyScreenState extends State<NearbyScreen> {
   static const int _radiusM = 2000;
-
-  final MapController _mapController = MapController();
 
   double? _userLat;
   double? _userLng;
@@ -69,10 +65,36 @@ class _NearbyScreenState extends State<NearbyScreen> {
     _refresh();
   }
 
-  @override
-  void dispose() {
-    _mapController.dispose();
-    super.dispose();
+  Set<Marker> _buildNearbyMarkers() {
+    if (_userLat == null || _userLng == null) return {};
+    final markers = <Marker>{
+      Marker(
+        markerId: const MarkerId('user'),
+        position: LatLng(_userLat!, _userLng!),
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+        infoWindow: const InfoWindow(title: 'Vous'),
+      ),
+    };
+    var i = 0;
+    for (final p in _places) {
+      final lat = _toDouble(p['latitude']);
+      final lng = _toDouble(p['longitude']);
+      if (lat == null || lng == null) continue;
+      final isSponsor = p['is_sponsor'] == true;
+      markers.add(
+        Marker(
+          markerId: MarkerId('place_$i'),
+          position: LatLng(lat, lng),
+          icon: BitmapDescriptor.defaultMarkerWithHue(
+            isSponsor
+                ? BitmapDescriptor.hueOrange
+                : BitmapDescriptor.hueGreen,
+          ),
+        ),
+      );
+      i++;
+    }
+    return markers;
   }
 
   Future<void> _refresh() async {
@@ -406,45 +428,16 @@ class _NearbyScreenState extends State<NearbyScreen> {
             borderRadius: BorderRadius.circular(16),
             child: SizedBox(
               height: 200,
-              child: RepaintBoundary(
-                child: FlutterMap(
-                  mapController: _mapController,
-                  options: MapOptions(
-                    initialCenter: LatLng(_userLat!, _userLng!),
-                    initialZoom: 13,
-                  ),
-                  children: [
-                    TerangaOsmTileLayer(
-                      onTileLoadFailure: () =>
-                          showTerangaMapTilesIssueSnackBar(context),
-                    ),
-                    MarkerLayer(
-                      markers: [
-                        Marker(
-                          point: LatLng(_userLat!, _userLng!),
-                          width: 36,
-                          height: 36,
-                          child: const Icon(Icons.person_pin_circle, color: Color(0xFF1565C0), size: 36),
-                        ),
-                        ..._places.map((p) {
-                          final lat = _toDouble(p['latitude']);
-                          final lng = _toDouble(p['longitude']);
-                          if (lat == null || lng == null) return null;
-                          return Marker(
-                            point: LatLng(lat, lng),
-                            width: 32,
-                            height: 32,
-                            child: Icon(
-                              Icons.place_rounded,
-                              color: (p['is_sponsor'] == true) ? Colors.amber[800] : AppTheme.primaryGreen,
-                              size: 32,
-                            ),
-                          );
-                        }).whereType<Marker>(),
-                      ],
-                    ),
-                  ],
+              child: GoogleMap(
+                initialCameraPosition: CameraPosition(
+                  target: LatLng(_userLat!, _userLng!),
+                  zoom: 13,
                 ),
+                markers: _buildNearbyMarkers(),
+                myLocationEnabled: true,
+                myLocationButtonEnabled: false,
+                zoomControlsEnabled: false,
+                mapToolbarEnabled: false,
               ),
             ),
           ),

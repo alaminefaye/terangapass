@@ -15,6 +15,9 @@ class Partner extends Model
     protected $fillable = [
         'name',
         'category',
+        'google_place_id',
+        'google_types',
+        'google_synced_at',
         'description',
         'address',
         'latitude',
@@ -37,6 +40,8 @@ class Partner extends Model
         'longitude' => 'decimal:8',
         'rating' => 'decimal:1',
         'photos' => 'array',
+        'google_types' => 'array',
+        'google_synced_at' => 'datetime',
         'is_sponsor' => 'boolean',
         'is_active' => 'boolean',
     ];

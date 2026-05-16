@@ -294,7 +294,7 @@
   "tourismNoResults": "No results",
   "mapTitle": "Interactive Map",
   "mapPlaceholderTitle": "Interactive map",
-  "mapPlaceholderSubtitle": "Google Maps integration coming soon",
+  "mapPlaceholderSubtitle": "Search for a place or address…",
   "mapOpenInGoogleMaps": "Open in Google Maps",
   "mapNearbyPointsTitle": "Nearby points of interest",
   "mapNoPoints": "No points available",

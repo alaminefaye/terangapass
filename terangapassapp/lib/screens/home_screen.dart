@@ -2,8 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
@@ -31,7 +30,6 @@ import 'nearby_screen.dart';
 import '../widgets/loading_placeholders.dart';
 import '../widgets/map_legend_strip.dart';
 import '../widgets/offline_cache_snack.dart';
-import '../widgets/teranga_osm_tile_layer.dart';
 
 enum _HomeFeatureId {
   audioAnnouncements,
@@ -67,7 +65,6 @@ class _HomeScreenState extends State<HomeScreen>
   List<Map<String, dynamic>> _competitionSites = [];
   bool _isLoadingCompetitionSites = false;
   String? _competitionSitesError;
-  final MapController _jojMapController = MapController();
   int _unreadNotificationsCount = 0;
   late final AnimationController _aiPulseController;
   bool _isNavigating = false;
@@ -430,28 +427,27 @@ class _HomeScreenState extends State<HomeScreen>
     return LatLng(lat, lng);
   }
 
-  List<Marker> _buildSiteMarkers(BuildContext context) {
+  Set<Marker> _buildSiteMarkers(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final markers = <Marker>[];
+    final markers = <Marker>{};
+    var i = 0;
     for (final site in _competitionSites) {
       final pos = _siteLatLng(site);
       if (pos == null) continue;
       final name = (site['name'] ?? '').toString().trim();
       markers.add(
         Marker(
-          point: pos,
-          width: 40,
-          height: 40,
-          child: Tooltip(
-            message: name.isEmpty ? l10n.homeSiteFallback : name,
-            child: const Icon(
-              Icons.location_on_rounded,
-              color: AppTheme.primaryGreen,
-              size: 38,
-            ),
+          markerId: MarkerId('site_$i'),
+          position: pos,
+          infoWindow: InfoWindow(
+            title: name.isEmpty ? l10n.homeSiteFallback : name,
+          ),
+          icon: BitmapDescriptor.defaultMarkerWithHue(
+            BitmapDescriptor.hueGreen,
           ),
         ),
       );
+      i++;
     }
     return markers;
   }
@@ -1656,21 +1652,15 @@ class _HomeScreenState extends State<HomeScreen>
                         ),
                       )
                     : hasCoords
-                    ? RepaintBoundary(
-                        child: FlutterMap(
-                          mapController: _jojMapController,
-                          options: MapOptions(
-                            initialCenter: markers.first.point,
-                            initialZoom: 12,
-                          ),
-                          children: [
-                            TerangaOsmTileLayer(
-                              onTileLoadFailure: () =>
-                                  showTerangaMapTilesIssueSnackBar(context),
-                            ),
-                            MarkerLayer(markers: markers),
-                          ],
+                    ? GoogleMap(
+                        initialCameraPosition: CameraPosition(
+                          target: markers.first.position,
+                          zoom: 12,
                         ),
+                        markers: markers,
+                        myLocationButtonEnabled: false,
+                        zoomControlsEnabled: false,
+                        mapToolbarEnabled: false,
                       )
                     : Center(
                         child: Padding(

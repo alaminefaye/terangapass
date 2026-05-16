@@ -2,16 +2,17 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:http/http.dart' as http;
-import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
-import '../widgets/teranga_osm_tile_layer.dart';
+import '../utils/google_maps_helpers.dart';
+import '../services/google_directions_service.dart';
 import '../services/location_service.dart';
 import '../services/api_service.dart';
 import '../widgets/loading_placeholders.dart';
@@ -46,7 +47,7 @@ class _MapScreenState extends State<MapScreen> {
   double? _currentLng;
   bool _isLoadingPoints = true;
   String? _pointsErrorMessage;
-  final MapController _mapController = MapController();
+  GoogleMapController? _mapController;
   final TextEditingController _searchController = TextEditingController();
   List<Map<String, dynamic>> _pointsOfInterest = [];
   List<Map<String, dynamic>> _allPoints = [];
@@ -65,13 +66,16 @@ class _MapScreenState extends State<MapScreen> {
   int _currentStepIndex = 0;
   String? _navInstruction;
   String? _navRemainingDistance;
+  String? _distanceBeforeManeuver;
   IconData _navIcon = Icons.straight_rounded;
   bool _approachNotified = false;
   bool _arrivalNotified = false;
+  int _lastSpokenStepIndex = -1;
+  final Set<int> _maneuverPreviewSpoken = {};
 
-  // Simulation de navigation (bouton Test)
-  Timer? _simTimer;
-  int _simIndex = 0;
+  // Synthèse vocale (instructions comme Google Maps)
+  final FlutterTts _tts = FlutterTts();
+  bool _ttsReady = false;
 
   // Notifications locales
   final FlutterLocalNotificationsPlugin _notificationsPlugin =
@@ -80,7 +84,7 @@ class _MapScreenState extends State<MapScreen> {
   @override
   void dispose() {
     _navPositionSub?.cancel();
-    _simTimer?.cancel();
+    _tts.stop();
     _searchController.dispose();
     super.dispose();
   }
@@ -98,6 +102,7 @@ class _MapScreenState extends State<MapScreen> {
       _currentLng = widget.initialLatLng!.longitude;
     }
     _initNotifications();
+    _initTts();
     _initLocationAndLoad().then((_) {
       // Calcul automatique de l'itinéraire si on a un lieu ciblé.
       if (widget.initialLatLng != null && mounted) {
@@ -124,14 +129,15 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
-  /// Calcule l'itinéraire depuis la position actuelle vers [widget.initialLatLng]
-  /// en utilisant l'API OSRM (OpenStreetMap routing, gratuit).
+  /// Itinéraire Google Directions (km / durée réalistes), secours OSRM.
   Future<void> _calculateRoute() async {
     final dest = widget.initialLatLng;
     if (dest == null) return;
 
-    final originLat = _currentLat ?? _fallbackLat;
-    final originLng = _currentLng ?? _fallbackLng;
+    final origin = LatLng(
+      _currentLat ?? _fallbackLat,
+      _currentLng ?? _fallbackLng,
+    );
 
     setState(() {
       _isLoadingRoute = true;
@@ -142,9 +148,51 @@ class _MapScreenState extends State<MapScreen> {
     });
 
     try {
+      final google = await GoogleDirectionsService.fetchDrivingRoute(
+        origin: origin,
+        destination: dest,
+      );
+      if (!mounted) return;
+      _applyRouteResult(
+        points: google.points,
+        distanceM: google.distanceMeters,
+        durationS: google.durationSeconds,
+        navSteps: google.navSteps,
+      );
+    } on GoogleDirectionsException {
+      await _calculateRouteWithOsrm(origin, dest);
+    } catch (_) {
+      await _calculateRouteWithOsrm(origin, dest);
+    }
+  }
+
+  void _applyRouteResult({
+    required List<LatLng> points,
+    required double distanceM,
+    required double durationS,
+    required List<Map<String, dynamic>> navSteps,
+  }) {
+    setState(() {
+      _routePoints = points;
+      _routeDistance = GoogleDirectionsService.formatDistanceLabel(distanceM);
+      _routeDuration = GoogleDirectionsService.formatDurationLabel(durationS);
+      _navSteps = navSteps;
+      _isLoadingRoute = false;
+    });
+
+    if (points.length > 1) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        GoogleMapsHelpers.fitBounds(_mapController, points, padding: 80);
+      });
+    }
+  }
+
+  Future<void> _calculateRouteWithOsrm(LatLng origin, LatLng dest) async {
+    try {
       final url = Uri.parse(
         'https://router.project-osrm.org/route/v1/driving/'
-        '$originLng,$originLat;${dest.longitude},${dest.latitude}'
+        '${origin.longitude},${origin.latitude};${dest.longitude},${dest.latitude}'
         '?overview=full&geometries=geojson&steps=true',
       );
       final response = await http.get(url).timeout(const Duration(seconds: 15));
@@ -175,103 +223,62 @@ class _MapScreenState extends State<MapScreen> {
 
       final points = coords
           .whereType<List>()
-          .map((c) => LatLng(
-                (c[1] as num).toDouble(),
-                (c[0] as num).toDouble(),
-              ))
+          .map(
+            (c) => LatLng(
+              (c[1] as num).toDouble(),
+              (c[0] as num).toDouble(),
+            ),
+          )
           .toList();
 
-      final distLabel = distanceM < 1000
-          ? '${distanceM.round()} m'
-          : '${(distanceM / 1000).toStringAsFixed(1)} km';
-      final durationMin = (durationS / 60).round();
-      final durLabel = durationMin < 60
-          ? '$durationMin min'
-          : '${durationMin ~/ 60} h ${durationMin % 60} min';
-
-      // Récupération des étapes de virage
       final legs = (route['legs'] as List?) ?? [];
       final steps = legs.isNotEmpty
           ? ((legs.first as Map<String, dynamic>)['steps'] as List?) ?? []
           : [];
-      final parsedSteps = steps
-          .whereType<Map<String, dynamic>>()
-          .toList();
+      final parsedSteps = steps.whereType<Map<String, dynamic>>().toList();
 
-      setState(() {
-        _routePoints = points;
-        _routeDistance = distLabel;
-        _routeDuration = durLabel;
-        _navSteps = parsedSteps;
-        _isLoadingRoute = false;
-      });
-
-      // Ajuster la vue pour englober tout le trajet
-      if (points.length > 1) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!mounted) return;
-          try {
-            final bounds = LatLngBounds.fromPoints(points);
-            _mapController.fitCamera(
-              CameraFit.bounds(
-                bounds: bounds,
-                padding: const EdgeInsets.fromLTRB(40, 120, 40, 320),
-              ),
-            );
-          } catch (_) {}
-        });
-      }
-    } catch (e) {
+      _applyRouteResult(
+        points: points,
+        distanceM: distanceM,
+        durationS: durationS,
+        navSteps: parsedSteps,
+      );
+    } catch (_) {
       if (!mounted) return;
       setState(() {
-        _routeError = 'Impossible de calculer l\'itinéraire';
+        _routeError =
+            'Impossible de calculer l\'itinéraire. Vérifiez Directions API sur Google Cloud.';
         _isLoadingRoute = false;
       });
     }
   }
 
-  /// Ouvre l'app de navigation native (Google Maps / Waze / geo) en mode direction.
-  Future<void> _startExternalNavigation() async {
-    final dest = widget.initialLatLng;
-    if (dest == null) return;
-
-    final lat = dest.latitude;
-    final lng = dest.longitude;
-    final label = Uri.encodeComponent(widget.focusedPlaceName ?? '');
-
-    // Schémas natifs : on tente via canLaunchUrl (déclarés dans le manifest).
-    final nativeCandidates = <Uri>[
-      Uri.parse('comgooglemaps://?daddr=$lat,$lng&directionsmode=driving'),
-      Uri.parse('waze://?ll=$lat,$lng&navigate=yes'),
-      Uri.parse('geo:$lat,$lng?q=$lat,$lng($label)'),
-    ];
-    for (final uri in nativeCandidates) {
-      try {
-        if (await canLaunchUrl(uri)) {
-          await launchUrl(uri, mode: LaunchMode.externalApplication);
-          return;
-        }
-      } catch (_) {}
-    }
-
-    // Fallback web : on lance directement sans canLaunchUrl (toujours disponible).
-    final webUrl = Uri.parse(
-      'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng&travelmode=driving',
-    );
+  Future<void> _initTts() async {
     try {
-      await launchUrl(webUrl, mode: LaunchMode.externalApplication);
+      await _tts.setLanguage('fr-FR');
+      await _tts.setSpeechRate(0.48);
+      await _tts.setVolume(1.0);
+      await _tts.awaitSpeakCompletion(true);
+      _ttsReady = true;
     } catch (_) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Impossible d\'ouvrir la navigation',
-            style: GoogleFonts.poppins(),
-          ),
-          backgroundColor: AppTheme.primaryRed,
-        ),
-      );
+      _ttsReady = false;
     }
+  }
+
+  Future<void> _speakNavInstruction(String text) async {
+    if (!_ttsReady || text.trim().isEmpty) return;
+    try {
+      await _tts.stop();
+      await _tts.speak(text.trim());
+    } catch (_) {}
+  }
+
+  void _announceStep(int stepIndex) {
+    if (stepIndex < 0 || stepIndex >= _navSteps.length) return;
+    if (stepIndex == _lastSpokenStepIndex) return;
+    _lastSpokenStepIndex = stepIndex;
+    final text = _frenchInstruction(_navSteps[stepIndex]);
+    _speakNavInstruction(text);
   }
 
   Future<void> _initNotifications() async {
@@ -310,72 +317,11 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
-  /// Lance la simulation de navigation le long de la route (pour tester).
-  void _startSimulation() {
-    if (_routePoints.length < 2) return;
-    _simIndex = 0;
-    setState(() {
-      _isNavigating = true;
-      _currentStepIndex = 0;
-      _approachNotified = false;
-      _arrivalNotified = false;
-      _navInstruction = _navSteps.isNotEmpty
-          ? _frenchInstruction(_navSteps.first)
-          : 'Simulation en cours…';
-      _navIcon = _navSteps.isNotEmpty
-          ? _iconForInstruction(_navSteps.first)
-          : Icons.straight_rounded;
-      _navRemainingDistance = _routeDistance;
-    });
-
-    _simTimer?.cancel();
-    _simTimer = Timer.periodic(const Duration(milliseconds: 600), (timer) {
-      if (!mounted) {
-        timer.cancel();
-        return;
-      }
-      if (_simIndex >= _routePoints.length) {
-        timer.cancel();
-        _stopNavigation();
-        return;
-      }
-
-      final pt = _routePoints[_simIndex];
-      // Calcul du cap vers le prochain point
-      double heading = 0;
-      if (_simIndex < _routePoints.length - 1) {
-        final next = _routePoints[_simIndex + 1];
-        heading = Geolocator.bearingBetween(
-          pt.latitude, pt.longitude,
-          next.latitude, next.longitude,
-        );
-      }
-
-      // Simuler une Position
-      final fakePos = Position(
-        latitude: pt.latitude,
-        longitude: pt.longitude,
-        timestamp: DateTime.now(),
-        accuracy: 5,
-        altitude: 0,
-        altitudeAccuracy: 0,
-        heading: heading,
-        headingAccuracy: 0,
-        speed: 10,
-        speedAccuracy: 0,
-      );
-      _onNavPositionUpdate(fakePos);
-      _simIndex++;
-    });
-  }
-
-  void _stopSimulation() {
-    _simTimer?.cancel();
-    _simTimer = null;
-  }
-
-  /// Convertit un step OSRM en instruction de navigation en français.
+  /// Convertit une étape (Google ou OSRM) en instruction en français.
   String _frenchInstruction(Map<String, dynamic> step) {
+    final explicit = (step['instruction'] as String?)?.trim();
+    if (explicit != null && explicit.isNotEmpty) return explicit;
+
     final type = (step['maneuver']?['type'] ?? '').toString().toLowerCase();
     final modifier = (step['maneuver']?['modifier'] ?? '').toString().toLowerCase();
     final name = (step['name'] ?? '').toString().trim();
@@ -425,7 +371,9 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   void _startInAppNavigation() {
-    if (_routePoints.isEmpty) return;
+    if (_routePoints.isEmpty || _isNavigating) return;
+    _lastSpokenStepIndex = -1;
+    _maneuverPreviewSpoken.clear();
     setState(() {
       _isNavigating = true;
       _currentStepIndex = 0;
@@ -440,6 +388,12 @@ class _MapScreenState extends State<MapScreen> {
       _navRemainingDistance = _routeDistance;
     });
 
+    if (_navSteps.isNotEmpty) {
+      _announceStep(0);
+    } else {
+      _speakNavInstruction('Suivez la route vers votre destination');
+    }
+
     _navPositionSub = Geolocator.getPositionStream(
       locationSettings: const LocationSettings(
         accuracy: LocationAccuracy.high,
@@ -452,8 +406,9 @@ class _MapScreenState extends State<MapScreen> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           try {
-            _mapController.moveAndRotate(
-              LatLng(_currentLat!, _currentLng!), 17, 0,
+            GoogleMapsHelpers.animateNavigation(
+              _mapController,
+              LatLng(_currentLat!, _currentLng!),
             );
           } catch (_) {}
         }
@@ -464,19 +419,26 @@ class _MapScreenState extends State<MapScreen> {
   void _stopNavigation() {
     _navPositionSub?.cancel();
     _navPositionSub = null;
-    _stopSimulation();
+    _tts.stop();
+    _lastSpokenStepIndex = -1;
+    _maneuverPreviewSpoken.clear();
     if (!mounted) return;
     setState(() {
       _isNavigating = false;
       _navInstruction = null;
       _navRemainingDistance = null;
+      _distanceBeforeManeuver = null;
       _approachNotified = false;
       _arrivalNotified = false;
     });
     // Remettre la carte à l'orientation nord
-    try {
-      _mapController.rotate(0);
-    } catch (_) {}
+    if (_currentLat != null && _currentLng != null) {
+      GoogleMapsHelpers.animateNavigation(
+        _mapController,
+        LatLng(_currentLat!, _currentLng!),
+        bearing: 0,
+      );
+    }
   }
 
   void _onNavPositionUpdate(Position pos) {
@@ -488,30 +450,48 @@ class _MapScreenState extends State<MapScreen> {
 
     // Recentrer la carte + orienter selon la direction de déplacement
     final heading = pos.heading;
-    try {
-      _mapController.moveAndRotate(
-        LatLng(pos.latitude, pos.longitude),
-        17,
-        -heading, // map tourne pour que la direction soit toujours vers le haut
-      );
-    } catch (_) {}
+    final bearing = heading.isFinite && heading >= 0 ? heading : 0.0;
+    GoogleMapsHelpers.animateNavigation(
+      _mapController,
+      LatLng(pos.latitude, pos.longitude),
+      bearing: bearing,
+    );
 
-    // Avancer à l'étape suivante si on est à moins de 40 m du prochain virage
-    if (_currentStepIndex < _navSteps.length - 1) {
-      final nextStep = _navSteps[_currentStepIndex + 1];
-      final loc = nextStep['maneuver']?['location'];
+    // Distance avant le prochain virage + passage à l'étape suivante
+    if (_navSteps.isNotEmpty && _currentStepIndex < _navSteps.length) {
+      final currentStep = _navSteps[_currentStepIndex];
+      final loc = currentStep['maneuver']?['location'];
       if (loc is List && loc.length >= 2) {
         final stepLat = (loc[1] as num).toDouble();
         final stepLng = (loc[0] as num).toDouble();
-        final dist = Geolocator.distanceBetween(
+        final distToManeuver = Geolocator.distanceBetween(
           pos.latitude, pos.longitude, stepLat, stepLng,
         );
-        if (dist < 40) {
+        setState(() {
+          _distanceBeforeManeuver = distToManeuver < 1000
+              ? 'Dans ${distToManeuver.round()} m'
+              : 'Dans ${(distToManeuver / 1000).toStringAsFixed(1)} km';
+        });
+
+        // Annonce vocale à ~80 m du virage
+        if (distToManeuver <= 80 &&
+            distToManeuver > 35 &&
+            !_maneuverPreviewSpoken.contains(_currentStepIndex)) {
+          _maneuverPreviewSpoken.add(_currentStepIndex);
+          final preview = _frenchInstruction(currentStep);
+          _speakNavInstruction(
+            'Dans ${distToManeuver.round()} mètres, $preview',
+          );
+        }
+
+        if (distToManeuver < 35 && _currentStepIndex < _navSteps.length - 1) {
+          final nextIndex = _currentStepIndex + 1;
           setState(() {
-            _currentStepIndex++;
-            _navInstruction = _frenchInstruction(_navSteps[_currentStepIndex]);
-            _navIcon = _iconForInstruction(_navSteps[_currentStepIndex]);
+            _currentStepIndex = nextIndex;
+            _navInstruction = _frenchInstruction(_navSteps[nextIndex]);
+            _navIcon = _iconForInstruction(_navSteps[nextIndex]);
           });
+          _announceStep(nextIndex);
         }
       }
     }
@@ -537,10 +517,13 @@ class _MapScreenState extends State<MapScreen> {
           body: 'Votre destination est à ${remaining.round()} mètres.',
         );
         if (mounted) {
+          final approachText =
+              'Dans ${remaining.round()} mètres, vous arriverez à destination';
           setState(() {
-            _navInstruction = 'Dans ${remaining.round()} m : arrivée à destination';
+            _navInstruction = approachText;
             _navIcon = Icons.flag_rounded;
           });
+          _speakNavInstruction(approachText);
         }
       }
 
@@ -553,10 +536,12 @@ class _MapScreenState extends State<MapScreen> {
           body: 'Vous avez atteint votre destination : ${widget.focusedPlaceName ?? ""}',
         );
         if (mounted) {
+          const arrivalText = 'Vous êtes arrivé à destination';
           setState(() {
-            _navInstruction = '🎉 Vous êtes arrivé à destination !';
+            _navInstruction = arrivalText;
             _navIcon = Icons.flag_rounded;
           });
+          _speakNavInstruction(arrivalText);
         }
         Future.delayed(const Duration(seconds: 4), () {
           if (mounted) _stopNavigation();
@@ -843,59 +828,43 @@ class _MapScreenState extends State<MapScreen> {
     return double.tryParse(value.toString().trim());
   }
 
-  List<Marker> _buildMarkers() {
-    final markers = _pointsOfInterest
-        .map((point) {
-          final lat = _toDouble(point['latitude'] ?? point['lat']);
-          final lng = _toDouble(
-            point['longitude'] ?? point['lng'] ?? point['lon'],
-          );
-          if (lat == null || lng == null) return null;
-          final category = (point['category'] ?? '').toString();
-          final color = _colorForCategory(category);
-          final name = (point['name'] ?? '').toString().trim();
+  Set<Marker> _buildMapMarkers() {
+    final markers = <Marker>{};
+    var index = 0;
+    for (final point in _pointsOfInterest) {
+      final lat = _toDouble(point['latitude'] ?? point['lat']);
+      final lng = _toDouble(
+        point['longitude'] ?? point['lng'] ?? point['lon'],
+      );
+      if (lat == null || lng == null) continue;
+      final category = (point['category'] ?? '').toString();
+      final name = (point['name'] ?? '').toString().trim();
+      final id = (point['id'] ?? index).toString();
 
-          return Marker(
-            width: 44,
-            height: 44,
-            point: LatLng(lat, lng),
-            child: Tooltip(
-              message: name,
-              child: Icon(Icons.location_on_rounded, color: color, size: 36),
-            ),
-          );
-        })
-        .whereType<Marker>()
-        .toList();
-
-    // Marqueur spécial pour le lieu ciblé depuis "À proximité".
-    final focused = widget.initialLatLng;
-    if (focused != null) {
       markers.add(
         Marker(
-          width: 56,
-          height: 56,
-          point: focused,
-          child: Tooltip(
-            message: widget.focusedPlaceName ?? '',
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFE07B39).withValues(alpha: 0.2),
-                    shape: BoxShape.circle,
-                  ),
-                ),
-                const Icon(
-                  Icons.location_on_rounded,
-                  color: Color(0xFFE07B39),
-                  size: 46,
-                ),
-              ],
-            ),
+          markerId: MarkerId('poi_$id'),
+          position: LatLng(lat, lng),
+          infoWindow: name.isEmpty ? InfoWindow.noText : InfoWindow(title: name),
+          icon: BitmapDescriptor.defaultMarkerWithHue(
+            GoogleMapsHelpers.markerHueForCategory(category),
+          ),
+        ),
+      );
+      index++;
+    }
+
+    final focused = widget.initialLatLng;
+    if (focused != null) {
+      final label = widget.focusedPlaceName ?? '';
+      markers.add(
+        Marker(
+          markerId: const MarkerId('focused_destination'),
+          position: focused,
+          infoWindow:
+              label.isEmpty ? InfoWindow.noText : InfoWindow(title: label),
+          icon: BitmapDescriptor.defaultMarkerWithHue(
+            BitmapDescriptor.hueOrange,
           ),
         ),
       );
@@ -903,19 +872,35 @@ class _MapScreenState extends State<MapScreen> {
     return markers;
   }
 
+  Set<Polyline> _buildRoutePolylines() {
+    if (_routePoints.length < 2) return {};
+    return {
+      Polyline(
+        polylineId: const PolylineId('route'),
+        points: _routePoints,
+        color: const Color(0xFF2E8B57),
+        width: 5,
+      ),
+    };
+  }
+
+  CameraPosition get _initialCameraPosition {
+    final center = widget.initialLatLng ??
+        LatLng(
+          _currentLat ?? 14.7167,
+          _currentLng ?? -17.4677,
+        );
+    return CameraPosition(
+      target: center,
+      zoom: widget.initialLatLng != null ? 16 : 12,
+    );
+  }
+
   void _syncMapToPoints() {
-    final markers = _buildMarkers();
+    final markers = _buildMapMarkers();
     if (markers.isEmpty) return;
-    try {
-      _mapController.move(markers.first.point, 13);
-    } catch (_) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        try {
-          _mapController.move(markers.first.point, 13);
-        } catch (_) {}
-      });
-    }
+    final first = markers.first.position;
+    GoogleMapsHelpers.animateTo(_mapController, first, zoom: 13);
   }
 
   IconData _iconForCategory(String category) {
@@ -1000,37 +985,18 @@ class _MapScreenState extends State<MapScreen> {
       body: SafeArea(
         child: Stack(
           children: [
-            // Carte OSM réelle style maquette
+            // Google Maps
             Positioned.fill(
-              child: RepaintBoundary(
-                child: FlutterMap(
-                  mapController: _mapController,
-                  options: MapOptions(
-                    initialCenter: widget.initialLatLng ??
-                        LatLng(
-                          _currentLat ?? 14.7167,
-                          _currentLng ?? -17.4677,
-                        ),
-                    initialZoom: widget.initialLatLng != null ? 16 : 12,
-                  ),
-                  children: [
-                    TerangaOsmTileLayer(
-                      onTileLoadFailure: () =>
-                          showTerangaMapTilesIssueSnackBar(context),
-                    ),
-                    if (_routePoints.length > 1)
-                      PolylineLayer(
-                        polylines: [
-                          Polyline(
-                            points: _routePoints,
-                            strokeWidth: 5,
-                            color: const Color(0xFF2E8B57),
-                          ),
-                        ],
-                      ),
-                    MarkerLayer(markers: _buildMarkers()),
-                  ],
-                ),
+              child: GoogleMap(
+                initialCameraPosition: _initialCameraPosition,
+                onMapCreated: (controller) => _mapController = controller,
+                markers: _buildMapMarkers(),
+                polylines: _buildRoutePolylines(),
+                myLocationEnabled: true,
+                myLocationButtonEnabled: false,
+                compassEnabled: true,
+                mapToolbarEnabled: false,
+                zoomControlsEnabled: false,
               ),
             ),
             // HUD de navigation affiché en haut quand la navigation est active
@@ -1251,6 +1217,95 @@ class _MapScreenState extends State<MapScreen> {
 
   Widget _buildDestinationPanel(BuildContext context) {
     final name = widget.focusedPlaceName ?? '';
+
+    // Pendant la navigation : pas de second « Démarrer », uniquement arrêter.
+    if (_isNavigating) {
+      return Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+          boxShadow: [
+            BoxShadow(color: Colors.black12, blurRadius: 12, offset: Offset(0, -2)),
+          ],
+        ),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Center(
+              child: Container(
+                width: 42,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(99),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF2E8B57).withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(_navIcon, color: const Color(0xFF2E8B57), size: 26),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Navigation en cours',
+                        style: GoogleFonts.poppins(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
+                          color: const Color(0xFF1A1F2E),
+                        ),
+                      ),
+                      if (_navRemainingDistance != null)
+                        Text(
+                          'Reste $_navRemainingDistance',
+                          style: GoogleFonts.poppins(
+                            fontSize: 12,
+                            color: AppTheme.textSecondary,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: _stopNavigation,
+                icon: const Icon(Icons.stop_rounded, size: 20),
+                label: const Text('Arrêter la navigation'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppTheme.primaryRed,
+                  side: const BorderSide(color: AppTheme.primaryRed),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  textStyle: GoogleFonts.poppins(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
@@ -1334,7 +1389,8 @@ class _MapScreenState extends State<MapScreen> {
             children: [
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: _isLoadingRoute ? null : _calculateRoute,
+                  onPressed:
+                      _isLoadingRoute || _isNavigating ? null : _calculateRoute,
                   icon: _isLoadingRoute
                       ? const SizedBox(
                           width: 14,
@@ -1362,7 +1418,7 @@ class _MapScreenState extends State<MapScreen> {
               const SizedBox(width: 10),
               Expanded(
                 child: ElevatedButton.icon(
-                  onPressed: _isLoadingRoute
+                  onPressed: _isLoadingRoute || _isNavigating
                       ? null
                       : () async {
                           if (_routePoints.isEmpty) {
@@ -1401,31 +1457,6 @@ class _MapScreenState extends State<MapScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 6),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              TextButton.icon(
-                onPressed: _startExternalNavigation,
-                icon: const Icon(Icons.open_in_new_rounded, size: 14),
-                label: const Text('Google Maps'),
-                style: TextButton.styleFrom(
-                  foregroundColor: AppTheme.textSecondary,
-                  textStyle: GoogleFonts.poppins(fontSize: 12),
-                ),
-              ),
-              const SizedBox(width: 8),
-              TextButton.icon(
-                onPressed: _routePoints.isNotEmpty ? _startSimulation : null,
-                icon: const Icon(Icons.science_rounded, size: 14),
-                label: const Text('Tester'),
-                style: TextButton.styleFrom(
-                  foregroundColor: const Color(0xFF7B2FBE),
-                  textStyle: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600),
-                ),
-              ),
-            ],
-          ),
         ],
       ),
     );
@@ -1454,15 +1485,29 @@ class _MapScreenState extends State<MapScreen> {
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: Text(
-                      _navInstruction ?? 'Calculer l\'itinéraire',
-                      style: GoogleFonts.poppins(
-                        color: Colors.white,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (_distanceBeforeManeuver != null)
+                          Text(
+                            _distanceBeforeManeuver!,
+                            style: GoogleFonts.poppins(
+                              color: const Color(0xFF90EE90),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        Text(
+                          _navInstruction ?? 'Navigation…',
+                          style: GoogleFonts.poppins(
+                            color: Colors.white,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -1667,7 +1712,11 @@ class _MapScreenState extends State<MapScreen> {
         _currentLat = pos.latitude;
         _currentLng = pos.longitude;
       });
-      _mapController.move(LatLng(pos.latitude, pos.longitude), 14);
+      GoogleMapsHelpers.animateTo(
+        _mapController,
+        LatLng(pos.latitude, pos.longitude),
+        zoom: 14,
+      );
       _loadPointsOfInterest();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

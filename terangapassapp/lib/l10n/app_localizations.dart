@@ -1523,7 +1523,7 @@ abstract class AppLocalizations {
   /// No description provided for @mapPlaceholderSubtitle.
   ///
   /// In fr, this message translates to:
-  /// **'Intégration Google Maps à venir'**
+  /// **'Rechercher un lieu, une adresse…'**
   String get mapPlaceholderSubtitle;
 
   /// No description provided for @mapOpenInGoogleMaps.

@@ -68,6 +68,8 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     Route::resource('partners', PartnerManagementController::class);
 
     // Tourisme
+    Route::post('tourism/sync-google-places', [TourismManagementController::class, 'syncGooglePlaces'])
+        ->name('tourism.sync-google-places');
     Route::resource('tourism', TourismManagementController::class);
 
     // Utilisateurs Mobile
