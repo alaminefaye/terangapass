@@ -13,6 +13,8 @@ use Illuminate\Support\Str;
  */
 class GooglePlacesService
 {
+    public const PHOTO_REF_PREFIX = 'google_photo:';
+
     /** Types Google Nearby Search → catégorie Teranga Pass. */
     public const NEARBY_TYPE_MAP = [
         'restaurant' => 'restaurant',
@@ -445,7 +447,7 @@ class GooglePlacesService
             foreach (array_slice($photos, 0, 5) as $photo) {
                 $ref = is_array($photo) ? ($photo['photo_reference'] ?? null) : null;
                 if (is_string($ref) && $ref !== '') {
-                    $refs[] = $this->buildPhotoUrl($ref);
+                    $refs[] = self::PHOTO_REF_PREFIX.$ref;
                 }
             }
             if ($refs !== []) {
@@ -470,6 +472,54 @@ class GooglePlacesService
             'photo_reference' => $photoReference,
             'key' => $this->apiKey,
         ]);
+    }
+
+    /**
+     * Convertit une valeur stockée (URL absolue ou référence google_photo:…) en URL affichable.
+     */
+    public function resolveMediaUrl(?string $stored): ?string
+    {
+        if ($stored === null || trim($stored) === '') {
+            return null;
+        }
+
+        $stored = trim($stored);
+        if (str_starts_with($stored, 'http://') || str_starts_with($stored, 'https://')) {
+            return $stored;
+        }
+
+        $ref = str_starts_with($stored, self::PHOTO_REF_PREFIX)
+            ? substr($stored, strlen(self::PHOTO_REF_PREFIX))
+            : $stored;
+
+        if ($ref === '' || ! $this->isConfigured()) {
+            return null;
+        }
+
+        return $this->buildPhotoUrl($ref);
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function resolvePhotoList(?array $photos): array
+    {
+        if ($photos === null || $photos === []) {
+            return [];
+        }
+
+        $urls = [];
+        foreach ($photos as $item) {
+            if (! is_string($item)) {
+                continue;
+            }
+            $url = $this->resolveMediaUrl($item);
+            if ($url !== null) {
+                $urls[] = $url;
+            }
+        }
+
+        return $urls;
     }
 
     /**

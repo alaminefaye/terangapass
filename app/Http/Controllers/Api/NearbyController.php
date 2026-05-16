@@ -60,13 +60,12 @@ class NearbyController extends Controller
                 (float) $partner->longitude
             );
 
-            $iconUrl = $partner->icon_path ?: $partner->logo_url;
-            $iconUrl = $this->normalizeUrl($iconUrl);
+            $iconUrl = $this->normalizeUrl($partner->resolvedLogoUrl());
 
-            $photos = is_array($partner->photos) ? $partner->photos : [];
-            $photos = array_values(array_filter(array_map(function ($u) {
-                return $this->normalizeUrl($u);
-            }, $photos)));
+            $photos = array_values(array_filter(array_map(
+                fn ($u) => $this->normalizeUrl($u),
+                $partner->resolvedPhotoUrls()
+            )));
 
             return [
                 'id' => $partner->id,

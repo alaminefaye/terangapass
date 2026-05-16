@@ -5,6 +5,7 @@ namespace App\Models;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Services\GooglePlacesService;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
@@ -49,6 +50,23 @@ class Partner extends Model
     public function reviews(): HasMany
     {
         return $this->hasMany(PoiReview::class);
+    }
+
+    public function resolvedLogoUrl(): ?string
+    {
+        $raw = $this->icon_path ?: $this->logo_url;
+
+        return app(GooglePlacesService::class)->resolveMediaUrl($raw);
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function resolvedPhotoUrls(): array
+    {
+        return app(GooglePlacesService::class)->resolvePhotoList(
+            is_array($this->photos) ? $this->photos : null
+        );
     }
 
     /** Recalcule et sauvegarde la note moyenne à partir des avis. */

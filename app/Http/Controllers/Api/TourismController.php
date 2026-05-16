@@ -59,13 +59,12 @@ class TourismController extends Controller
                 $distance = $this->formatDistance($distanceMeters);
             }
 
-            $iconUrl = $partner->icon_path ?: $partner->logo_url;
-            $iconUrl = $this->normalizeUrl($iconUrl);
+            $iconUrl = $this->normalizeUrl($partner->resolvedLogoUrl());
 
-            $photos = is_array($partner->photos) ? $partner->photos : [];
-            $photos = array_values(array_filter(array_map(function ($u) {
-                return $this->normalizeUrl($u);
-            }, $photos)));
+            $photos = array_values(array_filter(array_map(
+                fn ($u) => $this->normalizeUrl($u),
+                $partner->resolvedPhotoUrls()
+            )));
 
             return [
                 'id' => $partner->id,
@@ -118,7 +117,7 @@ class TourismController extends Controller
                 'latitude' => $partner->latitude,
                 'longitude' => $partner->longitude,
                 'mission_type' => $partner->category,
-                'icon_url' => $this->normalizeUrl($partner->icon_path ?: $partner->logo_url),
+                'icon_url' => $this->normalizeUrl($partner->resolvedLogoUrl()),
             ];
         });
 
