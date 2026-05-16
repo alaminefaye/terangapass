@@ -8,11 +8,12 @@ use Illuminate\Console\Command;
 class SyncGooglePlacesCommand extends Command
 {
     protected $signature = 'places:sync-google
-                            {--radius= : Rayon en mètres (max 50000, défaut config)}
+                            {--radius= : Rayon en mètres par zone (max 50000)}
+                            {--region= : Une seule zone (ID : dakar, thies, saint_louis… — places:list-zones)}
                             {--type= : Un seul type Google Nearby (ex. restaurant)}
-                            {--query= : Une seule recherche texte (ex. "notaire Dakar")}';
+                            {--query= : Une seule recherche texte (ex. "notaire Thiès")}';
 
-    protected $description = 'Importe les lieux Google Places (restaurants, hôtels, écoles…) dans la table partners';
+    protected $description = 'Importe les lieux Google Places dans partners (tout le Sénégal par défaut)';
 
     public function handle(GooglePlacesService $places): int
     {
@@ -24,17 +25,30 @@ class SyncGooglePlacesCommand extends Command
 
         $radius = (int) ($this->option('radius') ?: config('google.places_sync_radius', 50000));
         $radius = min(max($radius, 1000), 50000);
+        $region = $this->option('region');
+        $regionLabel = $region ? (string) $region : 'tout le Sénégal ('.count($places->syncZones()).' zones)';
         $log = fn (string $line) => $this->line($line);
 
-        $this->info("Synchronisation Google Places — Dakar, rayon {$radius} m");
+        $this->info("Synchronisation Google Places — {$regionLabel}, rayon {$radius} m/zone");
+
+        if ($region && $places->syncZones((string) $region) === []) {
+            $this->error("Région « {$region} » inconnue. Voir : php artisan places:list-zones");
+
+            return self::FAILURE;
+        }
 
         if ($type = $this->option('type')) {
             $category = GooglePlacesService::NEARBY_TYPE_MAP[$type] ?? 'other';
-            $stats = $places->syncNearbyType((string) $type, $category, $radius, $log);
+            $stats = $places->syncNearbyType((string) $type, $category, $radius, $region ? (string) $region : null, $log);
         } elseif ($query = $this->option('query')) {
-            $stats = $places->syncTextQuery((string) $query, 'other', $log);
+            $stats = $places->syncTextQuery(
+                (string) $query,
+                'other',
+                $region ? (string) $region : null,
+                $log
+            );
         } else {
-            $stats = $places->syncAll($radius, $log);
+            $stats = $places->syncAll($radius, $region ? (string) $region : null, $log);
         }
 
         $this->newLine();
@@ -56,7 +70,7 @@ class SyncGooglePlacesCommand extends Command
             $this->warn('Erreurs sans détail — lancez : php artisan places:diagnose-google');
         }
 
-        if ((int) $stats['errors'] > 0 && (int) $stats['created'] === 0) {
+        if ((int) $stats['errors'] > 0 && (int) $stats['created'] === 0 && (int) $stats['updated'] === 0) {
             return self::FAILURE;
         }
 

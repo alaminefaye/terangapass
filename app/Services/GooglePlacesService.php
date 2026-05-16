@@ -33,13 +33,13 @@ class GooglePlacesService
         'place_of_worship' => 'religious_site',
     ];
 
-    /** Recherches texte pour types mal couverts en Nearby. */
-    public const TEXT_SEARCH_QUERIES = [
-        ['query' => 'ambassade Dakar Sénégal', 'category' => 'embassy'],
-        ['query' => 'consulat Dakar Sénégal', 'category' => 'consulate'],
-        ['query' => 'notaire Dakar Sénégal', 'category' => 'notary'],
-        ['query' => 'supermarché Dakar Sénégal', 'category' => 'shop'],
-        ['query' => 'station service Dakar Sénégal', 'category' => 'gas_station'],
+    /** Modèles de recherche texte par ville/région (ambassades, notaires…). */
+    public const TEXT_SEARCH_TEMPLATES = [
+        ['template' => 'ambassade %s Sénégal', 'category' => 'embassy'],
+        ['template' => 'consulat %s Sénégal', 'category' => 'consulate'],
+        ['template' => 'notaire %s Sénégal', 'category' => 'notary'],
+        ['template' => 'supermarché %s Sénégal', 'category' => 'shop'],
+        ['template' => 'station service %s Sénégal', 'category' => 'gas_station'],
     ];
 
     private readonly string $apiKey;
@@ -81,6 +81,49 @@ class GooglePlacesService
     public function clearDiagnosticErrors(): void
     {
         $this->diagnosticErrors = [];
+    }
+
+    /**
+     * @return list<array{id:string,name:string,lat:float,lng:float}>
+     */
+    public function syncZones(?string $regionId = null): array
+    {
+        $zones = config('google.places_sync_zones', []);
+        if (! is_array($zones) || $zones === []) {
+            return [[
+                'id' => 'dakar',
+                'name' => 'Dakar',
+                'lat' => $this->centerLat,
+                'lng' => $this->centerLng,
+            ]];
+        }
+
+        if ($regionId === null || $regionId === '') {
+            return array_values($zones);
+        }
+
+        $id = strtolower($regionId);
+
+        return array_values(array_filter(
+            $zones,
+            fn (array $z) => strtolower((string) ($z['id'] ?? '')) === $id
+        ));
+    }
+
+    /**
+     * @return list<array{query:string,category:string}>
+     */
+    public function textQueriesForZone(string $zoneName): array
+    {
+        $queries = [];
+        foreach (self::TEXT_SEARCH_TEMPLATES as $tpl) {
+            $queries[] = [
+                'query' => sprintf($tpl['template'], $zoneName),
+                'category' => $tpl['category'],
+            ];
+        }
+
+        return $queries;
     }
 
     /**
@@ -129,11 +172,26 @@ class GooglePlacesService
         string $googleType,
         string $category,
         int $radiusMeters,
+        ?string $regionId = null,
         ?callable $log = null
     ): array {
         $this->clearDiagnosticErrors();
         $stats = $this->emptyStats();
-        $this->syncNearby($googleType, $category, $radiusMeters, $stats, $log);
+
+        foreach ($this->syncZones($regionId) as $zone) {
+            if ($log) {
+                $log("Zone {$zone['name']} — Nearby {$googleType}");
+            }
+            $this->syncNearby(
+                $googleType,
+                $category,
+                $radiusMeters,
+                (float) $zone['lat'],
+                (float) $zone['lng'],
+                $stats,
+                $log
+            );
+        }
 
         return $this->finalizeStats($stats);
     }
@@ -142,11 +200,36 @@ class GooglePlacesService
      * @param  callable(string): void|null  $log
      * @return array{created:int,updated:int,skipped:int,errors:int,error_messages:list<string>}
      */
-    public function syncTextQuery(string $query, string $category, ?callable $log = null): array
-    {
+    public function syncTextQuery(
+        string $query,
+        string $category,
+        ?string $regionId = null,
+        ?callable $log = null
+    ): array {
         $this->clearDiagnosticErrors();
         $stats = $this->emptyStats();
-        $this->syncTextSearch($query, $category, $stats, $log);
+        $zones = $this->syncZones($regionId);
+        if ($zones === []) {
+            $this->recordError("Région inconnue : {$regionId}");
+
+            return $this->finalizeStats($stats);
+        }
+
+        $radius = min(50000, (int) config('google.places_sync_radius', 50000));
+        foreach ($zones as $zone) {
+            if ($log) {
+                $log("Zone {$zone['name']} — Text: {$query}");
+            }
+            $this->syncTextSearch(
+                $query,
+                $category,
+                (float) $zone['lat'],
+                (float) $zone['lng'],
+                $radius,
+                $stats,
+                $log
+            );
+        }
 
         return $this->finalizeStats($stats);
     }
@@ -155,27 +238,60 @@ class GooglePlacesService
      * @param  callable(string): void|null  $log
      * @return array{created:int,updated:int,skipped:int,errors:int,error_messages:list<string>}
      */
-    public function syncAll(int $radiusMeters = 50000, ?callable $log = null): array
+    public function syncAll(int $radiusMeters = 50000, ?string $regionId = null, ?callable $log = null): array
     {
         if (! $this->isConfigured()) {
             throw new \RuntimeException('GOOGLE_MAPS_API_KEY manquant dans .env');
         }
 
+        $zones = $this->syncZones($regionId);
+        if ($zones === []) {
+            throw new \RuntimeException(
+                $regionId
+                    ? "Région « {$regionId} » introuvable. Lancez : php artisan places:list-zones"
+                    : 'Aucune zone configurée dans config/google_places_zones.php'
+            );
+        }
+
         $this->clearDiagnosticErrors();
         $stats = $this->emptyStats();
 
-        foreach (self::NEARBY_TYPE_MAP as $googleType => $category) {
+        foreach ($zones as $zone) {
+            $zoneName = (string) $zone['name'];
             if ($log) {
-                $log("Nearby: {$googleType} → {$category}");
+                $log('');
+                $log("════ Zone : {$zoneName} ════");
             }
-            $this->syncNearby($googleType, $category, $radiusMeters, $stats, $log);
-        }
 
-        foreach (self::TEXT_SEARCH_QUERIES as $item) {
-            if ($log) {
-                $log("Text: {$item['query']}");
+            foreach (self::NEARBY_TYPE_MAP as $googleType => $category) {
+                if ($log) {
+                    $log("  Nearby: {$googleType} → {$category}");
+                }
+                $this->syncNearby(
+                    $googleType,
+                    $category,
+                    $radiusMeters,
+                    (float) $zone['lat'],
+                    (float) $zone['lng'],
+                    $stats,
+                    $log
+                );
             }
-            $this->syncTextSearch($item['query'], $item['category'], $stats, $log);
+
+            foreach ($this->textQueriesForZone($zoneName) as $item) {
+                if ($log) {
+                    $log("  Text: {$item['query']}");
+                }
+                $this->syncTextSearch(
+                    $item['query'],
+                    $item['category'],
+                    (float) $zone['lat'],
+                    (float) $zone['lng'],
+                    $radiusMeters,
+                    $stats,
+                    $log
+                );
+            }
         }
 
         return $this->finalizeStats($stats);
@@ -215,6 +331,8 @@ class GooglePlacesService
         string $googleType,
         string $category,
         int $radiusMeters,
+        float $centerLat,
+        float $centerLng,
         array &$stats,
         ?callable $log
     ): void {
@@ -222,7 +340,7 @@ class GooglePlacesService
 
         do {
             $params = [
-                'location' => "{$this->centerLat},{$this->centerLng}",
+                'location' => "{$centerLat},{$centerLng}",
                 'radius' => min($radiusMeters, 50000),
                 'type' => $googleType,
                 'key' => $this->apiKey,
@@ -258,15 +376,22 @@ class GooglePlacesService
     /**
      * @param  array{created:int,updated:int,skipped:int,errors:int,error_messages:list<string>}  $stats
      */
-    private function syncTextSearch(string $query, string $category, array &$stats, ?callable $log): void
-    {
+    private function syncTextSearch(
+        string $query,
+        string $category,
+        float $centerLat,
+        float $centerLng,
+        int $radiusMeters,
+        array &$stats,
+        ?callable $log
+    ): void {
         $pageToken = null;
 
         do {
             $params = [
                 'query' => $query,
-                'location' => "{$this->centerLat},{$this->centerLng}",
-                'radius' => 50000,
+                'location' => "{$centerLat},{$centerLng}",
+                'radius' => min($radiusMeters, 50000),
                 'key' => $this->apiKey,
                 'language' => 'fr',
             ];
