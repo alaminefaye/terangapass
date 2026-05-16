@@ -43,6 +43,23 @@ class SyncGooglePlacesCommand extends Command
             [[$stats['created'], $stats['updated'], $stats['skipped'], $stats['errors']]]
         );
 
+        $messages = $stats['error_messages'] ?? [];
+        if ($messages !== []) {
+            $this->newLine();
+            $this->error('Erreurs Google (détail) :');
+            foreach (array_unique($messages) as $msg) {
+                $this->line('  • '.$msg);
+            }
+            $this->newLine();
+            $this->warn('Diagnostic : php artisan places:diagnose-google');
+        } elseif ((int) $stats['errors'] > 0) {
+            $this->warn('Erreurs sans détail — lancez : php artisan places:diagnose-google');
+        }
+
+        if ((int) $stats['errors'] > 0 && (int) $stats['created'] === 0) {
+            return self::FAILURE;
+        }
+
         $this->info('Terminé. Les apps lisent /api/v1/tourism/points-of-interest et /api/v1/nearby.');
 
         return self::SUCCESS;

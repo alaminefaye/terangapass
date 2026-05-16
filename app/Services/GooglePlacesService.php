@@ -46,6 +46,9 @@ class GooglePlacesService
 
     private readonly float $centerLng;
 
+    /** @var list<string> */
+    private array $diagnosticErrors = [];
+
     public function __construct()
     {
         $this->apiKey = (string) config('google.maps_api_key');
@@ -58,9 +61,67 @@ class GooglePlacesService
         return $this->apiKey !== '';
     }
 
+    public function maskedApiKey(): string
+    {
+        if ($this->apiKey === '') {
+            return '(vide)';
+        }
+
+        return substr($this->apiKey, 0, 8).'…'.substr($this->apiKey, -4);
+    }
+
+    /** @return list<string> */
+    public function getDiagnosticErrors(): array
+    {
+        return $this->diagnosticErrors;
+    }
+
+    public function clearDiagnosticErrors(): void
+    {
+        $this->diagnosticErrors = [];
+    }
+
+    /**
+     * Un appel test Nearby Search (diagnostic).
+     *
+     * @return array{ok:bool,status:?string,error_message:?string,results_count:int,raw:?array}
+     */
+    public function probeNearbySearch(): array
+    {
+        $this->clearDiagnosticErrors();
+
+        $raw = $this->requestRaw('nearbysearch/json', [
+            'location' => "{$this->centerLat},{$this->centerLng}",
+            'radius' => 1500,
+            'type' => 'restaurant',
+            'key' => $this->apiKey,
+            'language' => 'fr',
+        ]);
+
+        if ($raw === null) {
+            return [
+                'ok' => false,
+                'status' => null,
+                'error_message' => $this->diagnosticErrors[0] ?? 'Réponse vide',
+                'results_count' => 0,
+                'raw' => null,
+            ];
+        }
+
+        $status = (string) ($raw['status'] ?? 'UNKNOWN');
+
+        return [
+            'ok' => $status === 'OK' || $status === 'ZERO_RESULTS',
+            'status' => $status,
+            'error_message' => $raw['error_message'] ?? null,
+            'results_count' => count($raw['results'] ?? []),
+            'raw' => $raw,
+        ];
+    }
+
     /**
      * @param  callable(string): void|null  $log
-     * @return array{created:int,updated:int,skipped:int,errors:int}
+     * @return array{created:int,updated:int,skipped:int,errors:int,error_messages:list<string>}
      */
     public function syncNearbyType(
         string $googleType,
@@ -68,27 +129,29 @@ class GooglePlacesService
         int $radiusMeters,
         ?callable $log = null
     ): array {
-        $stats = ['created' => 0, 'updated' => 0, 'skipped' => 0, 'errors' => 0];
+        $this->clearDiagnosticErrors();
+        $stats = $this->emptyStats();
         $this->syncNearby($googleType, $category, $radiusMeters, $stats, $log);
 
-        return $stats;
+        return $this->finalizeStats($stats);
     }
 
     /**
      * @param  callable(string): void|null  $log
-     * @return array{created:int,updated:int,skipped:int,errors:int}
+     * @return array{created:int,updated:int,skipped:int,errors:int,error_messages:list<string>}
      */
     public function syncTextQuery(string $query, string $category, ?callable $log = null): array
     {
-        $stats = ['created' => 0, 'updated' => 0, 'skipped' => 0, 'errors' => 0];
+        $this->clearDiagnosticErrors();
+        $stats = $this->emptyStats();
         $this->syncTextSearch($query, $category, $stats, $log);
 
-        return $stats;
+        return $this->finalizeStats($stats);
     }
 
     /**
      * @param  callable(string): void|null  $log
-     * @return array{created:int,updated:int,skipped:int,errors:int}
+     * @return array{created:int,updated:int,skipped:int,errors:int,error_messages:list<string>}
      */
     public function syncAll(int $radiusMeters = 50000, ?callable $log = null): array
     {
@@ -96,7 +159,8 @@ class GooglePlacesService
             throw new \RuntimeException('GOOGLE_MAPS_API_KEY manquant dans .env');
         }
 
-        $stats = ['created' => 0, 'updated' => 0, 'skipped' => 0, 'errors' => 0];
+        $this->clearDiagnosticErrors();
+        $stats = $this->emptyStats();
 
         foreach (self::NEARBY_TYPE_MAP as $googleType => $category) {
             if ($log) {
@@ -112,11 +176,38 @@ class GooglePlacesService
             $this->syncTextSearch($item['query'], $item['category'], $stats, $log);
         }
 
-        return $stats;
+        return $this->finalizeStats($stats);
     }
 
     /**
-     * @param  array{created:int,updated:int,skipped:int,errors:int}  $stats
+     * @return array{created:int,updated:int,skipped:int,errors:int,error_messages:list<string>}
+     */
+    private function emptyStats(): array
+    {
+        return ['created' => 0, 'updated' => 0, 'skipped' => 0, 'errors' => 0, 'error_messages' => []];
+    }
+
+    /**
+     * @param  array{created:int,updated:int,skipped:int,errors:int,error_messages:list<string>}  $stats
+     * @return array{created:int,updated:int,skipped:int,errors:int,error_messages:list<string>}
+     */
+    private function finalizeStats(array $stats): array
+    {
+        $stats['error_messages'] = array_values(array_unique([
+            ...$stats['error_messages'],
+            ...$this->diagnosticErrors,
+        ]));
+
+        return $stats;
+    }
+
+    private function recordError(string $message): void
+    {
+        $this->diagnosticErrors[] = $message;
+    }
+
+    /**
+     * @param  array{created:int,updated:int,skipped:int,errors:int,error_messages:list<string>}  $stats
      */
     private function syncNearby(
         string $googleType,
@@ -146,6 +237,10 @@ class GooglePlacesService
             $payload = $this->request('nearbysearch/json', $params);
             if ($payload === null) {
                 $stats['errors']++;
+                $stats['error_messages'] = array_merge(
+                    $stats['error_messages'],
+                    $this->diagnosticErrors
+                );
 
                 return;
             }
@@ -159,7 +254,7 @@ class GooglePlacesService
     }
 
     /**
-     * @param  array{created:int,updated:int,skipped:int,errors:int}  $stats
+     * @param  array{created:int,updated:int,skipped:int,errors:int,error_messages:list<string>}  $stats
      */
     private function syncTextSearch(string $query, string $category, array &$stats, ?callable $log): void
     {
@@ -184,6 +279,10 @@ class GooglePlacesService
             $payload = $this->request('textsearch/json', $params);
             if ($payload === null) {
                 $stats['errors']++;
+                $stats['error_messages'] = array_merge(
+                    $stats['error_messages'],
+                    $this->diagnosticErrors
+                );
 
                 return;
             }
@@ -421,28 +520,63 @@ class GooglePlacesService
      */
     private function request(string $endpoint, array $params): ?array
     {
+        $data = $this->requestRaw($endpoint, $params);
+        if ($data === null) {
+            return null;
+        }
+
+        $status = (string) ($data['status'] ?? 'UNKNOWN');
+        if ($status === 'OK' || $status === 'ZERO_RESULTS') {
+            return $data;
+        }
+
+        return null;
+    }
+
+    /**
+     * @param  array<string, string|int|float>  $params
+     * @return array<string, mixed>|null
+     */
+    private function requestRaw(string $endpoint, array $params): ?array
+    {
         $url = rtrim((string) config('google.places_base_url'), '/').'/'.$endpoint;
 
         try {
             $response = Http::timeout(25)->get($url, $params);
-        } catch (\Throwable) {
+        } catch (\Throwable $e) {
+            $this->recordError("{$endpoint} : connexion impossible — ".$e->getMessage());
+
             return null;
         }
 
-        if (! $response->successful()) {
+        $body = $response->json();
+        if (! is_array($body)) {
+            $this->recordError("{$endpoint} : HTTP {$response->status()} — réponse non JSON");
+
             return null;
         }
 
-        $data = $response->json();
-        if (! is_array($data)) {
-            return null;
+        $status = (string) ($body['status'] ?? 'UNKNOWN');
+        $googleMessage = trim((string) ($body['error_message'] ?? ''));
+
+        if ($status === 'OK' || $status === 'ZERO_RESULTS') {
+            return $body;
         }
 
-        $status = $data['status'] ?? 'UNKNOWN';
-        if ($status !== 'OK' && $status !== 'ZERO_RESULTS') {
-            return null;
-        }
+        $hint = match ($status) {
+            'REQUEST_DENIED' => ' → Activez « Places API » sur Google Cloud, vérifiez la facturation, et autorisez cette clé pour le serveur (pas seulement Android/iOS).',
+            'INVALID_REQUEST' => ' → Paramètres de requête invalides.',
+            'OVER_QUERY_LIMIT' => ' → Quota dépassé ou facturation inactive.',
+            'UNKNOWN_ERROR' => ' → Réessayez dans quelques secondes.',
+            default => '',
+        };
 
-        return $data;
+        $this->recordError(
+            "{$endpoint} : {$status}"
+            .($googleMessage !== '' ? " — {$googleMessage}" : '')
+            .$hint
+        );
+
+        return $body;
     }
 }
