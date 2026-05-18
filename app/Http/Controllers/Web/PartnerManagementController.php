@@ -20,6 +20,10 @@ class PartnerManagementController extends Controller
             $query->where('is_sponsor', $request->is_sponsor);
         }
 
+        if ($request->filled('is_recommended')) {
+            $query->where('is_recommended', $request->is_recommended);
+        }
+
         if ($request->filled('is_active')) {
             $query->where('is_active', $request->is_active);
         }
@@ -59,8 +63,16 @@ class PartnerManagementController extends Controller
             'opening_hours' => 'nullable|string|max:255',
             'logo_url' => 'nullable|url',
             'is_sponsor' => 'boolean',
+            'is_recommended' => 'boolean',
+            'recommendation_priority' => 'nullable|integer|min:0|max:9999',
+            'recommendation_pitch' => 'nullable|string|max:200',
             'is_active' => 'boolean',
         ]);
+
+        $validated['is_sponsor'] = $request->boolean('is_sponsor');
+        $validated['is_recommended'] = $request->boolean('is_recommended');
+        $validated['is_active'] = $request->boolean('is_active');
+        $validated['recommendation_priority'] = (int) ($validated['recommendation_priority'] ?? 0);
 
         Partner::create($validated);
 
@@ -94,8 +106,16 @@ class PartnerManagementController extends Controller
             'opening_hours' => 'nullable|string|max:255',
             'logo_url' => 'nullable|url',
             'is_sponsor' => 'boolean',
+            'is_recommended' => 'boolean',
+            'recommendation_priority' => 'nullable|integer|min:0|max:9999',
+            'recommendation_pitch' => 'nullable|string|max:200',
             'is_active' => 'boolean',
         ]);
+
+        $validated['is_sponsor'] = $request->boolean('is_sponsor');
+        $validated['is_recommended'] = $request->boolean('is_recommended');
+        $validated['is_active'] = $request->boolean('is_active');
+        $validated['recommendation_priority'] = (int) ($validated['recommendation_priority'] ?? 0);
 
         $partner->update($validated);
 

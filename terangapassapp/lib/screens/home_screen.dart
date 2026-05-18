@@ -31,6 +31,7 @@ import '../widgets/loading_placeholders.dart';
 import '../widgets/map_legend_strip.dart';
 import '../widgets/offline_cache_snack.dart';
 import '../utils/promo_popup_presenter.dart';
+import '../widgets/recommended_places_section.dart';
 
 enum _HomeFeatureId {
   audioAnnouncements,
@@ -530,6 +531,13 @@ class _HomeScreenState extends State<HomeScreen>
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: _buildJojCountdownStrip(context),
+                ),
+              ),
+              const SliverToBoxAdapter(child: SizedBox(height: 14)),
+              const SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16),
+                  child: RecommendedPlacesSection(),
                 ),
               ),
               const SliverToBoxAdapter(child: SizedBox(height: 14)),

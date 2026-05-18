@@ -52,6 +52,14 @@
                     </select>
                 </div>
                 <div class="col-md-2">
+                    <label class="form-label">Recommandé</label>
+                    <select name="is_recommended" class="form-select">
+                        <option value="">Tous</option>
+                        <option value="1" {{ request('is_recommended') == '1' ? 'selected' : '' }}>Oui</option>
+                        <option value="0" {{ request('is_recommended') == '0' ? 'selected' : '' }}>Non</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
                     <label class="form-label">Statut</label>
                     <select name="is_active" class="form-select">
                         <option value="">Tous</option>
@@ -85,6 +93,7 @@
                         <th>Adresse</th>
                         <th>Visites</th>
                         <th>Sponsor</th>
+                        <th>Recommandé</th>
                         <th>Statut</th>
                         <th>Actions</th>
                     </tr>
@@ -142,6 +151,13 @@
                         <td>
                             @if($partner->is_sponsor)
                             <span class="badge bg-warning">Oui</span>
+                            @else
+                            <span class="badge bg-secondary">Non</span>
+                            @endif
+                        </td>
+                        <td>
+                            @if($partner->is_recommended)
+                            <span class="badge bg-success">Oui</span>
                             @else
                             <span class="badge bg-secondary">Non</span>
                             @endif

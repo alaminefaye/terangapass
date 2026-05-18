@@ -148,11 +148,36 @@
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" name="is_sponsor" value="1" id="is_sponsor" {{ old('is_sponsor', $partner->is_sponsor) ? 'checked' : '' }}>
                             <label class="form-check-label" for="is_sponsor">
-                                Sponsor officiel
+                                Sponsor officiel (priorité « À deux pas »)
                             </label>
                         </div>
                     </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="is_recommended" value="1" id="is_recommended" {{ old('is_recommended', $partner->is_recommended) ? 'checked' : '' }}>
+                            <label class="form-check-label" for="is_recommended">
+                                Lieu recommandé (carrousel accueil & tourisme)
+                            </label>
+                        </div>
+                    </div>
+                </div>
 
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Priorité recommandation</label>
+                        <input type="number" name="recommendation_priority" class="form-control" min="0" max="9999"
+                               value="{{ old('recommendation_priority', $partner->recommendation_priority ?? 0) }}">
+                        <small class="text-muted">Plus élevé = affiché en premier.</small>
+                    </div>
+                    <div class="col-md-8 mb-3">
+                        <label class="form-label">Accroche courte (optionnel)</label>
+                        <input type="text" name="recommendation_pitch" class="form-control" maxlength="200"
+                               value="{{ old('recommendation_pitch', $partner->recommendation_pitch) }}"
+                               placeholder="Ex. Cuisine sénégalaise d'exception">
+                    </div>
+                </div>
+
+                <div class="row">
                     <div class="col-md-6 mb-3">
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" name="is_active" value="1" id="is_active" {{ old('is_active', $partner->is_active) ? 'checked' : '' }}>

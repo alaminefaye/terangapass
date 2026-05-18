@@ -26,6 +26,8 @@ trait FormatsPartnerForApi
             'category' => $this->getCategoryLabel($partner->category),
             'category_key' => $partner->category,
             'is_sponsor' => (bool) $partner->is_sponsor,
+            'is_recommended' => (bool) $partner->is_recommended,
+            'recommendation_pitch' => $partner->recommendation_pitch,
             'distance' => $distance,
             'distance_meters' => $distanceMeters,
             'address' => $partner->address,

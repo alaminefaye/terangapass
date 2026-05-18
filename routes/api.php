@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\OfflinePackController;
 use App\Http\Controllers\Api\PassTicketController;
 use App\Http\Controllers\Api\PromoPopupController;
+use App\Http\Controllers\Api\RecommendedPlacesController;
 use App\Http\Controllers\Api\TourismController;
 use App\Http\Controllers\Api\TransportController;
 use App\Http\Controllers\Api\UserController;
@@ -93,6 +94,9 @@ Route::middleware(['api.user.active'])->prefix('v1')->group(function () {
 
     // Transport
     Route::get('/transport/shuttles', [TransportController::class, 'shuttles']);
+
+    // Lieux recommandés (hôtels, restaurants, etc.)
+    Route::get('/places/recommended', [RecommendedPlacesController::class, 'index']);
 
     // Tourisme
     Route::get('/tourism/points-of-interest', [TourismController::class, 'pointsOfInterest']);

@@ -12,6 +12,7 @@ import '../services/offline_pack_service.dart';
 import '../widgets/loading_placeholders.dart';
 import '../widgets/offline_cache_snack.dart';
 import '../utils/promo_popup_presenter.dart';
+import '../widgets/recommended_places_section.dart';
 import 'embassies_screen.dart';
 import 'nearby_screen.dart';
 import 'place_detail_screen.dart';
@@ -99,15 +100,28 @@ class _TourismScreenState extends State<TourismScreen> {
     );
   }
 
+  String? _activeCategoryKey(AppLocalizations l10n) {
+    final filters = _filters(l10n);
+    final filter = filters[_chipIndex.clamp(0, filters.length - 1)];
+    return filter.categoryKey;
+  }
+
   List<Map<String, dynamic>> _visiblePoints(AppLocalizations l10n) {
     final filters = _filters(l10n);
     final filter = filters[_chipIndex.clamp(0, filters.length - 1)];
-    return _pointsOfInterest.where((p) {
+    final list = _pointsOfInterest.where((p) {
       if (!PoiCategoryFilters.matchesCategory(p, filter.categoryKey)) {
         return false;
       }
       return PoiCategoryFilters.matchesSearch(p, _searchController.text);
     }).toList();
+    list.sort((a, b) {
+      final ra = a['is_recommended'] == true;
+      final rb = b['is_recommended'] == true;
+      if (ra != rb) return ra ? -1 : 1;
+      return 0;
+    });
+    return list;
   }
 
   Future<void> _loadPointsOfInterest({bool serverSearch = false}) async {
@@ -726,6 +740,8 @@ class _TourismScreenState extends State<TourismScreen> {
                     ),
                   )
                 : _buildPlacesList(
+                    context,
+                    l10n,
                     visiblePoints,
                     showLimitedHint: showLimitedHint,
                   ),
@@ -736,15 +752,30 @@ class _TourismScreenState extends State<TourismScreen> {
   }
 
   Widget _buildPlacesList(
+    BuildContext context,
+    AppLocalizations l10n,
     List<Map<String, dynamic>> points, {
     required bool showLimitedHint,
   }) {
+    final categoryKey = _activeCategoryKey(l10n);
+    final showRecommendedCarousel =
+        !_isServerSearchActive && _searchController.text.trim().isEmpty;
     if (points.isEmpty) {
       return ListView(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
         children: [
           if (_locationError != null) _buildLocationBanner(),
           _buildSearchField(),
+          if (showRecommendedCarousel)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: RecommendedPlacesSection(
+                key: ValueKey(categoryKey ?? 'all'),
+                categoryKey: categoryKey,
+                compact: true,
+                limit: 10,
+              ),
+            ),
           if (showLimitedHint)
             Container(
               margin: const EdgeInsets.only(bottom: 12),
@@ -784,8 +815,10 @@ class _TourismScreenState extends State<TourismScreen> {
     }
 
     final showBanner = _locationError != null;
-    final extraHeaders =
-        (showBanner ? 1 : 0) + 1 + (showLimitedHint ? 1 : 0);
+    final extraHeaders = (showBanner ? 1 : 0) +
+        1 +
+        (showLimitedHint ? 1 : 0) +
+        (showRecommendedCarousel ? 1 : 0);
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
       itemCount: points.length + extraHeaders,
@@ -798,6 +831,17 @@ class _TourismScreenState extends State<TourismScreen> {
         }
         if (index == headerIndex++) {
           return _buildSearchField();
+        }
+        if (showRecommendedCarousel && index == headerIndex++) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: RecommendedPlacesSection(
+              key: ValueKey(categoryKey ?? 'all'),
+              categoryKey: categoryKey,
+              compact: true,
+              limit: 10,
+            ),
+          );
         }
         if (showLimitedHint && index == headerIndex++) {
           return Container(
@@ -822,6 +866,7 @@ class _TourismScreenState extends State<TourismScreen> {
         final color = PoiCategoryFilters.colorForPoint(point);
         final iconUrl = _getPointIconUrl(point);
         final distanceLabel = _distanceLabelForPoint(point);
+        final recommended = point['is_recommended'] == true;
 
         return Container(
           margin: const EdgeInsets.only(bottom: 12),
@@ -866,13 +911,39 @@ class _TourismScreenState extends State<TourismScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            (point['name'] ?? '').toString().trim(),
-                            style: GoogleFonts.plusJakartaSans(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 14,
-                              color: AppTheme.textPrimary,
-                            ),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  (point['name'] ?? '').toString().trim(),
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 14,
+                                    color: AppTheme.textPrimary,
+                                  ),
+                                ),
+                              ),
+                              if (recommended)
+                                Container(
+                                  margin: const EdgeInsets.only(left: 6),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 7,
+                                    vertical: 3,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFE8F5EE),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    'Recommandé',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w700,
+                                      color: const Color(0xFF1D603D),
+                                    ),
+                                  ),
+                                ),
+                            ],
                           ),
                           const SizedBox(height: 4),
                           Row(

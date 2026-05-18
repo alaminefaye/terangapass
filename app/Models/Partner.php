@@ -32,6 +32,9 @@ class Partner extends Model
         'icon_path',
         'photos',
         'is_sponsor',
+        'is_recommended',
+        'recommendation_priority',
+        'recommendation_pitch',
         'visit_count',
         'is_active',
     ];
@@ -44,6 +47,7 @@ class Partner extends Model
         'google_types' => 'array',
         'google_synced_at' => 'datetime',
         'is_sponsor' => 'boolean',
+        'is_recommended' => 'boolean',
         'is_active' => 'boolean',
     ];
 

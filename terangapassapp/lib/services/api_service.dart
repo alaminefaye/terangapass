@@ -1139,6 +1139,34 @@ class ApiService {
     }
   }
 
+  /// Lieux recommandés (carrousel accueil / tourisme).
+  Future<List<Map<String, dynamic>>> getRecommendedPlaces({
+    String? category,
+    double? latitude,
+    double? longitude,
+    int limit = 12,
+  }) async {
+    try {
+      final response = await _dio.get(
+        'places/recommended',
+        queryParameters: {
+          'limit': limit,
+          if (category != null && category.isNotEmpty) 'category': category,
+          if (latitude != null) 'latitude': latitude,
+          if (longitude != null) 'longitude': longitude,
+        },
+      );
+      final raw = response.data['data'];
+      if (raw is! List) return [];
+      return raw
+          .whereType<Map>()
+          .map((e) => Map<String, dynamic>.from(e))
+          .toList();
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
   /// Récupère la liste des ambassades (catégorie dédiée).
   Future<List<dynamic>> getEmbassies() async {
     try {
