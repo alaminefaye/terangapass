@@ -30,6 +30,7 @@ import 'nearby_screen.dart';
 import '../widgets/loading_placeholders.dart';
 import '../widgets/map_legend_strip.dart';
 import '../widgets/offline_cache_snack.dart';
+import '../utils/promo_popup_presenter.dart';
 
 enum _HomeFeatureId {
   audioAnnouncements,
@@ -130,6 +131,11 @@ class _HomeScreenState extends State<HomeScreen>
     _aiPulseController.repeat(reverse: true);
     _bindOfficialPlayerListeners();
     Future.microtask(_refreshHomeData);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        PromoPopupPresenter.showForPlacement(context, 'home');
+      }
+    });
   }
 
   /// Recharge annonces, sites JOJ, notifications et compte à rebours.

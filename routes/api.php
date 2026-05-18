@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\NearbyController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\OfflinePackController;
 use App\Http\Controllers\Api\PassTicketController;
+use App\Http\Controllers\Api\PromoPopupController;
 use App\Http\Controllers\Api\TourismController;
 use App\Http\Controllers\Api\TransportController;
 use App\Http\Controllers\Api\UserController;
@@ -46,6 +47,11 @@ Route::prefix('v1')->group(function () {
     Route::get('/utility/offline-bundle/embassies', [OfflinePackController::class, 'embassiesBundle']);
     Route::get('/utility/offline-bundle/competition-calendar', [OfflinePackController::class, 'competitionCalendarBundle']);
     Route::get('/utility/offline-bundle/audio-announcements', [OfflinePackController::class, 'audioAnnouncementsBundle']);
+
+    // Pop-ups publicitaires (sans auth)
+    Route::get('/promotions/popup', [PromoPopupController::class, 'active']);
+    Route::post('/promotions/popup/{id}/impression', [PromoPopupController::class, 'recordImpression']);
+    Route::post('/promotions/popup/{id}/click', [PromoPopupController::class, 'recordClick']);
 });
 
 // Routes protégées (nécessitent une authentification)

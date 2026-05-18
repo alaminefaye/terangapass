@@ -20,6 +20,8 @@ import '../widgets/loading_placeholders.dart';
 import '../widgets/map_legend_strip.dart';
 import '../services/offline_pack_service.dart';
 import '../widgets/offline_cache_snack.dart';
+import '../utils/poi_media_helpers.dart';
+import '../utils/promo_popup_presenter.dart';
 import 'place_detail_screen.dart';
 
 
@@ -119,6 +121,11 @@ class _MapScreenState extends State<MapScreen> {
       // Calcul automatique de l'itinéraire si on a un lieu ciblé.
       if (_hasDestination && mounted) {
         _calculateRoute();
+      }
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        PromoPopupPresenter.showForPlacement(context, 'map');
       }
     });
   }
@@ -1667,6 +1674,9 @@ class _MapScreenState extends State<MapScreen> {
     final category = (point['category'] ?? '').toString().trim();
     final distanceLabel = _distanceLabelForPoint(point, category);
     final phone = (point['phone'] ?? '').toString().trim();
+    final thumbnailUrl = PoiMediaHelpers.thumbnailUrl(point);
+    final categoryColor = _colorForCategory(category);
+    final categoryIcon = _iconForCategory(category);
 
     return Material(
       color: Colors.transparent,
@@ -1687,14 +1697,44 @@ class _MapScreenState extends State<MapScreen> {
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: _colorForCategory(category).withValues(alpha: 0.12),
+                  color: categoryColor.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(11),
                 ),
-                child: Icon(
-                  _iconForCategory(category),
-                  color: _colorForCategory(category),
-                  size: 20,
-                ),
+                clipBehavior: Clip.antiAlias,
+                child: thumbnailUrl != null
+                    ? Image.network(
+                        thumbnailUrl,
+                        width: 44,
+                        height: 44,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Center(
+                            child: Icon(
+                              categoryIcon,
+                              color: categoryColor,
+                              size: 20,
+                            ),
+                          );
+                        },
+                        loadingBuilder: (context, child, progress) {
+                          if (progress == null) return child;
+                          return Center(
+                            child: SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: categoryColor,
+                              ),
+                            ),
+                          );
+                        },
+                      )
+                    : Icon(
+                        categoryIcon,
+                        color: categoryColor,
+                        size: 20,
+                      ),
               ),
               const SizedBox(width: 12),
               Expanded(

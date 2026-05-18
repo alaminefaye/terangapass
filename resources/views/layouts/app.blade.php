@@ -120,6 +120,14 @@
                             <div data-i18n="Audio">Annonces Audio</div>
                         </a>
                     </li>
+
+                    <!-- Pop-ups pub -->
+                    <li class="menu-item {{ request()->routeIs('admin.promo-popups.*') ? 'active' : '' }}">
+                        <a href="{{ route('admin.promo-popups.index') }}" class="menu-link">
+                            <i class="menu-icon tf-icons bx bx-image-alt"></i>
+                            <div data-i18n="PromoPopups">Pop-ups pub</div>
+                        </a>
+                    </li>
                     
                     <!-- Statistiques -->
                     <li class="menu-item {{ request()->routeIs('admin.statistics.*') ? 'active' : '' }}">

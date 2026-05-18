@@ -1159,6 +1159,41 @@ class ApiService {
     }
   }
 
+  /// Pop-up publicitaire actif pour un écran (home, map, tourism).
+  Future<Map<String, dynamic>?> getActivePromoPopup({
+    String placement = 'home',
+  }) async {
+    try {
+      final response = await _dio.get(
+        'promotions/popup',
+        queryParameters: {'placement': placement},
+      );
+      final data = response.data;
+      if (data is! Map || data['data'] == null) return null;
+      final popup = data['data'];
+      if (popup is! Map) return null;
+      return Map<String, dynamic>.from(popup);
+    } on DioException {
+      return null;
+    }
+  }
+
+  Future<void> recordPromoPopupImpression(int id) async {
+    try {
+      await _dio.post('promotions/popup/$id/impression');
+    } on DioException {
+      // silencieux
+    }
+  }
+
+  Future<void> recordPromoPopupClick(int id) async {
+    try {
+      await _dio.post('promotions/popup/$id/click');
+    } on DioException {
+      // silencieux
+    }
+  }
+
   /// Manifeste du futur pack hors ligne (version catalogue, bundles, etc.).
   Future<Map<String, dynamic>> getOfflineManifest() async {
     try {

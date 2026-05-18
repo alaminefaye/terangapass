@@ -13,6 +13,7 @@ use App\Http\Controllers\Web\NotificationManagementController;
 use App\Http\Controllers\Web\PartnerManagementController;
 use App\Http\Controllers\Web\PassTicketManagementController;
 use App\Http\Controllers\Web\ProfileController;
+use App\Http\Controllers\Web\PromoPopupManagementController;
 use App\Http\Controllers\Web\SettingsController;
 use App\Http\Controllers\Web\StatisticsController;
 use App\Http\Controllers\Web\TourismManagementController;
@@ -50,6 +51,9 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
 
     // Annonces Audio
     Route::resource('audio-announcements', AudioAnnouncementManagementController::class);
+
+    // Pop-ups publicitaires (monétisation)
+    Route::resource('promo-popups', PromoPopupManagementController::class)->except(['show']);
 
     // Alertes
     Route::get('alerts', [AlertManagementController::class, 'index'])->name('alerts.index');

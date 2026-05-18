@@ -11,6 +11,7 @@ import '../services/location_service.dart';
 import '../services/offline_pack_service.dart';
 import '../widgets/loading_placeholders.dart';
 import '../widgets/offline_cache_snack.dart';
+import '../utils/promo_popup_presenter.dart';
 import 'embassies_screen.dart';
 import 'nearby_screen.dart';
 import 'place_detail_screen.dart';
@@ -47,6 +48,11 @@ class _TourismScreenState extends State<TourismScreen> {
     super.initState();
     _searchController.addListener(_onSearchChanged);
     _loadPointsOfInterest();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        PromoPopupPresenter.showForPlacement(context, 'tourism');
+      }
+    });
   }
 
   @override
