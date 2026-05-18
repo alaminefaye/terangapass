@@ -136,10 +136,19 @@
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label">URL du logo</label>
-                    <input type="url" name="logo_url" class="form-control @error('logo_url') is-invalid @enderror" value="{{ old('logo_url', $partner->logo_url) }}">
+                    <label class="form-label">Logo / image</label>
+                    @php $logoPreview = $partner->resolvedLogoUrl(); @endphp
+                    @if($logoPreview)
+                    <div class="mb-2">
+                        <img src="{{ $logoPreview }}" alt="" class="img-fluid rounded" style="max-height:120px;">
+                    </div>
+                    @endif
+                    <input type="text" name="logo_url" class="form-control @error('logo_url') is-invalid @enderror"
+                           value="{{ old('logo_url', $partner->logo_url ?? $partner->icon_path) }}"
+                           placeholder="https://… ou google_photo:… (import Google)">
+                    <small class="text-muted">Les lieux importés Google utilisent <code>google_photo:…</code> — ne modifiez pas sauf pour remplacer par une URL https.</small>
                     @error('logo_url')
-                    <div class="invalid-feedback">{{ $message }}</div>
+                    <div class="invalid-feedback d-block">{{ $message }}</div>
                     @enderror
                 </div>
 

@@ -136,10 +136,11 @@
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label">URL du logo</label>
-                    <input type="url" name="logo_url" class="form-control @error('logo_url') is-invalid @enderror" value="{{ old('logo_url') }}">
+                    <label class="form-label">Logo / image (URL ou google_photo:…)</label>
+                    <input type="text" name="logo_url" class="form-control @error('logo_url') is-invalid @enderror"
+                           value="{{ old('logo_url') }}" placeholder="https://…">
                     @error('logo_url')
-                    <div class="invalid-feedback">{{ $message }}</div>
+                    <div class="invalid-feedback d-block">{{ $message }}</div>
                     @enderror
                 </div>
 
