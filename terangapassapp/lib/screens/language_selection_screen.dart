@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../constants/app_constants.dart';
-import 'auth/login_screen.dart';
+import 'home_screen.dart';
 
 /// Écran de sélection de langue affiché une seule fois au premier lancement,
 /// avant la connexion. Permet à l'utilisateur de choisir parmi 5 langues.
@@ -115,7 +115,7 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen>
 
     if (!mounted) return;
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => const LoginScreen()),
+      MaterialPageRoute(builder: (_) => const HomeScreen()),
     );
   }
 

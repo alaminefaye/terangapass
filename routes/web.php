@@ -8,6 +8,7 @@ use App\Http\Controllers\Web\AudioAnnouncementManagementController;
 use App\Http\Controllers\Web\CompetitionSiteManagementController;
 use App\Http\Controllers\Web\ContactController;
 use App\Http\Controllers\Web\IncidentManagementController;
+use App\Http\Controllers\Web\LegalController;
 use App\Http\Controllers\Web\MobileUserController;
 use App\Http\Controllers\Web\NotificationManagementController;
 use App\Http\Controllers\Web\PartnerManagementController;
@@ -31,6 +32,14 @@ Route::get('/brand/terangpass-logo', function () {
         'Cache-Control' => 'public, max-age=3600',
     ]);
 })->name('brand.terangpass-logo');
+
+// Pages légales publiques (stores App Store / Google Play — sans authentification)
+Route::get('/conditions-utilisation', [LegalController::class, 'termsOfUse'])->name('legal.terms');
+Route::get('/terms-of-use', [LegalController::class, 'termsOfUseEn'])->name('legal.terms.en');
+Route::get('/politique-confidentialite', [LegalController::class, 'privacyPolicy'])->name('legal.privacy');
+Route::get('/privacy-policy', [LegalController::class, 'privacyPolicyEn'])->name('legal.privacy.en');
+Route::redirect('/cgu', '/conditions-utilisation');
+Route::redirect('/terms', '/conditions-utilisation');
 
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [LoginController::class, 'login']);

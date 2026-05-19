@@ -4,6 +4,7 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
+import '../theme/app_theme_extensions.dart';
 import '../services/api_service.dart';
 import '../services/offline_pack_service.dart';
 import '../widgets/offline_cache_snack.dart';
@@ -184,6 +185,7 @@ class _AudioAnnouncementsScreenState extends State<AudioAnnouncementsScreen>
 
   /// Barres d'onde animées pendant la lecture
   Widget _buildWaveBars(bool isPlaying) {
+    final tp = context.tp;
     if (!isPlaying) {
       return Row(
         mainAxisSize: MainAxisSize.min,
@@ -194,7 +196,7 @@ class _AudioAnnouncementsScreenState extends State<AudioAnnouncementsScreen>
             height: 4,
             margin: const EdgeInsets.symmetric(horizontal: 1.5),
             decoration: BoxDecoration(
-              color: Colors.grey.shade300,
+              color: tp.border,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -323,9 +325,10 @@ class _AudioAnnouncementsScreenState extends State<AudioAnnouncementsScreen>
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final tp = context.tp;
     final announcements = _filteredAnnouncements;
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F1EA),
+      backgroundColor: tp.scaffoldAlt,
       body: Stack(
         children: [
           // Contenu principal
@@ -343,14 +346,14 @@ class _AudioAnnouncementsScreenState extends State<AudioAnnouncementsScreen>
                           Icon(
                             Icons.wifi_off_rounded,
                             size: 64,
-                            color: AppTheme.textSecondary,
+                            color: tp.textSecondary,
                           ),
                           const SizedBox(height: 16),
                           Text(
                             _errorMessage!,
                             style: GoogleFonts.poppins(
                               fontSize: 14,
-                              color: AppTheme.textSecondary,
+                              color: tp.textSecondary,
                             ),
                             textAlign: TextAlign.center,
                           ),
@@ -377,11 +380,12 @@ class _AudioAnnouncementsScreenState extends State<AudioAnnouncementsScreen>
                         Container(
                           padding: const EdgeInsets.all(30),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: tp.surface,
                             shape: BoxShape.circle,
+                            border: Border.all(color: tp.border),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.05),
+                                color: Colors.black.withValues(alpha: tp.isDark ? 0.25 : 0.05),
                                 blurRadius: 20,
                                 offset: const Offset(0, 10),
                               ),
@@ -390,7 +394,7 @@ class _AudioAnnouncementsScreenState extends State<AudioAnnouncementsScreen>
                           child: Icon(
                             Icons.volume_off_rounded,
                             size: 64,
-                            color: AppTheme.textSecondary,
+                            color: tp.textSecondary,
                           ),
                         ),
                         const SizedBox(height: 24),
@@ -399,7 +403,7 @@ class _AudioAnnouncementsScreenState extends State<AudioAnnouncementsScreen>
                           style: GoogleFonts.poppins(
                             fontSize: 18,
                             fontWeight: FontWeight.w600,
-                            color: AppTheme.textSecondary,
+                            color: tp.textSecondary,
                           ),
                         ),
                       ],
@@ -416,11 +420,12 @@ class _AudioAnnouncementsScreenState extends State<AudioAnnouncementsScreen>
                       return Container(
                         margin: const EdgeInsets.only(bottom: 20),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: tp.surface,
                           borderRadius: BorderRadius.circular(24),
+                          border: Border.all(color: tp.border),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.05),
+                              color: Colors.black.withValues(alpha: tp.isDark ? 0.2 : 0.05),
                               offset: const Offset(0, 10),
                               blurRadius: 20,
                             ),
@@ -470,7 +475,7 @@ class _AudioAnnouncementsScreenState extends State<AudioAnnouncementsScreen>
                                       vertical: 5,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: Colors.grey.shade100,
+                                      color: tp.chipBackground,
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: Row(
@@ -478,7 +483,7 @@ class _AudioAnnouncementsScreenState extends State<AudioAnnouncementsScreen>
                                         Icon(
                                           Icons.access_time,
                                           size: 14,
-                                          color: AppTheme.textSecondary,
+                                          color: tp.textSecondary,
                                         ),
                                         const SizedBox(width: 4),
                                         Text(
@@ -488,7 +493,7 @@ class _AudioAnnouncementsScreenState extends State<AudioAnnouncementsScreen>
                                           style: GoogleFonts.poppins(
                                             fontSize: 12,
                                             fontWeight: FontWeight.w500,
-                                            color: AppTheme.textSecondary,
+                                            color: tp.textSecondary,
                                           ),
                                         ),
                                       ],
@@ -502,7 +507,7 @@ class _AudioAnnouncementsScreenState extends State<AudioAnnouncementsScreen>
                                 style: GoogleFonts.poppins(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
-                                  color: AppTheme.textPrimary,
+                                  color: tp.textPrimary,
                                 ),
                               ),
                               const SizedBox(height: 8),
@@ -510,7 +515,7 @@ class _AudioAnnouncementsScreenState extends State<AudioAnnouncementsScreen>
                                 announcement['content'] as String,
                                 style: GoogleFonts.poppins(
                                   fontSize: 14,
-                                  color: AppTheme.textSecondary,
+                                  color: tp.textSecondary,
                                   height: 1.5,
                                 ),
                               ),
@@ -519,10 +524,10 @@ class _AudioAnnouncementsScreenState extends State<AudioAnnouncementsScreen>
                               Container(
                                 padding: const EdgeInsets.all(16),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFF8FAFC),
+                                  color: tp.surfaceElevated,
                                   borderRadius: BorderRadius.circular(20),
                                   border: Border.all(
-                                    color: Colors.grey.shade200,
+                                    color: tp.border,
                                   ),
                                 ),
                                 child: Column(
@@ -595,8 +600,7 @@ class _AudioAnnouncementsScreenState extends State<AudioAnnouncementsScreen>
                                                   value: isPlaying
                                                       ? _progress
                                                       : 0.0,
-                                                  backgroundColor:
-                                                      Colors.grey.shade200,
+                                                  backgroundColor: tp.border,
                                                   valueColor:
                                                       AlwaysStoppedAnimation<
                                                         Color
@@ -618,8 +622,7 @@ class _AudioAnnouncementsScreenState extends State<AudioAnnouncementsScreen>
                                                         : '0:00',
                                                     style: GoogleFonts.poppins(
                                                       fontSize: 12,
-                                                      color: AppTheme
-                                                          .textSecondary,
+                                                      color: tp.textSecondary,
                                                       fontWeight:
                                                           FontWeight.w500,
                                                     ),
@@ -632,10 +635,8 @@ class _AudioAnnouncementsScreenState extends State<AudioAnnouncementsScreen>
                                                     style: GoogleFonts.poppins(
                                                       fontSize: 12,
                                                       color: isPlaying
-                                                          ? AppTheme
-                                                                .primaryGreen
-                                                          : AppTheme
-                                                                .textSecondary,
+                                                          ? AppTheme.primaryGreen
+                                                          : tp.textSecondary,
                                                       fontWeight:
                                                           FontWeight.w600,
                                                     ),
@@ -769,12 +770,13 @@ class _AudioAnnouncementsScreenState extends State<AudioAnnouncementsScreen>
   Future<void> _showLanguagePicker() async {
     final selected = await showModalBottomSheet<String>(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: context.tp.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) {
         final l10n = AppLocalizations.of(context)!;
+        final sheetTp = context.tp;
         return SafeArea(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -784,7 +786,7 @@ class _AudioAnnouncementsScreenState extends State<AudioAnnouncementsScreen>
                 width: 44,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
+                  color: sheetTp.border,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),

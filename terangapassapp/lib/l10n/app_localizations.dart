@@ -1268,6 +1268,66 @@ abstract class AppLocalizations {
   /// **'Déconnexion'**
   String get profileLogout;
 
+  /// No description provided for @profileDeleteAccount.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer mon compte'**
+  String get profileDeleteAccount;
+
+  /// No description provided for @profileDeleteAccountTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer le compte'**
+  String get profileDeleteAccountTitle;
+
+  /// No description provided for @profileDeleteAccountBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Cette action est irréversible. Vos alertes, signalements et données associées seront supprimés définitivement. Pour confirmer, saisissez exactement le code suivant dans le champ ci-dessous :'**
+  String get profileDeleteAccountBody;
+
+  /// No description provided for @profileDeleteAccountCodeLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Code de confirmation'**
+  String get profileDeleteAccountCodeLabel;
+
+  /// No description provided for @profileDeleteAccountCodeHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'teranga pass'**
+  String get profileDeleteAccountCodeHint;
+
+  /// No description provided for @profileDeleteAccountCodeFieldHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Saisissez le code ici'**
+  String get profileDeleteAccountCodeFieldHint;
+
+  /// No description provided for @profileDeleteAccountCodeError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Code incorrect. Saisissez exactement : teranga pass'**
+  String get profileDeleteAccountCodeError;
+
+  /// No description provided for @profileDeleteAccountConfirm.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer définitivement'**
+  String get profileDeleteAccountConfirm;
+
+  /// No description provided for @profileDeleteAccountSuccess.
+  ///
+  /// In fr, this message translates to:
+  /// **'Votre compte a été supprimé.'**
+  String get profileDeleteAccountSuccess;
+
+  /// No description provided for @profileDeleteAccountFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de supprimer le compte pour le moment.'**
+  String get profileDeleteAccountFailed;
+
   /// No description provided for @profileDefaultSosTitle.
   ///
   /// In fr, this message translates to:
@@ -1615,6 +1675,30 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Hôpitaux'**
   String get mapFilterHospitals;
+
+  /// No description provided for @mapFilterBanks.
+  ///
+  /// In fr, this message translates to:
+  /// **'Banques'**
+  String get mapFilterBanks;
+
+  /// No description provided for @mapFilterGasStations.
+  ///
+  /// In fr, this message translates to:
+  /// **'Stations'**
+  String get mapFilterGasStations;
+
+  /// No description provided for @mapFilterShops.
+  ///
+  /// In fr, this message translates to:
+  /// **'Boutiques'**
+  String get mapFilterShops;
+
+  /// No description provided for @mapFilterConsulates.
+  ///
+  /// In fr, this message translates to:
+  /// **'Consulats'**
+  String get mapFilterConsulates;
 
   /// No description provided for @notificationsFallbackTitle.
   ///
@@ -2006,6 +2090,36 @@ abstract class AppLocalizations {
   /// **'Partenaire'**
   String get nearbySponsorBadge;
 
+  /// No description provided for @profileThemeSetting.
+  ///
+  /// In fr, this message translates to:
+  /// **'Apparence'**
+  String get profileThemeSetting;
+
+  /// No description provided for @profileThemeSettingHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisissez le mode clair, sombre ou automatique.'**
+  String get profileThemeSettingHint;
+
+  /// No description provided for @profileThemeSystem.
+  ///
+  /// In fr, this message translates to:
+  /// **'Automatique (système)'**
+  String get profileThemeSystem;
+
+  /// No description provided for @profileThemeLight.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mode clair'**
+  String get profileThemeLight;
+
+  /// No description provided for @profileThemeDark.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mode sombre'**
+  String get profileThemeDark;
+
   /// No description provided for @profileEsimTitle.
   ///
   /// In fr, this message translates to:
@@ -2015,19 +2129,25 @@ abstract class AppLocalizations {
   /// No description provided for @profileEsimSubtitle.
   ///
   /// In fr, this message translates to:
-  /// **'Data voyage (bientôt)'**
+  /// **'Fonctionnalité à venir'**
   String get profileEsimSubtitle;
+
+  /// No description provided for @esimComingBadge.
+  ///
+  /// In fr, this message translates to:
+  /// **'Fonctionnalité à venir'**
+  String get esimComingBadge;
 
   /// No description provided for @esimComingTitle.
   ///
   /// In fr, this message translates to:
-  /// **'eSIM Teranga Pass'**
+  /// **'Forfaits eSIM'**
   String get esimComingTitle;
 
   /// No description provided for @esimComingBody.
   ///
   /// In fr, this message translates to:
-  /// **'L’intégration partenaire (ex. Airalo), les paiements (PayDunya, Wave) et l’activation par QR arriveront dans une prochaine version. Cet écran sert de repère pour la démo et la recette produit.'**
+  /// **'L’achat de forfaits internet pour vos voyages au Sénégal sera bientôt disponible directement dans Teranga Pass.\n\nMerci de votre patience.'**
   String get esimComingBody;
 
   /// No description provided for @mapLegendTitle.
@@ -2250,10 +2370,28 @@ abstract class AppLocalizations {
   /// **'Jours avant les JOJ'**
   String get homeJojCountdownLabel;
 
+  /// No description provided for @homeJojOlympicSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'JEUX OLYMPIQUES DE LA JEUNESSE'**
+  String get homeJojOlympicSubtitle;
+
+  /// No description provided for @homeJojCityLine.
+  ///
+  /// In fr, this message translates to:
+  /// **'Dakar 2026'**
+  String get homeJojCityLine;
+
+  /// No description provided for @homeJojDateRange.
+  ///
+  /// In fr, this message translates to:
+  /// **'31 octobre -> 13 novembre'**
+  String get homeJojDateRange;
+
   /// No description provided for @homeEsimConnectSubtitle.
   ///
   /// In fr, this message translates to:
-  /// **'Connectez-vous'**
+  /// **'Bientôt disponible'**
   String get homeEsimConnectSubtitle;
 
   /// No description provided for @homeNearbySubtitle.
@@ -2285,6 +2423,828 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Convertisseur'**
   String get homeCurrencyTitle;
+
+  /// No description provided for @authRequiredTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connexion requise'**
+  String get authRequiredTitle;
+
+  /// No description provided for @authRequiredBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pour utiliser « {featureName} », connectez-vous ou créez un compte.'**
+  String authRequiredBody(Object featureName);
+
+  /// No description provided for @authRequiredBodyGuestHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pour utiliser « {featureName} », connectez-vous pour enregistrer vos actions.'**
+  String authRequiredBodyGuestHint(Object featureName);
+
+  /// No description provided for @authRequiredExploreHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous pouvez continuer à explorer le tourisme et les lieux recommandés sans compte.'**
+  String get authRequiredExploreHint;
+
+  /// No description provided for @authLater.
+  ///
+  /// In fr, this message translates to:
+  /// **'Plus tard'**
+  String get authLater;
+
+  /// No description provided for @authFeatureMedicalAlert.
+  ///
+  /// In fr, this message translates to:
+  /// **'Alerte médicale'**
+  String get authFeatureMedicalAlert;
+
+  /// No description provided for @authFeatureAiAssistant.
+  ///
+  /// In fr, this message translates to:
+  /// **'Assistant IA'**
+  String get authFeatureAiAssistant;
+
+  /// No description provided for @authFeatureReport.
+  ///
+  /// In fr, this message translates to:
+  /// **'Signalement'**
+  String get authFeatureReport;
+
+  /// No description provided for @authFeatureMyReports.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mes signalements'**
+  String get authFeatureMyReports;
+
+  /// No description provided for @authFeatureSos.
+  ///
+  /// In fr, this message translates to:
+  /// **'SOS urgence'**
+  String get authFeatureSos;
+
+  /// No description provided for @authFeatureMapAndRoute.
+  ///
+  /// In fr, this message translates to:
+  /// **'la carte et l\'itinéraire'**
+  String get authFeatureMapAndRoute;
+
+  /// No description provided for @authFeatureRoute.
+  ///
+  /// In fr, this message translates to:
+  /// **'l\'itinéraire'**
+  String get authFeatureRoute;
+
+  /// No description provided for @authFeatureLeaveReview.
+  ///
+  /// In fr, this message translates to:
+  /// **'Laisser un avis'**
+  String get authFeatureLeaveReview;
+
+  /// No description provided for @weatherUnavailable.
+  ///
+  /// In fr, this message translates to:
+  /// **'Indisponible'**
+  String get weatherUnavailable;
+
+  /// No description provided for @weatherDefaultLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Météo'**
+  String get weatherDefaultLabel;
+
+  /// No description provided for @homeLogin.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connexion'**
+  String get homeLogin;
+
+  /// No description provided for @recommendedSectionTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nos recommandations'**
+  String get recommendedSectionTitle;
+
+  /// No description provided for @recommendedSectionSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sélection Teranga Pass · hôtels, restos et lieux utiles'**
+  String get recommendedSectionSubtitle;
+
+  /// No description provided for @recommendedBadge.
+  ///
+  /// In fr, this message translates to:
+  /// **'Recommandé'**
+  String get recommendedBadge;
+
+  /// No description provided for @viewOnMap.
+  ///
+  /// In fr, this message translates to:
+  /// **'Voir sur la carte'**
+  String get viewOnMap;
+
+  /// No description provided for @loadingPleaseWait.
+  ///
+  /// In fr, this message translates to:
+  /// **'Patientez un instant…'**
+  String get loadingPleaseWait;
+
+  /// No description provided for @promoCloseBarrier.
+  ///
+  /// In fr, this message translates to:
+  /// **'Fermer la publicité'**
+  String get promoCloseBarrier;
+
+  /// No description provided for @promoLearnMore.
+  ///
+  /// In fr, this message translates to:
+  /// **'En savoir plus'**
+  String get promoLearnMore;
+
+  /// No description provided for @promoSponsoredLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Publicité · {sponsor}'**
+  String promoSponsoredLabel(Object sponsor);
+
+  /// No description provided for @aiWelcomeMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Bonjour, je suis votre assistant IA TerangaPass. Posez votre question.'**
+  String get aiWelcomeMessage;
+
+  /// No description provided for @aiDisclaimer.
+  ///
+  /// In fr, this message translates to:
+  /// **'Réponses basées sur les données TerangaPass (JOJ Dakar 2026).'**
+  String get aiDisclaimer;
+
+  /// No description provided for @aiSuggestionCompetitionSites.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sites de compétition'**
+  String get aiSuggestionCompetitionSites;
+
+  /// No description provided for @aiSuggestionCompetitionSitesQuery.
+  ///
+  /// In fr, this message translates to:
+  /// **'Quels sont les sites de compétition JOJ ?'**
+  String get aiSuggestionCompetitionSitesQuery;
+
+  /// No description provided for @aiSuggestionShuttles.
+  ///
+  /// In fr, this message translates to:
+  /// **'Navettes'**
+  String get aiSuggestionShuttles;
+
+  /// No description provided for @aiSuggestionShuttlesQuery.
+  ///
+  /// In fr, this message translates to:
+  /// **'Horaires des navettes'**
+  String get aiSuggestionShuttlesQuery;
+
+  /// No description provided for @aiSuggestionTourism.
+  ///
+  /// In fr, this message translates to:
+  /// **'Infos touristiques'**
+  String get aiSuggestionTourism;
+
+  /// No description provided for @aiSuggestionTourismQuery.
+  ///
+  /// In fr, this message translates to:
+  /// **'Lieux touristiques à Dakar'**
+  String get aiSuggestionTourismQuery;
+
+  /// No description provided for @aiSuggestionAnnouncements.
+  ///
+  /// In fr, this message translates to:
+  /// **'Annonces'**
+  String get aiSuggestionAnnouncements;
+
+  /// No description provided for @aiSuggestionAnnouncementsQuery.
+  ///
+  /// In fr, this message translates to:
+  /// **'Dernières annonces audio'**
+  String get aiSuggestionAnnouncementsQuery;
+
+  /// No description provided for @aiSuggestionEmergencies.
+  ///
+  /// In fr, this message translates to:
+  /// **'Urgences'**
+  String get aiSuggestionEmergencies;
+
+  /// No description provided for @aiSuggestionEmergenciesQuery.
+  ///
+  /// In fr, this message translates to:
+  /// **'Numéros d\'urgence au Sénégal'**
+  String get aiSuggestionEmergenciesQuery;
+
+  /// No description provided for @aiSuggestionCalendar.
+  ///
+  /// In fr, this message translates to:
+  /// **'Calendrier'**
+  String get aiSuggestionCalendar;
+
+  /// No description provided for @aiSuggestionCalendarQuery.
+  ///
+  /// In fr, this message translates to:
+  /// **'Calendrier des compétitions JOJ'**
+  String get aiSuggestionCalendarQuery;
+
+  /// No description provided for @aiEmptyReply.
+  ///
+  /// In fr, this message translates to:
+  /// **'Je n\'ai pas pu générer de réponse. Réessayez.'**
+  String get aiEmptyReply;
+
+  /// No description provided for @aiErrorPrefix.
+  ///
+  /// In fr, this message translates to:
+  /// **'Erreur IA : {error}'**
+  String aiErrorPrefix(Object error);
+
+  /// No description provided for @aiTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Assistant IA TerangaPass'**
+  String get aiTitle;
+
+  /// No description provided for @aiConnectedAs.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connecté(e) : {name}'**
+  String aiConnectedAs(Object name);
+
+  /// No description provided for @aiAllowLocation.
+  ///
+  /// In fr, this message translates to:
+  /// **'Autoriser la localisation'**
+  String get aiAllowLocation;
+
+  /// No description provided for @aiSuggestionsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Suggestions'**
+  String get aiSuggestionsTitle;
+
+  /// No description provided for @aiMessageHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Écrire un message...'**
+  String get aiMessageHint;
+
+  /// No description provided for @placeLeaveReviewTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Laisser un avis'**
+  String get placeLeaveReviewTitle;
+
+  /// No description provided for @placeReviewCommentHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Votre commentaire (optionnel)…'**
+  String get placeReviewCommentHint;
+
+  /// No description provided for @placeReviewPublish.
+  ///
+  /// In fr, this message translates to:
+  /// **'Publier'**
+  String get placeReviewPublish;
+
+  /// No description provided for @placeReviewPublished.
+  ///
+  /// In fr, this message translates to:
+  /// **'Avis publié.'**
+  String get placeReviewPublished;
+
+  /// No description provided for @placeReviewSavedOffline.
+  ///
+  /// In fr, this message translates to:
+  /// **'Avis sauvegardé sur cet appareil. Pour le partager à tous les utilisateurs, connectez-vous.'**
+  String get placeReviewSavedOffline;
+
+  /// No description provided for @placeReviewsUnavailableDetail.
+  ///
+  /// In fr, this message translates to:
+  /// **'Les avis ne sont pas disponibles pour ce lieu.'**
+  String get placeReviewsUnavailableDetail;
+
+  /// No description provided for @placeReviewsEmptyDetail.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun avis pour le moment.\nSoyez le premier à laisser un commentaire !'**
+  String get placeReviewsEmptyDetail;
+
+  /// No description provided for @placePhotoGallery.
+  ///
+  /// In fr, this message translates to:
+  /// **'Galerie photos'**
+  String get placePhotoGallery;
+
+  /// No description provided for @placeInfoDistance.
+  ///
+  /// In fr, this message translates to:
+  /// **'Distance'**
+  String get placeInfoDistance;
+
+  /// No description provided for @placeInfoAddress.
+  ///
+  /// In fr, this message translates to:
+  /// **'Adresse'**
+  String get placeInfoAddress;
+
+  /// No description provided for @placeInfoPhone.
+  ///
+  /// In fr, this message translates to:
+  /// **'Téléphone'**
+  String get placeInfoPhone;
+
+  /// No description provided for @placeInfoHours.
+  ///
+  /// In fr, this message translates to:
+  /// **'Horaires'**
+  String get placeInfoHours;
+
+  /// No description provided for @placeInfoDuration.
+  ///
+  /// In fr, this message translates to:
+  /// **'Durée estimée'**
+  String get placeInfoDuration;
+
+  /// No description provided for @placeInfoDirections.
+  ///
+  /// In fr, this message translates to:
+  /// **'Comment s\'y rendre'**
+  String get placeInfoDirections;
+
+  /// No description provided for @placeWebsite.
+  ///
+  /// In fr, this message translates to:
+  /// **'Site web'**
+  String get placeWebsite;
+
+  /// No description provided for @placeDescription.
+  ///
+  /// In fr, this message translates to:
+  /// **'Description'**
+  String get placeDescription;
+
+  /// No description provided for @placeReviewsSectionTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Avis & commentaires'**
+  String get placeReviewsSectionTitle;
+
+  /// No description provided for @placeReviewCount.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count} avis'**
+  String placeReviewCount(int count);
+
+  /// No description provided for @placeReviewsUnavailable.
+  ///
+  /// In fr, this message translates to:
+  /// **'Les avis ne sont pas disponibles pour le moment.'**
+  String get placeReviewsUnavailable;
+
+  /// No description provided for @placeReviewsEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun avis pour le moment. Soyez le premier !'**
+  String get placeReviewsEmpty;
+
+  /// No description provided for @reviewAuthorMe.
+  ///
+  /// In fr, this message translates to:
+  /// **'Moi'**
+  String get reviewAuthorMe;
+
+  /// No description provided for @reviewAuthorAnonymous.
+  ///
+  /// In fr, this message translates to:
+  /// **'Anonyme'**
+  String get reviewAuthorAnonymous;
+
+  /// No description provided for @embassiesTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ambassades'**
+  String get embassiesTitle;
+
+  /// No description provided for @embassiesSearchHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rechercher un pays...'**
+  String get embassiesSearchHint;
+
+  /// No description provided for @embassiesSortDistance.
+  ///
+  /// In fr, this message translates to:
+  /// **'Distance'**
+  String get embassiesSortDistance;
+
+  /// No description provided for @embassiesSortRating.
+  ///
+  /// In fr, this message translates to:
+  /// **'Note'**
+  String get embassiesSortRating;
+
+  /// No description provided for @embassiesSortName.
+  ///
+  /// In fr, this message translates to:
+  /// **'A-Z'**
+  String get embassiesSortName;
+
+  /// No description provided for @embassyTypeConsulate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Consulat'**
+  String get embassyTypeConsulate;
+
+  /// No description provided for @embassyTypeEmbassy.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ambassade'**
+  String get embassyTypeEmbassy;
+
+  /// No description provided for @embassyOpeningHours.
+  ///
+  /// In fr, this message translates to:
+  /// **'Horaires : {hours}'**
+  String embassyOpeningHours(Object hours);
+
+  /// No description provided for @embassyRating.
+  ///
+  /// In fr, this message translates to:
+  /// **'Note : {rating} / 5'**
+  String embassyRating(Object rating);
+
+  /// No description provided for @embassyCoordinates.
+  ///
+  /// In fr, this message translates to:
+  /// **'Coordonnées : {coords}'**
+  String embassyCoordinates(Object coords);
+
+  /// No description provided for @embassyPhone.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tél : {phone}'**
+  String embassyPhone(Object phone);
+
+  /// No description provided for @embassyEmail.
+  ///
+  /// In fr, this message translates to:
+  /// **'Email : {email}'**
+  String embassyEmail(Object email);
+
+  /// No description provided for @embassyActionMap.
+  ///
+  /// In fr, this message translates to:
+  /// **'Carte'**
+  String get embassyActionMap;
+
+  /// No description provided for @embassyActionWebsite.
+  ///
+  /// In fr, this message translates to:
+  /// **'Site web'**
+  String get embassyActionWebsite;
+
+  /// No description provided for @embassyUrgent.
+  ///
+  /// In fr, this message translates to:
+  /// **'Urgence'**
+  String get embassyUrgent;
+
+  /// No description provided for @embassyFilterConsulates.
+  ///
+  /// In fr, this message translates to:
+  /// **'Consulats'**
+  String get embassyFilterConsulates;
+
+  /// No description provided for @embassyFilterEmbassies.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ambassades'**
+  String get embassyFilterEmbassies;
+
+  /// No description provided for @embassyDistanceLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Distance : {distance}'**
+  String embassyDistanceLabel(Object distance);
+
+  /// No description provided for @tourismSearchMinChars.
+  ///
+  /// In fr, this message translates to:
+  /// **'Saisissez au moins 2 caractères pour rechercher.'**
+  String get tourismSearchMinChars;
+
+  /// No description provided for @tourismSearchNoResults.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun lieu trouvé pour cette recherche.'**
+  String get tourismSearchNoResults;
+
+  /// No description provided for @tourismSearchUnavailable.
+  ///
+  /// In fr, this message translates to:
+  /// **'Recherche indisponible pour le moment.'**
+  String get tourismSearchUnavailable;
+
+  /// No description provided for @tourismLocalFilterHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Filtre local sur la liste affichée.'**
+  String get tourismLocalFilterHint;
+
+  /// No description provided for @tourismEmptySearch.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun lieu pour cette recherche'**
+  String get tourismEmptySearch;
+
+  /// No description provided for @nearbyErrorLocationDisabled.
+  ///
+  /// In fr, this message translates to:
+  /// **'La localisation du téléphone est désactivée. Activez-la dans les réglages.'**
+  String get nearbyErrorLocationDisabled;
+
+  /// No description provided for @nearbyErrorPermissionDenied.
+  ///
+  /// In fr, this message translates to:
+  /// **'La permission de localisation est refusée. Autorisez-la pour voir les lieux proches.'**
+  String get nearbyErrorPermissionDenied;
+
+  /// No description provided for @nearbyErrorPositionTimeout.
+  ///
+  /// In fr, this message translates to:
+  /// **'Position introuvable pour le moment. Réessayez.'**
+  String get nearbyErrorPositionTimeout;
+
+  /// No description provided for @nearbyFallbackOutOfRadius.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun lieu dans un rayon de {radius} m. Élargissez le rayon ou changez de catégorie.'**
+  String nearbyFallbackOutOfRadius(int radius);
+
+  /// No description provided for @incidentVideoGallery.
+  ///
+  /// In fr, this message translates to:
+  /// **'Galerie vidéo'**
+  String get incidentVideoGallery;
+
+  /// No description provided for @incidentVideoCamera.
+  ///
+  /// In fr, this message translates to:
+  /// **'Caméra vidéo'**
+  String get incidentVideoCamera;
+
+  /// No description provided for @incidentAddVideoError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d\'ajouter la vidéo'**
+  String get incidentAddVideoError;
+
+  /// No description provided for @incidentTrackAction.
+  ///
+  /// In fr, this message translates to:
+  /// **'Suivre'**
+  String get incidentTrackAction;
+
+  /// No description provided for @incidentReportNavShort.
+  ///
+  /// In fr, this message translates to:
+  /// **'Signaler'**
+  String get incidentReportNavShort;
+
+  /// No description provided for @incidentHistoryTooltip.
+  ///
+  /// In fr, this message translates to:
+  /// **'Historique'**
+  String get incidentHistoryTooltip;
+
+  /// No description provided for @incidentPrivacyNotice.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vos preuves seront chiffrées et transmises de façon sécurisée.'**
+  String get incidentPrivacyNotice;
+
+  /// No description provided for @incidentEvidencePhoto.
+  ///
+  /// In fr, this message translates to:
+  /// **'Photo'**
+  String get incidentEvidencePhoto;
+
+  /// No description provided for @incidentEvidenceVideo.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vidéo'**
+  String get incidentEvidenceVideo;
+
+  /// No description provided for @incidentEvidenceAudio.
+  ///
+  /// In fr, this message translates to:
+  /// **'Audio'**
+  String get incidentEvidenceAudio;
+
+  /// No description provided for @incidentVideosAddedCount.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count} vidéo(s) ajoutée(s)'**
+  String incidentVideosAddedCount(int count);
+
+  /// No description provided for @incidentDossierRef.
+  ///
+  /// In fr, this message translates to:
+  /// **'Dossier TP-{year}-{month}-{id}'**
+  String incidentDossierRef(Object year, Object month, Object id);
+
+  /// No description provided for @incidentDossierRefShort.
+  ///
+  /// In fr, this message translates to:
+  /// **'Dossier #{id}'**
+  String incidentDossierRefShort(Object id);
+
+  /// No description provided for @jojNoEventsForDate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun événement pour cette date'**
+  String get jojNoEventsForDate;
+
+  /// No description provided for @jojCurrencyConverterTooltip.
+  ///
+  /// In fr, this message translates to:
+  /// **'Convertisseur'**
+  String get jojCurrencyConverterTooltip;
+
+  /// No description provided for @mapRouteServerError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Erreur serveur ({code})'**
+  String mapRouteServerError(int code);
+
+  /// No description provided for @mapRouteNotFound.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun itinéraire trouvé'**
+  String get mapRouteNotFound;
+
+  /// No description provided for @mapRouteDirectionsApiError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de calculer l\'itinéraire. Réessayez.'**
+  String get mapRouteDirectionsApiError;
+
+  /// No description provided for @mapGuestPointsUnavailable.
+  ///
+  /// In fr, this message translates to:
+  /// **'Lieux indisponibles pour le moment. Connectez-vous pour tout afficher.'**
+  String get mapGuestPointsUnavailable;
+
+  /// No description provided for @mapMissingCoordinates.
+  ///
+  /// In fr, this message translates to:
+  /// **'Coordonnées manquantes'**
+  String get mapMissingCoordinates;
+
+  /// No description provided for @mapNavInProgress.
+  ///
+  /// In fr, this message translates to:
+  /// **'Navigation en cours'**
+  String get mapNavInProgress;
+
+  /// No description provided for @mapNavRemaining.
+  ///
+  /// In fr, this message translates to:
+  /// **'Reste {distance}'**
+  String mapNavRemaining(Object distance);
+
+  /// No description provided for @mapNavStop.
+  ///
+  /// In fr, this message translates to:
+  /// **'Arrêter la navigation'**
+  String get mapNavStop;
+
+  /// No description provided for @mapRouteSummaryDriving.
+  ///
+  /// In fr, this message translates to:
+  /// **'{distance} · {duration} en voiture'**
+  String mapRouteSummaryDriving(Object distance, Object duration);
+
+  /// No description provided for @mapRouteRecalculate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Recalculer'**
+  String get mapRouteRecalculate;
+
+  /// No description provided for @mapRouteView.
+  ///
+  /// In fr, this message translates to:
+  /// **'Voir l\'itinéraire'**
+  String get mapRouteView;
+
+  /// No description provided for @mapNavStart.
+  ///
+  /// In fr, this message translates to:
+  /// **'Démarrer'**
+  String get mapNavStart;
+
+  /// No description provided for @mapNavDefaultInstruction.
+  ///
+  /// In fr, this message translates to:
+  /// **'Navigation…'**
+  String get mapNavDefaultInstruction;
+
+  /// No description provided for @mapNavRemainingDistance.
+  ///
+  /// In fr, this message translates to:
+  /// **'Distance restante : {distance}'**
+  String mapNavRemainingDistance(Object distance);
+
+  /// No description provided for @mapNavFollowRoute.
+  ///
+  /// In fr, this message translates to:
+  /// **'Suivez la route'**
+  String get mapNavFollowRoute;
+
+  /// No description provided for @mapNavFollowRouteToDestination.
+  ///
+  /// In fr, this message translates to:
+  /// **'Suivez la route vers votre destination'**
+  String get mapNavFollowRouteToDestination;
+
+  /// No description provided for @mapNavInMeters.
+  ///
+  /// In fr, this message translates to:
+  /// **'Dans {distance} mètres'**
+  String mapNavInMeters(Object distance);
+
+  /// No description provided for @mapNavInKilometers.
+  ///
+  /// In fr, this message translates to:
+  /// **'Dans {distance} kilomètres'**
+  String mapNavInKilometers(Object distance);
+
+  /// No description provided for @mapNavApproachingTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous approchez !'**
+  String get mapNavApproachingTitle;
+
+  /// No description provided for @mapNavApproachingBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Votre destination est à {distance}'**
+  String mapNavApproachingBody(Object distance);
+
+  /// No description provided for @mapNavArrivedTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous êtes arrivé !'**
+  String get mapNavArrivedTitle;
+
+  /// No description provided for @mapNavArrivedBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous êtes arrivé à destination.'**
+  String get mapNavArrivedBody;
+
+  /// No description provided for @mapNavArrivedVoice.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous êtes arrivé à destination'**
+  String get mapNavArrivedVoice;
+
+  /// No description provided for @mapNavInstructionDepart.
+  ///
+  /// In fr, this message translates to:
+  /// **'Partez vers {destination}'**
+  String mapNavInstructionDepart(Object destination);
+
+  /// No description provided for @mapNavInstructionContinue.
+  ///
+  /// In fr, this message translates to:
+  /// **'Continuez sur {road}'**
+  String mapNavInstructionContinue(Object road);
+
+  /// No description provided for @mapNavInstructionTurn.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tournez {direction} sur {road}'**
+  String mapNavInstructionTurn(Object direction, Object road);
+
+  /// No description provided for @mapNavInstructionRoundabout.
+  ///
+  /// In fr, this message translates to:
+  /// **'Au rond-point, prenez la {exit} sortie'**
+  String mapNavInstructionRoundabout(Object exit);
+
+  /// No description provided for @mapNavInstructionArrive.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous êtes arrivé à {destination}'**
+  String mapNavInstructionArrive(Object destination);
 }
 
 class _AppLocalizationsDelegate

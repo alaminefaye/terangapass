@@ -83,6 +83,55 @@ class UserController extends Controller
         return response()->json(['data' => $user]);
     }
 
+    /**
+     * Suppression définitive du compte mobile (code de confirmation requis).
+     */
+    public function deleteAccount(Request $request)
+    {
+        $user = $this->getUserFromToken($request);
+        if (! $user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Non autorisé. Veuillez vous reconnecter.',
+            ], 401);
+        }
+
+        if ($user->user_type === 'admin') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ce compte ne peut pas être supprimé depuis l’application.',
+            ], 403);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'confirmation_code' => ['required', 'string', 'max:64'],
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Code de confirmation requis.',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $code = strtolower(trim((string) $request->input('confirmation_code')));
+        if ($code !== 'teranga pass') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Code de confirmation incorrect.',
+            ], 422);
+        }
+
+        $user->deviceTokens()->delete();
+        $user->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Votre compte a été supprimé définitivement.',
+        ]);
+    }
+
     private function getUserFromToken(Request $request)
     {
         $token = $request->bearerToken() ?? $request->header('Authorization');

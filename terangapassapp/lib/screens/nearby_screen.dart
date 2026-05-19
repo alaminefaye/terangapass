@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -7,11 +9,14 @@ import '../l10n/app_localizations.dart';
 import '../services/api_service.dart';
 import '../services/location_service.dart';
 import '../theme/app_theme.dart';
+import '../theme/app_theme_extensions.dart';
 import '../widgets/loading_placeholders.dart';
 import '../widgets/map_legend_strip.dart';
 import '../services/offline_pack_service.dart';
 import '../services/offline_nearby_builder.dart';
 import '../widgets/offline_cache_snack.dart';
+import '../services/guest_data_service.dart';
+import '../utils/auth_guard.dart';
 import 'map_screen.dart';
 
 class NearbyScreen extends StatefulWidget {
@@ -42,6 +47,11 @@ class _NearbyScreenState extends State<NearbyScreen> {
   void initState() {
     super.initState();
     _refresh();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (mounted && !await AuthGuard.isLoggedIn()) {
+        unawaited(GuestDataService.warmUpOfflineCatalog());
+      }
+    });
   }
 
   Set<Marker> _buildNearbyMarkers() {
@@ -51,7 +61,7 @@ class _NearbyScreenState extends State<NearbyScreen> {
         markerId: const MarkerId('user'),
         position: LatLng(_userLat!, _userLng!),
         icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
-        infoWindow: const InfoWindow(title: 'Vous'),
+        infoWindow: InfoWindow(title: AppLocalizations.of(context)!.mapLegendYou),
       ),
     };
     var i = 0;
@@ -226,18 +236,18 @@ class _NearbyScreenState extends State<NearbyScreen> {
     if (msg.contains('services de localisation sont desactives') ||
         msg.contains('services de localisation sont désactivés') ||
         msg.contains('location services are disabled')) {
-      return 'La localisation du téléphone est désactivée. Activez le GPS puis réessayez.';
+      return l10n.nearbyErrorLocationDisabled;
     }
     if (msg.contains('permission') ||
         msg.contains('refuse') ||
         msg.contains('refus') ||
         msg.contains('denied')) {
-      return 'La permission de localisation pour Teranga Pass est refusée. Autorisez-la dans les réglages de l’app.';
+      return l10n.nearbyErrorPermissionDenied;
     }
     if (msg.contains('timeout') ||
         msg.contains('time limit') ||
         msg.contains('timed out')) {
-      return 'Position introuvable pour le moment. Vérifiez le GPS et réessayez.';
+      return l10n.nearbyErrorPositionTimeout;
     }
     return raw;
   }
@@ -248,7 +258,7 @@ class _NearbyScreenState extends State<NearbyScreen> {
     final chips = _chips(l10n);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F1EA),
+      backgroundColor: context.tp.scaffoldAlt,
       body: Column(
         children: [
           Container(
@@ -366,25 +376,26 @@ class _NearbyScreenState extends State<NearbyScreen> {
     }
 
     if (_userLat == null || _userLng == null) {
+      final tp = context.tp;
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.location_off_rounded, size: 48, color: Colors.grey[500]),
+              Icon(Icons.location_off_rounded, size: 48, color: tp.textSecondary),
               const SizedBox(height: 12),
               Text(
                 _friendlyLocationError(l10n),
                 textAlign: TextAlign.center,
-                style: GoogleFonts.poppins(fontSize: 14, color: AppTheme.textSecondary),
+                style: GoogleFonts.poppins(fontSize: 14, color: tp.textPrimary),
               ),
               if (_locationError != null && _locationError!.isNotEmpty) ...[
                 const SizedBox(height: 8),
                 Text(
                   _locationError!,
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[600]),
+                  style: GoogleFonts.poppins(fontSize: 12, color: tp.textSecondary),
                 ),
               ],
               const SizedBox(height: 20),
@@ -399,6 +410,8 @@ class _NearbyScreenState extends State<NearbyScreen> {
       );
     }
 
+    final tp = context.tp;
+
     return RefreshIndicator(
       onRefresh: _refresh,
       child: ListView(
@@ -409,15 +422,23 @@ class _NearbyScreenState extends State<NearbyScreen> {
               margin: const EdgeInsets.only(bottom: 12),
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0xFFFFF8E6),
+                color: tp.isDark
+                    ? const Color(0xFF3D3520)
+                    : const Color(0xFFFFF8E6),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFE8C547)),
+                border: Border.all(
+                  color: tp.isDark
+                      ? const Color(0xFFE8C547).withValues(alpha: 0.45)
+                      : const Color(0xFFE8C547),
+                ),
               ),
               child: Text(
                 'Aucun lieu dans un rayon de $_radiusM m. Voici les plus proches.',
                 style: GoogleFonts.poppins(
                   fontSize: 12,
-                  color: const Color(0xFF5C4A00),
+                  color: tp.isDark
+                      ? const Color(0xFFF5E6B8)
+                      : const Color(0xFF5C4A00),
                 ),
               ),
             ),
@@ -447,7 +468,10 @@ class _NearbyScreenState extends State<NearbyScreen> {
               child: Text(
                 l10n.nearbyEmpty,
                 textAlign: TextAlign.center,
-                style: GoogleFonts.poppins(fontSize: 14, color: AppTheme.textSecondary),
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  color: context.tp.textPrimary,
+                ),
               ),
             )
           else
@@ -487,11 +511,15 @@ class _PlaceCard extends StatelessWidget {
     final lng = _toDouble(place['longitude']);
     final hasCoords = lat != null && lng != null;
 
+    final tp = context.tp;
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
       elevation: 0,
-      color: Colors.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      color: tp.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+        side: BorderSide(color: tp.border),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(14),
         child: Column(
@@ -506,7 +534,7 @@ class _PlaceCard extends StatelessWidget {
                     style: GoogleFonts.poppins(
                       fontWeight: FontWeight.w700,
                       fontSize: 15,
-                      color: const Color(0xFF1A1F2E),
+                      color: tp.textPrimary,
                     ),
                   ),
                 ),
@@ -531,11 +559,11 @@ class _PlaceCard extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               '$category · $distance',
-              style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.textSecondary),
+              style: GoogleFonts.poppins(fontSize: 12, color: tp.textSecondary),
             ),
             if (address.isNotEmpty) ...[
               const SizedBox(height: 6),
-              Text(address, style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.textPrimary)),
+              Text(address, style: GoogleFonts.poppins(fontSize: 12, color: tp.textPrimary)),
             ],
             if (openingHours.isNotEmpty) ...[
               const SizedBox(height: 8),
@@ -571,18 +599,14 @@ class _PlaceCard extends StatelessWidget {
                   Expanded(
                     child: OutlinedButton.icon(
                       onPressed: () {
-                        Navigator.push(
+                        MapScreen.push(
                           context,
-                          MaterialPageRoute(
-                            builder: (_) => MapScreen(
-                              initialLatLng: LatLng(lat, lng),
-                              focusedPlaceName: name,
-                            ),
-                          ),
+                          initialLatLng: LatLng(lat, lng),
+                          focusedPlaceName: name,
                         );
                       },
                       icon: const Icon(Icons.map_rounded, size: 16),
-                      label: const Text('Voir sur la carte'),
+                      label: Text(AppLocalizations.of(context)!.viewOnMap),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: const Color(0xFF2E8B57),
                         side: const BorderSide(color: Color(0xFF2E8B57)),
@@ -606,7 +630,7 @@ class _PlaceCard extends StatelessWidget {
                         if (await canLaunchUrl(u)) await launchUrl(u);
                       },
                       icon: const Icon(Icons.phone_rounded, size: 16),
-                      label: const Text('Appeler'),
+                      label: Text(AppLocalizations.of(context)!.call),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: const Color(0xFF3A7CA5),
                         side: const BorderSide(color: Color(0xFF3A7CA5)),

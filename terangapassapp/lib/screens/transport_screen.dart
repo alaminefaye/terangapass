@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
+import '../theme/app_theme_extensions.dart';
 import '../services/api_service.dart';
 import '../widgets/loading_placeholders.dart';
 
@@ -63,8 +64,9 @@ class _TransportScreenState extends State<TransportScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final tp = context.tp;
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F1EA),
+      backgroundColor: tp.scaffoldAlt,
       body: Stack(
         children: [
           // Contenu principal
@@ -82,14 +84,14 @@ class _TransportScreenState extends State<TransportScreen> {
                           Icon(
                             Icons.wifi_off_rounded,
                             size: 64,
-                            color: AppTheme.textSecondary,
+                            color: tp.textSecondary,
                           ),
                           const SizedBox(height: 16),
                           Text(
                             _errorMessage!,
                             style: GoogleFonts.poppins(
                               fontSize: 14,
-                              color: AppTheme.textSecondary,
+                              color: tp.textSecondary,
                             ),
                             textAlign: TextAlign.center,
                           ),
@@ -116,14 +118,14 @@ class _TransportScreenState extends State<TransportScreen> {
                         Icon(
                           Icons.directions_bus_rounded,
                           size: 64,
-                          color: AppTheme.textSecondary,
+                          color: tp.textSecondary,
                         ),
                         const SizedBox(height: 16),
                         Text(
                           l10n.transportNoShuttles,
                           style: GoogleFonts.poppins(
                             fontSize: 16,
-                            color: AppTheme.textSecondary,
+                            color: tp.textSecondary,
                           ),
                         ),
                       ],
@@ -214,6 +216,7 @@ class _TransportScreenState extends State<TransportScreen> {
 
   Widget _buildShuttleCard(Map<String, dynamic> shuttle) {
     final l10n = AppLocalizations.of(context)!;
+    final tp = context.tp;
     final icon = _getTransportIcon(shuttle['type'] as String? ?? 'bus');
 
     return GestureDetector(
@@ -221,11 +224,12 @@ class _TransportScreenState extends State<TransportScreen> {
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: tp.surface,
           borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: tp.border),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
+              color: Colors.black.withValues(alpha: tp.isDark ? 0.25 : 0.05),
               offset: const Offset(0, 4),
               blurRadius: 12,
             ),
@@ -263,7 +267,7 @@ class _TransportScreenState extends State<TransportScreen> {
                           style: GoogleFonts.poppins(
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
-                            color: AppTheme.textPrimary,
+                            color: tp.textPrimary,
                           ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
@@ -275,7 +279,7 @@ class _TransportScreenState extends State<TransportScreen> {
                             shuttle['period'] as String? ?? '',
                             style: GoogleFonts.poppins(
                               fontSize: 11,
-                              color: AppTheme.textSecondary,
+                              color: tp.textSecondary,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -293,7 +297,7 @@ class _TransportScreenState extends State<TransportScreen> {
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: tp.chipBackground,
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(
                               color: AppTheme.primaryGreen.withValues(
@@ -326,7 +330,7 @@ class _TransportScreenState extends State<TransportScreen> {
                       Icon(
                         Icons.chevron_right_rounded,
                         size: 20,
-                        color: AppTheme.textSecondary,
+                        color: tp.textSecondary,
                       ),
                     ],
                   ),
@@ -364,7 +368,7 @@ class _TransportScreenState extends State<TransportScreen> {
                     shuttle['days'] as String,
                     style: GoogleFonts.poppins(
                       fontSize: 11,
-                      color: AppTheme.textSecondary,
+                      color: tp.textSecondary,
                       fontStyle: FontStyle.italic,
                     ),
                   ),
@@ -397,7 +401,7 @@ class _TransportScreenState extends State<TransportScreen> {
                         '${l10n.transportNextDeparturePrefix} ',
                         style: GoogleFonts.poppins(
                           fontSize: 12,
-                          color: AppTheme.textPrimary,
+                          color: tp.textPrimary,
                         ),
                       ),
                       Text(
@@ -420,14 +424,14 @@ class _TransportScreenState extends State<TransportScreen> {
                     Icon(
                       Icons.location_on,
                       size: 12,
-                      color: AppTheme.textSecondary,
+                      color: tp.textSecondary,
                     ),
                     const SizedBox(width: 3),
                     Text(
                       shuttle['location'] as String,
                       style: GoogleFonts.poppins(
                         fontSize: 11,
-                        color: AppTheme.textSecondary,
+                        color: tp.textSecondary,
                       ),
                     ),
                   ],
@@ -453,10 +457,12 @@ class _TransportScreenState extends State<TransportScreen> {
           minChildSize: 0.4,
           maxChildSize: 0.95,
           builder: (context, scrollController) {
+            final sheetTp = context.tp;
             return Container(
-              decoration: const BoxDecoration(
-                color: Color(0xFFF5F7FA),
-                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              decoration: BoxDecoration(
+                color: sheetTp.scaffoldAlt,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                border: Border(top: BorderSide(color: sheetTp.border)),
               ),
               child: Column(
                 children: [
@@ -466,7 +472,7 @@ class _TransportScreenState extends State<TransportScreen> {
                     width: 44,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade300,
+                      color: sheetTp.border,
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -503,7 +509,7 @@ class _TransportScreenState extends State<TransportScreen> {
                                 style: GoogleFonts.poppins(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
-                                  color: AppTheme.textPrimary,
+                                  color: sheetTp.textPrimary,
                                 ),
                               ),
                               if ((shuttle['type'] as String? ?? '').isNotEmpty)
@@ -555,7 +561,7 @@ class _TransportScreenState extends State<TransportScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  const Divider(height: 1),
+                  Divider(height: 1, color: sheetTp.border),
                   // Contenu scrollable
                   Expanded(
                     child: ListView(
@@ -716,14 +722,15 @@ class _TransportScreenState extends State<TransportScreen> {
                           Container(
                             padding: const EdgeInsets.all(14),
                             decoration: BoxDecoration(
-                              color: Colors.white,
+                              color: sheetTp.surface,
                               borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: sheetTp.border),
                             ),
                             child: Text(
                               shuttle['description'] as String,
                               style: GoogleFonts.poppins(
                                 fontSize: 13,
-                                color: AppTheme.textSecondary,
+                                color: sheetTp.textSecondary,
                                 height: 1.5,
                               ),
                             ),
@@ -742,6 +749,7 @@ class _TransportScreenState extends State<TransportScreen> {
   }
 
   Widget _detailSectionTitle(String title, IconData icon) {
+    final tp = context.tp;
     return Row(
       children: [
         Icon(icon, size: 16, color: AppTheme.primaryGreen),
@@ -751,7 +759,7 @@ class _TransportScreenState extends State<TransportScreen> {
           style: GoogleFonts.poppins(
             fontSize: 13,
             fontWeight: FontWeight.bold,
-            color: AppTheme.textPrimary,
+            color: tp.textPrimary,
           ),
         ),
       ],
@@ -764,12 +772,14 @@ class _TransportScreenState extends State<TransportScreen> {
     required String label,
     required String value,
   }) {
+    final tp = context.tp;
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: tp.surface,
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: tp.border),
       ),
       child: Row(
         children: [
@@ -790,7 +800,7 @@ class _TransportScreenState extends State<TransportScreen> {
                   label,
                   style: GoogleFonts.poppins(
                     fontSize: 10,
-                    color: AppTheme.textSecondary,
+                    color: tp.textSecondary,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -798,7 +808,7 @@ class _TransportScreenState extends State<TransportScreen> {
                   value,
                   style: GoogleFonts.poppins(
                     fontSize: 13,
-                    color: AppTheme.textPrimary,
+                    color: tp.textPrimary,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -815,6 +825,7 @@ class _TransportScreenState extends State<TransportScreen> {
     String? time,
     required bool isLast,
   }) {
+    final tp = context.tp;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -827,7 +838,7 @@ class _TransportScreenState extends State<TransportScreen> {
               decoration: BoxDecoration(
                 color: isLast ? AppTheme.primaryRed : AppTheme.primaryGreen,
                 shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 2),
+                border: Border.all(color: tp.surface, width: 2),
                 boxShadow: [
                   BoxShadow(
                     color:
@@ -857,7 +868,7 @@ class _TransportScreenState extends State<TransportScreen> {
                   name,
                   style: GoogleFonts.poppins(
                     fontSize: 13,
-                    color: AppTheme.textPrimary,
+                    color: tp.textPrimary,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -866,7 +877,7 @@ class _TransportScreenState extends State<TransportScreen> {
                     time,
                     style: GoogleFonts.poppins(
                       fontSize: 12,
-                      color: AppTheme.textSecondary,
+                      color: tp.textSecondary,
                     ),
                   ),
               ],
@@ -882,6 +893,7 @@ class _TransportScreenState extends State<TransportScreen> {
     required Color color,
     required String text,
   }) {
+    final tp = context.tp;
     return Row(
       children: [
         Container(
@@ -898,7 +910,7 @@ class _TransportScreenState extends State<TransportScreen> {
             text,
             style: GoogleFonts.poppins(
               fontSize: 12,
-              color: AppTheme.textPrimary,
+              color: tp.textPrimary,
               fontWeight: FontWeight.w500,
             ),
           ),

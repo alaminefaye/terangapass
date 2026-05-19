@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
+import '../theme/app_theme_extensions.dart';
 import '../services/api_service.dart';
 import '../widgets/loading_placeholders.dart';
 
@@ -233,6 +234,30 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     }
   }
 
+  String _field(Map<String, dynamic> n, List<String> keys) {
+    for (final key in keys) {
+      final v = n[key];
+      if (v != null && v.toString().trim().isNotEmpty) {
+        return v.toString().trim();
+      }
+    }
+    return '';
+  }
+
+  Map<String, dynamic> _normalizeNotification(Map<String, dynamic> n) {
+    return {
+      ...n,
+      'title': _field(n, const ['title', 'subject', 'name']),
+      'description': _field(n, const [
+        'description',
+        'body',
+        'message',
+        'content',
+        'text',
+      ]),
+    };
+  }
+
   Future<void> _loadNotifications() async {
     setState(() {
       _isLoading = true;
@@ -247,7 +272,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       if (!mounted) return;
       setState(() {
         _notifications = notifications
-            .map((n) => n as Map<String, dynamic>)
+            .map((n) => _normalizeNotification(Map<String, dynamic>.from(n as Map)))
             .toList();
         final unique = {
           for (final n in _notifications) (n['zone'] ?? '').toString().trim(),
@@ -393,6 +418,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     final title = (notification['title'] ?? '').toString().trim();
     final description = (notification['description'] ??
             notification['body'] ??
+            notification['message'] ??
             '')
         .toString()
         .trim();
@@ -402,9 +428,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     final color = _colorForType(rawType);
     final isPersonal = _isPersonal(notification);
 
+    final sheetTp = context.tp;
     await showModalBottomSheet<void>(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: sheetTp.surface,
       isScrollControlled: true,
       showDragHandle: true,
       shape: const RoundedRectangleBorder(
@@ -448,7 +475,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                           style: GoogleFonts.poppins(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            color: AppTheme.textPrimary,
+                            color: sheetTp.textPrimary,
                           ),
                         ),
                       ),
@@ -476,7 +503,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                           time,
                           style: GoogleFonts.poppins(
                             fontSize: 12,
-                            color: AppTheme.textSecondary,
+                            color: sheetTp.textSecondary,
                           ),
                         ),
                     ],
@@ -488,7 +515,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                         Icon(
                           Icons.location_on_outlined,
                           size: 16,
-                          color: AppTheme.textSecondary,
+                          color: sheetTp.textSecondary,
                         ),
                         const SizedBox(width: 6),
                         Expanded(
@@ -496,7 +523,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                             locationText,
                             style: GoogleFonts.poppins(
                               fontSize: 12,
-                              color: AppTheme.textSecondary,
+                              color: sheetTp.textSecondary,
                             ),
                           ),
                         ),
@@ -508,7 +535,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     description.isEmpty ? '—' : description,
                     style: GoogleFonts.poppins(
                       fontSize: 14,
-                      color: AppTheme.textSecondary,
+                      color: sheetTp.textSecondary,
                       height: 1.5,
                     ),
                   ),
@@ -606,7 +633,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     if (t.contains('rout')) return Colors.blue;
     if (t.contains('médic') || t.contains('medic')) return Colors.purple;
     if (t.contains('audio') || t.contains('annonce')) return const Color(0xFF6B4FA3);
-    return AppTheme.textSecondary;
+    return context.tp.textSecondary;
   }
 
   DateTime? _parseDate(dynamic value) {
@@ -645,9 +672,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     final isRead = _isRead(notification);
     final isPersonal = _isPersonal(notification);
 
+    final menuTp = context.tp;
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: menuTp.surface,
       showDragHandle: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -659,10 +687,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             children: [
               if (isRead)
                 ListTile(
-                  leading: const Icon(Icons.mark_email_unread_rounded),
+                  leading: Icon(
+                    Icons.mark_email_unread_rounded,
+                    color: menuTp.textPrimary,
+                  ),
                   title: Text(
                     l10n.markAsUnread,
-                    style: GoogleFonts.poppins(),
+                    style: GoogleFonts.poppins(color: menuTp.textPrimary),
                   ),
                   onTap: () {
                     Navigator.of(ctx).pop();
@@ -671,10 +702,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 )
               else
                 ListTile(
-                  leading: const Icon(Icons.mark_email_read_rounded),
+                  leading: Icon(
+                    Icons.mark_email_read_rounded,
+                    color: menuTp.textPrimary,
+                  ),
                   title: Text(
                     l10n.markAsRead,
-                    style: GoogleFonts.poppins(),
+                    style: GoogleFonts.poppins(color: menuTp.textPrimary),
                   ),
                   onTap: () {
                     Navigator.of(ctx).pop();
@@ -743,10 +777,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final tp = context.tp;
     final unreadCount = _notifications.where((n) => !_isRead(n)).length;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F1EA),
+      backgroundColor: tp.scaffoldAlt,
       body: Column(
         children: [
           SafeArea(
@@ -818,8 +853,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             margin: const EdgeInsets.symmetric(horizontal: 16),
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: tp.surface,
               borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: tp.border),
             ),
             child: Row(
               children: [
@@ -828,6 +864,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   style: GoogleFonts.poppins(
                     fontWeight: FontWeight.w600,
                     fontSize: 14,
+                    color: tp.textPrimary,
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -836,12 +873,21 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     value: _selectedZone,
                     isExpanded: true,
                     underline: Container(),
+                    dropdownColor: tp.surfaceElevated,
+                    iconEnabledColor: tp.textSecondary,
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      color: tp.textPrimary,
+                    ),
                     items: [
                       DropdownMenuItem<String?>(
                         value: null,
                         child: Text(
                           l10n.allZones,
-                          style: GoogleFonts.poppins(fontSize: 14),
+                          style: GoogleFonts.poppins(
+                            fontSize: 14,
+                            color: tp.textPrimary,
+                          ),
                         ),
                       ),
                       ..._zones.map(
@@ -849,7 +895,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                           value: zone,
                           child: Text(
                             zone,
-                            style: GoogleFonts.poppins(fontSize: 14),
+                            style: GoogleFonts.poppins(
+                              fontSize: 14,
+                              color: tp.textPrimary,
+                            ),
                           ),
                         ),
                       ),
@@ -868,7 +917,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
           Expanded(
             child: _isLoading
-                ? const TerangaBrandedLoading()
+                ? const TerangaBrandedLoading(showSkeletonList: false)
                 : _errorMessage != null
                 ? Center(
                     child: Padding(
@@ -879,14 +928,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                           Icon(
                             Icons.wifi_off_rounded,
                             size: 64,
-                            color: AppTheme.textSecondary,
+                            color: tp.textSecondary,
                           ),
                           const SizedBox(height: 16),
                           Text(
                             _errorMessage!,
                             style: GoogleFonts.poppins(
                               fontSize: 14,
-                              color: AppTheme.textSecondary,
+                              color: tp.textSecondary,
                             ),
                             textAlign: TextAlign.center,
                           ),
@@ -913,14 +962,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                         Icon(
                           Icons.notifications_off_rounded,
                           size: 64,
-                          color: AppTheme.textSecondary,
+                          color: tp.textSecondary,
                         ),
                         const SizedBox(height: 16),
                         Text(
                           l10n.noNotifications,
                           style: GoogleFonts.poppins(
                             fontSize: 16,
-                            color: AppTheme.textSecondary,
+                            color: tp.textSecondary,
                           ),
                         ),
                       ],
@@ -1050,78 +1099,105 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     );
   }
 
+  String _displayTitleForCard(
+    AppLocalizations l10n,
+    Map<String, dynamic> notification,
+    String title,
+  ) {
+    if (title.isNotEmpty) return title;
+    final chip = _displayNotificationChipLabel(l10n, notification);
+    if (chip.isEmpty) return l10n.notificationsFallbackTitle;
+    final sep = chip.indexOf(_chipSep);
+    if (sep > 0) return chip.substring(0, sep).trim();
+    return chip;
+  }
+
   Widget _buildNotificationCard({
     required Map<String, dynamic> notification,
     required bool isRead,
     required bool isPersonal,
   }) {
+    final l10n = AppLocalizations.of(context)!;
+    final tp = context.tp;
+    final isDark = tp.isDark;
+
     final rawType = (notification['type'] ?? '').toString();
-    final title = (notification['title'] ?? '').toString();
-    final description =
-        (notification['description'] ?? notification['body'] ?? '').toString();
+    final title = (notification['title'] ?? '').toString().trim();
+    final description = (notification['description'] ?? '').toString().trim();
+    final displayTitle = _displayTitleForCard(l10n, notification, title);
+    final displayBody =
+        description.isEmpty ? displayTitle : description;
     final locationText = _notificationLocationText(notification);
     final time = _displayTime(notification);
     final icon = _iconForType(rawType);
-    final color = _colorForType(rawType);
-    final l10n = AppLocalizations.of(context)!;
-    final chipLabel = _displayNotificationChipLabel(l10n, notification);
+    final accent = _colorForType(rawType);
 
-    return Container(
-      decoration: BoxDecoration(
-        color: isRead ? Colors.white : const Color(0xFFF0FFF4),
+    // Couleurs explicites (évite onSurface / surfaceContainerHighest peu contrastés).
+    final titleColor = tp.textPrimary;
+    final bodyColor = tp.textSecondary;
+    final metaColor = tp.textSecondary;
+
+    final cardBg = isRead
+        ? tp.surface
+        : (isDark
+            ? tp.surfaceElevated
+            : AppTheme.primaryGreen.withValues(alpha: 0.08));
+
+    return Material(
+      color: cardBg,
+      elevation: isDark ? 0 : 1,
+      shadowColor: Colors.black26,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
         borderRadius: BorderRadius.circular(14),
-        border: Border(
-          left: BorderSide(color: color, width: 4),
-        ),
-      ),
-      child: Material(
-        borderRadius: BorderRadius.circular(14),
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(14),
-          onTap: () => _openNotification(notification),
-          onLongPress: () => _showContextMenu(notification),
+        onTap: () => _openNotification(notification),
+        onLongPress: () => _showContextMenu(notification),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: isDark ? const Color(0xFF3D4658) : tp.border,
+            ),
+          ),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+            padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Expanded(
-                      flex: 3,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: color.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(icon, color: color, size: 16),
-                            const SizedBox(width: 6),
-                            Expanded(
-                              child: Text(
-                                chipLabel,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: GoogleFonts.poppins(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  color: color,
-                                ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: accent.withValues(alpha: isDark ? 0.35 : 0.12),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(icon, color: accent, size: 15),
+                          const SizedBox(width: 5),
+                          Flexible(
+                            child: Text(
+                              _displayNotificationChipLabel(l10n, notification),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.poppins(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: isDark ? Colors.white : accent,
                               ),
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
                     if (!isRead) ...[
-                      const SizedBox(width: 10),
+                      const SizedBox(width: 8),
                       Container(
                         width: 8,
                         height: 8,
@@ -1132,74 +1208,79 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       ),
                     ],
                     const Spacer(),
-                    Text(
-                      time,
-                      style: GoogleFonts.poppins(
-                        fontSize: 12,
-                        color: AppTheme.textSecondary,
+                    if (time.isNotEmpty)
+                      Text(
+                        time,
+                        style: GoogleFonts.poppins(
+                          fontSize: 11,
+                          color: metaColor,
+                        ),
                       ),
-                    ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 10),
                 Text(
-                  title.isEmpty ? l10n.notificationsFallbackTitle : title,
+                  displayTitle,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.poppins(
-                    fontWeight:
-                        isRead ? FontWeight.w500 : FontWeight.bold,
+                    fontWeight: isRead ? FontWeight.w600 : FontWeight.w700,
                     fontSize: 16,
-                    color: AppTheme.textPrimary,
+                    height: 1.25,
+                    color: titleColor,
                   ),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  description,
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
-                    color: AppTheme.textSecondary,
+                if (description.isNotEmpty &&
+                    description != displayTitle) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    displayBody,
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      height: 1.35,
+                      color: bodyColor,
+                    ),
                   ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    if (locationText != null && locationText.isNotEmpty) ...[
-                      Icon(
-                        Icons.location_on,
-                        size: 14,
-                        color: AppTheme.textSecondary,
-                      ),
+                ],
+                if (locationText != null && locationText.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Icon(Icons.location_on_outlined, size: 14, color: metaColor),
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
                           locationText,
-                          style: GoogleFonts.poppins(
-                            fontSize: 12,
-                            color: AppTheme.textSecondary,
-                          ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.poppins(
+                            fontSize: 12,
+                            color: metaColor,
+                          ),
                         ),
                       ),
-                      const SizedBox(width: 8),
-                    ] else
-                      const Spacer(),
-                    if (isPersonal)
-                      const Icon(
-                        Icons.swipe_left_rounded,
-                        size: 14,
-                        color: AppTheme.textSecondary,
-                      )
-                    else
-                      const Icon(
-                        Icons.chevron_right_rounded,
-                        color: AppTheme.textSecondary,
+                      Icon(
+                        isPersonal
+                            ? Icons.swipe_left_rounded
+                            : Icons.chevron_right_rounded,
+                        size: 18,
+                        color: metaColor,
                       ),
-                  ],
-                ),
+                    ],
+                  ),
+                ] else
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: Icon(
+                      isPersonal
+                          ? Icons.swipe_left_rounded
+                          : Icons.chevron_right_rounded,
+                      size: 18,
+                      color: metaColor,
+                    ),
+                  ),
               ],
             ),
           ),
@@ -1210,9 +1291,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   Future<void> _showZoneFilterSheet() async {
     final l10n = AppLocalizations.of(context)!;
+    final sheetTp = context.tp;
     final selected = await showModalBottomSheet<String?>(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: sheetTp.surface,
       showDragHandle: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -1223,17 +1305,23 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             shrinkWrap: true,
             children: [
               ListTile(
-                title: Text(l10n.allZones, style: GoogleFonts.poppins()),
+                title: Text(
+                  l10n.allZones,
+                  style: GoogleFonts.poppins(color: sheetTp.textPrimary),
+                ),
                 trailing: _selectedZone == null
-                    ? const Icon(Icons.check_rounded)
+                    ? Icon(Icons.check_rounded, color: AppTheme.primaryGreen)
                     : null,
                 onTap: () => Navigator.of(context).pop(null),
               ),
               ..._zones.map(
                 (z) => ListTile(
-                  title: Text(z, style: GoogleFonts.poppins()),
+                  title: Text(
+                    z,
+                    style: GoogleFonts.poppins(color: sheetTp.textPrimary),
+                  ),
                   trailing: z == _selectedZone
-                      ? const Icon(Icons.check_rounded)
+                      ? Icon(Icons.check_rounded, color: AppTheme.primaryGreen)
                       : null,
                   onTap: () => Navigator.of(context).pop(z),
                 ),

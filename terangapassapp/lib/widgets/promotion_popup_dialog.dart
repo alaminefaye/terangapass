@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../l10n/app_localizations.dart';
 import '../services/promo_popup_service.dart';
 import '../theme/app_theme.dart';
 
@@ -18,10 +19,11 @@ class PromotionPopupDialog extends StatelessWidget {
       PromoPopupService.instance.recordImpression(id.toInt());
     }
 
+    final l10n = AppLocalizations.of(context)!;
     return showGeneralDialog<void>(
       context: context,
       barrierDismissible: true,
-      barrierLabel: 'Fermer la publicité',
+      barrierLabel: l10n.promoCloseBarrier,
       barrierColor: Colors.black.withValues(alpha: 0.55),
       pageBuilder: (ctx, animation, secondaryAnimation) {
         return PromotionPopupDialog(promo: promo);
@@ -68,11 +70,12 @@ class PromotionPopupDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final imageUrl = promo['image_url']?.toString();
     final sponsor = promo['sponsor_name']?.toString();
     final linkLabel = (promo['link_label']?.toString().trim().isNotEmpty == true)
         ? promo['link_label'].toString().trim()
-        : 'En savoir plus';
+        : l10n.promoLearnMore;
     final hasLink = promo['link_url']?.toString().trim().isNotEmpty == true;
 
     return SafeArea(
@@ -160,7 +163,7 @@ class PromotionPopupDialog extends StatelessWidget {
                                 bottom: hasLink ? 0 : 14,
                               ),
                               child: Text(
-                                'Publicité · $sponsor',
+                                l10n.promoSponsoredLabel(sponsor),
                                 style: GoogleFonts.poppins(
                                   fontSize: 11,
                                   color: AppTheme.textSecondary,

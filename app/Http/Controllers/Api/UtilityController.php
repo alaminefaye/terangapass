@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
 
 class UtilityController extends Controller
 {
@@ -79,6 +81,89 @@ class UtilityController extends Controller
                 'bundles' => $bundles,
             ],
         ]);
+    }
+
+    /**
+     * Météo locale via Open-Meteo (gratuit) — cache 20 min par position arrondie.
+     */
+    public function weather(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'lat' => ['required', 'numeric', 'between:-90,90'],
+            'lng' => ['required', 'numeric', 'between:-180,180'],
+        ]);
+
+        $lat = round((float) $validated['lat'], 2);
+        $lng = round((float) $validated['lng'], 2);
+        $cacheKey = "weather:v1:{$lat}:{$lng}";
+
+        $payload = Cache::remember($cacheKey, now()->addMinutes(20), function () use ($lat, $lng) {
+            $response = Http::timeout(10)->get('https://api.open-meteo.com/v1/forecast', [
+                'latitude' => $lat,
+                'longitude' => $lng,
+                'current' => 'temperature_2m,weather_code',
+                'timezone' => 'auto',
+            ]);
+
+            if (! $response->successful()) {
+                return null;
+            }
+
+            $json = $response->json();
+            $current = $json['current'] ?? [];
+            $code = (int) ($current['weather_code'] ?? -1);
+            $temp = $current['temperature_2m'] ?? null;
+
+            if ($temp === null) {
+                return null;
+            }
+
+            return [
+                'latitude' => $lat,
+                'longitude' => $lng,
+                'temperature_c' => round((float) $temp),
+                'weather_code' => $code,
+                'label' => $this->weatherLabelFr($code),
+                'icon' => $this->weatherIconKey($code),
+                'timezone' => $json['timezone'] ?? 'Africa/Dakar',
+                'source' => 'open-meteo',
+                'fetched_at' => now()->toIso8601String(),
+            ];
+        });
+
+        if ($payload === null) {
+            return response()->json([
+                'message' => 'Météo indisponible pour le moment.',
+            ], 503);
+        }
+
+        return response()->json(['data' => $payload]);
+    }
+
+    private function weatherLabelFr(int $code): string
+    {
+        return match (true) {
+            $code === 0 => 'Ensoleillé',
+            in_array($code, [1, 2, 3], true) => 'Partiellement nuageux',
+            in_array($code, [45, 48], true) => 'Brume',
+            in_array($code, [51, 53, 55, 56, 57], true) => 'Bruine',
+            in_array($code, [61, 63, 65, 66, 67, 80, 81, 82], true) => 'Pluie',
+            in_array($code, [71, 73, 75, 77, 85, 86], true) => 'Neige',
+            in_array($code, [95, 96, 99], true) => 'Orage',
+            default => 'Nuageux',
+        };
+    }
+
+    private function weatherIconKey(int $code): string
+    {
+        return match (true) {
+            $code === 0 => 'sunny',
+            in_array($code, [1, 2, 3], true) => 'partly_cloudy',
+            in_array($code, [45, 48], true) => 'fog',
+            in_array($code, [51, 53, 55, 61, 63, 65, 80, 81, 82], true) => 'rain',
+            in_array($code, [95, 96, 99], true) => 'thunderstorm',
+            default => 'cloudy',
+        };
     }
 
     public function jojCountdown()

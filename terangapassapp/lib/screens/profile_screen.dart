@@ -6,6 +6,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../constants/app_constants.dart';
 import '../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
+import '../theme/app_theme_extensions.dart';
+import '../services/theme_mode_service.dart';
+import '../widgets/theme_mode_sheet.dart';
 import '../services/api_service.dart';
 import '../services/notification_service.dart';
 import '../services/offline_pack_service.dart';
@@ -295,6 +298,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
         .toList();
   }
 
+  Future<void> _confirmDeleteAccount() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogContext) => const _DeleteAccountDialog(),
+    );
+
+    if (!mounted || confirmed != true) return;
+
+    final l10n = AppLocalizations.of(context)!;
+    isAuthenticatedNotifier.value = false;
+    await ApiService().clearLocalAuth();
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(l10n.profileDeleteAccountSuccess),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (context) => const LoginScreen()),
+      (route) => false,
+    );
+  }
+
   Future<void> _logout() async {
     try {
       final apiService = ApiService();
@@ -318,6 +347,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  String _themeModeLabel(AppLocalizations l10n) {
+    switch (ThemeModeService.notifier.value) {
+      case ThemeMode.light:
+        return l10n.profileThemeLight;
+      case ThemeMode.dark:
+        return l10n.profileThemeDark;
+      case ThemeMode.system:
+        return l10n.profileThemeSystem;
+    }
+  }
+
   String _languageLabel(String code, AppLocalizations l10n) {
     final c = code.trim().toLowerCase();
     if (c == 'fr') return l10n.languageFrench;
@@ -337,7 +377,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     final selected = await showModalBottomSheet<String>(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: context.tp.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -396,14 +436,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     if (_isLoading) {
-      return const AuthGateLoadingScaffold(
-        backgroundColor: Color(0xFFF4F1EA),
+      return AuthGateLoadingScaffold(
+        backgroundColor: Theme.of(context).brightness == Brightness.dark
+            ? const Color(0xFF0F1218)
+            : const Color(0xFFF4F1EA),
       );
     }
 
     if (_userProfile == null) {
       return Scaffold(
-        backgroundColor: const Color(0xFFF4F1EA),
+        backgroundColor: context.tp.scaffoldAlt,
         appBar: AppBar(
           backgroundColor: AppTheme.primaryGreen,
           elevation: 0,
@@ -411,14 +453,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             icon: const Icon(Icons.arrow_back, color: Colors.white),
             onPressed: () => Navigator.of(context).pop(),
           ),
-          title: Text(
-            l10n.profileTitle,
-            style: GoogleFonts.poppins(
-              color: Colors.white,
-              fontWeight: FontWeight.w600,
-              fontSize: 18,
-            ),
-          ),
+          title: Text(l10n.profileTitle),
         ),
         body: Center(
           child: Padding(
@@ -468,26 +503,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
             .trim();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F7FB),
+      backgroundColor: context.tp.scaffold,
       appBar: AppBar(
-        backgroundColor: const Color(0xFFF6F7FB),
+        backgroundColor: context.tp.scaffold,
+        foregroundColor: context.tp.textPrimary,
         elevation: 0,
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Color(0xFF1A1F2E)),
+          icon: const Icon(Icons.arrow_back_ios_new),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
           l10n.profileTitle,
-          style: GoogleFonts.poppins(
-            color: const Color(0xFF1A1F2E),
-            fontWeight: FontWeight.w700,
-            fontSize: 18,
-          ),
+          style: GoogleFonts.poppins(fontWeight: FontWeight.w700, fontSize: 18),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.edit_rounded, color: Color(0xFF1A1F2E)),
+            icon: const Icon(Icons.edit_rounded),
             onPressed: _showEditProfileSheet,
           ),
         ],
@@ -588,7 +620,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               style: GoogleFonts.poppins(
                 fontWeight: FontWeight.w700,
                 fontSize: 16,
-                color: const Color(0xFF1A1F2E),
+                color: context.tp.textPrimary,
               ),
             ),
             const SizedBox(height: 8),
@@ -613,7 +645,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               style: GoogleFonts.poppins(
                 fontWeight: FontWeight.w700,
                 fontSize: 16,
-                color: const Color(0xFF1A1F2E),
+                color: context.tp.textPrimary,
               ),
             ),
             const SizedBox(height: 8),
@@ -697,6 +729,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
               },
             ),
             _buildSettingTile(
+              l10n.profileThemeSetting,
+              Icons.dark_mode_outlined,
+              false,
+              value: _themeModeLabel(l10n),
+              onTap: () async {
+                await showThemeModeSheet(context);
+                if (mounted) setState(() {});
+              },
+            ),
+            _buildSettingTile(
               l10n.appLanguage,
               Icons.translate_rounded,
               false,
@@ -723,7 +765,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               style: GoogleFonts.poppins(
                 fontWeight: FontWeight.w700,
                 fontSize: 16,
-                color: const Color(0xFF1A1F2E),
+                color: context.tp.textPrimary,
               ),
             ),
             const SizedBox(height: 8),
@@ -732,15 +774,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 18),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: context.tp.surface,
                   borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: context.tp.border),
                 ),
                 child: Text(
                   l10n.profileNoRecentActivity,
                   textAlign: TextAlign.center,
                   style: GoogleFonts.poppins(
                     fontSize: 13,
-                    color: AppTheme.textSecondary,
+                    color: context.tp.textSecondary,
                   ),
                 ),
               )
@@ -784,6 +827,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   elevation: 0,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: TextButton.icon(
+                onPressed: _confirmDeleteAccount,
+                icon: Icon(
+                  Icons.delete_forever_outlined,
+                  color: AppTheme.primaryRed.withValues(alpha: 0.9),
+                ),
+                label: Text(
+                  l10n.profileDeleteAccount,
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.primaryRed,
                   ),
                 ),
               ),
@@ -850,19 +912,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
     bool? switchValue,
     ValueChanged<bool>? onSwitchChanged,
   }) {
+    final tp = context.tp;
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: tp.surface,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.1),
-            offset: const Offset(0, 6),
-            blurRadius: 12,
-            spreadRadius: 0,
-          ),
-        ],
+        border: Border.all(color: tp.border),
+        boxShadow: tp.isDark
+            ? null
+            : [
+                BoxShadow(
+                  color: Colors.grey.withValues(alpha: 0.1),
+                  offset: const Offset(0, 6),
+                  blurRadius: 12,
+                ),
+              ],
       ),
       child: ListTile(
         isThreeLine: subtitle != null && subtitle.trim().isNotEmpty,
@@ -881,7 +946,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           style: GoogleFonts.poppins(
             fontWeight: FontWeight.w600,
             fontSize: 14,
-            color: AppTheme.textPrimary,
+            color: tp.textPrimary,
           ),
         ),
         subtitle: subtitle != null && subtitle.trim().isNotEmpty
@@ -889,7 +954,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 subtitle.trim(),
                 style: GoogleFonts.poppins(
                   fontSize: 12,
-                  color: AppTheme.textSecondary,
+                  color: tp.textSecondary,
                   height: 1.35,
                 ),
                 maxLines: 8,
@@ -903,8 +968,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   onChanged: onSwitchChanged,
                   activeThumbColor: Colors.white,
                   activeTrackColor: AppTheme.primaryGreen,
-                  inactiveThumbColor: Colors.white,
-                  inactiveTrackColor: Colors.grey.withValues(alpha: 0.3),
+                  inactiveThumbColor: tp.isDark ? tp.textSecondary : Colors.white,
+                  inactiveTrackColor: tp.isDark ? tp.border : Colors.grey.withValues(alpha: 0.3),
                   trackOutlineColor: WidgetStateProperty.all(
                     Colors.transparent,
                   ),
@@ -918,19 +983,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       value.trim(),
                       style: GoogleFonts.poppins(
                         fontSize: 12,
-                        color: AppTheme.textSecondary,
+                        color: tp.textSecondary,
                       ),
                     ),
                   const SizedBox(width: 8),
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.grey.withValues(alpha: 0.05),
+                      color: tp.chipBackground,
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
                       Icons.arrow_forward_ios_rounded,
-                      color: Colors.grey[400],
+                      color: tp.textSecondary,
                       size: 16,
                     ),
                   ),
@@ -964,19 +1029,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
     ];
 
+    final tp = context.tp;
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: tp.surface,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.1),
-            offset: const Offset(0, 6),
-            blurRadius: 12,
-            spreadRadius: 0,
-          ),
-        ],
+        border: Border.all(color: tp.border),
+        boxShadow: tp.isDark
+            ? null
+            : [
+                BoxShadow(
+                  color: Colors.grey.withValues(alpha: 0.1),
+                  offset: const Offset(0, 6),
+                  blurRadius: 12,
+                ),
+              ],
       ),
       child: Column(
         children: [
@@ -986,7 +1054,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               Divider(
                 height: 1,
                 thickness: 1,
-                color: Colors.grey.withValues(alpha: 0.08),
+                color: tp.divider,
               ),
           ],
         ],
@@ -995,6 +1063,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildPersonalInfoRow(_PersonalInfoRowData data) {
+    final tp = context.tp;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       child: Row(
@@ -1016,7 +1085,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   data.label,
                   style: GoogleFonts.poppins(
                     fontSize: 11,
-                    color: AppTheme.textSecondary,
+                    color: tp.textSecondary,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -1026,7 +1095,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   style: GoogleFonts.poppins(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: AppTheme.textPrimary,
+                    color: tp.textPrimary,
                   ),
                 ),
               ],
@@ -1043,22 +1112,37 @@ class _ProfileScreenState extends State<ProfileScreen> {
     IconData icon, {
     VoidCallback? onTap,
   }) {
+    final tp = context.tp;
+    final onGradient = true;
+    final cardColor = onGradient && tp.isDark
+        ? Colors.white.withValues(alpha: 0.12)
+        : (tp.isDark ? tp.surfaceElevated : Colors.white);
+    final valueColor = onGradient && tp.isDark ? Colors.white : tp.textPrimary;
+    final labelColor = onGradient && tp.isDark
+        ? Colors.white.withValues(alpha: 0.75)
+        : tp.textSecondary;
+
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
       child: Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.primaryGreen.withValues(alpha: 0.1),
-            offset: const Offset(0, 8),
-            blurRadius: 16,
-            spreadRadius: -5,
-          ),
-        ],
-      ),
+        decoration: BoxDecoration(
+          color: cardColor,
+          borderRadius: BorderRadius.circular(16),
+          border: tp.isDark
+              ? Border.all(color: Colors.white.withValues(alpha: 0.1))
+              : null,
+          boxShadow: tp.isDark
+              ? null
+              : [
+                  BoxShadow(
+                    color: AppTheme.primaryGreen.withValues(alpha: 0.1),
+                    offset: const Offset(0, 8),
+                    blurRadius: 16,
+                    spreadRadius: -5,
+                  ),
+                ],
+        ),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
           child: Column(
@@ -1084,7 +1168,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 style: GoogleFonts.poppins(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: AppTheme.textPrimary,
+                  color: valueColor,
                 ),
               ),
               const SizedBox(height: 3),
@@ -1092,7 +1176,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 label,
                 style: GoogleFonts.poppins(
                   fontSize: 11,
-                  color: AppTheme.textSecondary,
+                  color: labelColor,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -1128,12 +1212,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: context.tp.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (context) {
-        final l10n = AppLocalizations.of(context)!;
+      builder: (sheetContext) {
+        final l10n = AppLocalizations.of(sheetContext)!;
+        final tp = sheetContext.tp;
         return StatefulBuilder(
           builder: (context, setModalState) {
             return Padding(
@@ -1150,7 +1235,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     width: 44,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade300,
+                      color: tp.border,
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -1162,7 +1247,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       style: GoogleFonts.poppins(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: AppTheme.textPrimary,
+                        color: tp.textPrimary,
                       ),
                     ),
                   ),
@@ -1355,22 +1440,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
     Color color,
     {VoidCallback? onTap}
   ) {
+    final tp = context.tp;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: tp.surface,
           borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withValues(alpha: 0.1),
-              offset: const Offset(0, 6),
-              blurRadius: 12,
-              spreadRadius: 0,
-            ),
-          ],
+          border: Border.all(color: tp.border),
+          boxShadow: tp.isDark
+              ? null
+              : [
+                  BoxShadow(
+                    color: Colors.grey.withValues(alpha: 0.1),
+                    offset: const Offset(0, 6),
+                    blurRadius: 12,
+                  ),
+                ],
         ),
         child: ListTile(
           contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
@@ -1388,7 +1476,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             style: GoogleFonts.poppins(
               fontWeight: FontWeight.w600,
               fontSize: 14,
-              color: AppTheme.textPrimary,
+              color: tp.textPrimary,
             ),
           ),
           subtitle: time.trim().isEmpty
@@ -1397,18 +1485,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   time,
                   style: GoogleFonts.poppins(
                     fontSize: 12,
-                    color: AppTheme.textSecondary,
+                    color: tp.textSecondary,
                   ),
                 ),
           trailing: Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.grey.withValues(alpha: 0.05),
+              color: tp.chipBackground,
               shape: BoxShape.circle,
             ),
             child: Icon(
               Icons.arrow_forward_ios_rounded,
-              color: Colors.grey[400],
+              color: tp.textSecondary,
               size: 14,
             ),
           ),
@@ -1525,6 +1613,179 @@ class _OfflinePackDialogState extends State<_OfflinePackDialog> {
   }
 }
 
+/// Dialogue suppression de compte — contrôleur et focus gérés ici (évite crash clavier).
+class _DeleteAccountDialog extends StatefulWidget {
+  const _DeleteAccountDialog();
+
+  static const _confirmationCode = 'teranga pass';
+
+  @override
+  State<_DeleteAccountDialog> createState() => _DeleteAccountDialogState();
+}
+
+class _DeleteAccountDialogState extends State<_DeleteAccountDialog> {
+  final _codeController = TextEditingController();
+  final _codeFocus = FocusNode();
+  bool _codeError = false;
+  bool _isSubmitting = false;
+
+  @override
+  void dispose() {
+    _codeFocus.dispose();
+    _codeController.dispose();
+    super.dispose();
+  }
+
+  bool _isCodeValid(String value) {
+    return value.trim().toLowerCase() == _DeleteAccountDialog._confirmationCode;
+  }
+
+  void _close(bool result) {
+    if (!mounted || _isSubmitting) return;
+    _codeFocus.unfocus();
+    FocusManager.instance.primaryFocus?.unfocus();
+    // Fermer après le frame évite le crash Android (IME / InsetsController).
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      Navigator.of(context).pop(result);
+    });
+  }
+
+  Future<void> _submit() async {
+    if (!_isCodeValid(_codeController.text)) {
+      setState(() => _codeError = true);
+      return;
+    }
+    setState(() {
+      _codeError = false;
+      _isSubmitting = true;
+    });
+    _codeFocus.unfocus();
+
+    try {
+      await ApiService().deleteAccount(
+        confirmationCode: _codeController.text.trim(),
+      );
+      if (!mounted) return;
+      _close(true);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _isSubmitting = false);
+      final l10n = AppLocalizations.of(context)!;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(l10n.profileDeleteAccountFailed),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final tp = context.tp;
+
+    return AlertDialog(
+      backgroundColor: tp.surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      title: Text(
+        l10n.profileDeleteAccountTitle,
+        style: GoogleFonts.poppins(
+          fontWeight: FontWeight.w700,
+          color: tp.textPrimary,
+        ),
+      ),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              l10n.profileDeleteAccountBody,
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                height: 1.45,
+                color: tp.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                color: tp.chipBackground,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: tp.border),
+              ),
+              child: SelectableText(
+                l10n.profileDeleteAccountCodeHint,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.4,
+                  color: tp.textPrimary,
+                ),
+              ),
+            ),
+            const SizedBox(height: 14),
+            TextField(
+              controller: _codeController,
+              focusNode: _codeFocus,
+              enabled: !_isSubmitting,
+              autocorrect: false,
+              textInputAction: TextInputAction.done,
+              style: GoogleFonts.poppins(color: tp.textPrimary),
+              onSubmitted: (_) {
+                if (!_isSubmitting) _submit();
+              },
+              decoration: InputDecoration(
+                labelText: l10n.profileDeleteAccountCodeLabel,
+                hintText: l10n.profileDeleteAccountCodeFieldHint,
+                errorText:
+                    _codeError ? l10n.profileDeleteAccountCodeError : null,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onChanged: (_) {
+                if (_codeError) setState(() => _codeError = false);
+              },
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _isSubmitting ? null : () => _close(false),
+          child: Text(
+            l10n.cancel,
+            style: GoogleFonts.poppins(color: tp.textSecondary),
+          ),
+        ),
+        FilledButton(
+          onPressed: _isSubmitting ? null : _submit,
+          style: FilledButton.styleFrom(backgroundColor: AppTheme.primaryRed),
+          child: _isSubmitting
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                )
+              : Text(
+                  l10n.profileDeleteAccountConfirm,
+                  style: GoogleFonts.poppins(color: Colors.white),
+                ),
+        ),
+      ],
+    );
+  }
+}
+
 class _PersonalInfoRowData {
   const _PersonalInfoRowData({
     required this.icon,
@@ -1544,18 +1805,11 @@ class PrivacyScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F1EA),
+      backgroundColor: context.tp.scaffoldAlt,
       appBar: AppBar(
         backgroundColor: AppTheme.primaryGreen,
         elevation: 0,
-        title: Text(
-          l10n.profilePrivacySetting,
-          style: GoogleFonts.poppins(
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
-            fontSize: 18,
-          ),
-        ),
+        title: Text(l10n.profilePrivacySetting),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -1563,7 +1817,7 @@ class PrivacyScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: context.tp.surface,
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
@@ -1581,7 +1835,7 @@ class PrivacyScreen extends StatelessWidget {
                   style: GoogleFonts.poppins(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
-                    color: AppTheme.textPrimary,
+                    color: context.tp.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -1590,7 +1844,7 @@ class PrivacyScreen extends StatelessWidget {
                   style: GoogleFonts.poppins(
                     fontSize: 13,
                     height: 1.4,
-                    color: AppTheme.textSecondary,
+                    color: context.tp.textSecondary,
                   ),
                 ),
               ],
@@ -1599,15 +1853,9 @@ class PrivacyScreen extends StatelessWidget {
           const SizedBox(height: 12),
           Container(
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: context.tp.surface,
               borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withValues(alpha: 0.1),
-                  offset: const Offset(0, 6),
-                  blurRadius: 12,
-                ),
-              ],
+              border: Border.all(color: context.tp.border),
             ),
             child: Column(
               children: [
@@ -1629,21 +1877,21 @@ class PrivacyScreen extends StatelessWidget {
                     style: GoogleFonts.poppins(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: AppTheme.textPrimary,
+                      color: context.tp.textPrimary,
                     ),
                   ),
                   subtitle: Text(
                     l10n.privacyLocationSubtitle,
                     style: GoogleFonts.poppins(
                       fontSize: 12,
-                      color: AppTheme.textSecondary,
+                      color: context.tp.textSecondary,
                     ),
                   ),
                 ),
                 Divider(
                   height: 1,
                   thickness: 1,
-                  color: Colors.grey.withValues(alpha: 0.08),
+                  color: context.tp.divider,
                 ),
                 ListTile(
                   leading: Container(
@@ -1663,14 +1911,14 @@ class PrivacyScreen extends StatelessWidget {
                     style: GoogleFonts.poppins(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: AppTheme.textPrimary,
+                      color: context.tp.textPrimary,
                     ),
                   ),
                   subtitle: Text(
                     l10n.privacyNotificationsSubtitle,
                     style: GoogleFonts.poppins(
                       fontSize: 12,
-                      color: AppTheme.textSecondary,
+                      color: context.tp.textSecondary,
                     ),
                   ),
                 ),

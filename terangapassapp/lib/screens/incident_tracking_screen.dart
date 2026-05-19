@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../services/api_service.dart';
 import '../theme/app_theme.dart';
+import '../theme/app_theme_extensions.dart';
 import '../widgets/loading_placeholders.dart';
 
 /// Suivi d'un signalement : données réelles API uniquement.
@@ -94,15 +95,19 @@ class _IncidentTrackingScreenState extends State<IncidentTrackingScreen> {
     }
   }
 
-  String _dossierRef() {
+  String _dossierRef(AppLocalizations l10n) {
     final created =
         DateTime.tryParse((_tracking['created_at'] ?? '').toString());
     if (created != null) {
       final y = created.year;
       final m = created.month.toString().padLeft(2, '0');
-      return 'Dossier TP-$y-$m-${widget.incidentId.toString().padLeft(6, '0')}';
+      return l10n.incidentDossierRef(
+        y,
+        m,
+        widget.incidentId.toString().padLeft(6, '0'),
+      );
     }
-    return 'Dossier #${widget.incidentId}';
+    return l10n.incidentDossierRefShort(widget.incidentId);
   }
 
   String _timeLabel(Object? value) {
@@ -144,6 +149,7 @@ class _IncidentTrackingScreenState extends State<IncidentTrackingScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final tp = context.tp;
     final status = (_tracking['status'] ?? 'pending').toString();
     final type = (_tracking['type'] ?? '').toString();
     final description = (_tracking['description'] ?? '').toString().trim();
@@ -152,7 +158,7 @@ class _IncidentTrackingScreenState extends State<IncidentTrackingScreen> {
     final rows = _timelineRows();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFAF7F0),
+      backgroundColor: tp.scaffold,
       body: SafeArea(
         child: _isLoading
             ? const TerangaBrandedLoading()
@@ -163,7 +169,7 @@ class _IncidentTrackingScreenState extends State<IncidentTrackingScreen> {
                   child: Text(
                     _error!,
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.poppins(color: AppTheme.textSecondary),
+                    style: GoogleFonts.poppins(color: tp.textSecondary),
                   ),
                 ),
               )
@@ -178,16 +184,16 @@ class _IncidentTrackingScreenState extends State<IncidentTrackingScreen> {
                       children: [
                         IconButton(
                           onPressed: () => Navigator.of(context).pop(),
-                          icon: const Icon(
+                          icon: Icon(
                             Icons.arrow_back_rounded,
-                            color: Color(0xFF1A1F2E),
+                            color: tp.textPrimary,
                           ),
                         ),
                         const Spacer(),
                         Text(
                           l10n.incidentTrackingNavTitle,
                           style: GoogleFonts.poppins(
-                            color: const Color(0xFF1A1F2E),
+                            color: tp.textPrimary,
                             fontWeight: FontWeight.w600,
                             fontSize: 13,
                           ),
@@ -206,7 +212,7 @@ class _IncidentTrackingScreenState extends State<IncidentTrackingScreen> {
                           style: GoogleFonts.robotoSlab(
                             fontSize: 22,
                             fontWeight: FontWeight.w700,
-                            color: const Color(0xFF1A1F2E),
+                            color: tp.textPrimary,
                           ),
                         ),
                         if (description.isNotEmpty) ...[
@@ -216,7 +222,7 @@ class _IncidentTrackingScreenState extends State<IncidentTrackingScreen> {
                             style: GoogleFonts.poppins(
                               fontSize: 14,
                               height: 1.45,
-                              color: AppTheme.textPrimary,
+                              color: tp.textPrimary,
                             ),
                           ),
                         ],
@@ -228,7 +234,7 @@ class _IncidentTrackingScreenState extends State<IncidentTrackingScreen> {
                               Icon(
                                 Icons.place_outlined,
                                 size: 18,
-                                color: AppTheme.textSecondary,
+                                color: tp.textSecondary,
                               ),
                               const SizedBox(width: 6),
                               Expanded(
@@ -236,7 +242,7 @@ class _IncidentTrackingScreenState extends State<IncidentTrackingScreen> {
                                   address,
                                   style: GoogleFonts.poppins(
                                     fontSize: 13,
-                                    color: AppTheme.textSecondary,
+                                    color: tp.textSecondary,
                                   ),
                                 ),
                               ),
@@ -245,10 +251,10 @@ class _IncidentTrackingScreenState extends State<IncidentTrackingScreen> {
                         ],
                         const SizedBox(height: 8),
                         Text(
-                          _dossierRef(),
+                          _dossierRef(l10n),
                           style: GoogleFonts.robotoMono(
                             fontSize: 11,
-                            color: AppTheme.textSecondary,
+                            color: tp.textSecondary,
                           ),
                         ),
                         const SizedBox(height: 14),
@@ -258,7 +264,7 @@ class _IncidentTrackingScreenState extends State<IncidentTrackingScreen> {
                             vertical: 8,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFE8F5EE),
+                            color: _statusColor(status).withValues(alpha: tp.isDark ? 0.2 : 0.12),
                             borderRadius: BorderRadius.circular(999),
                           ),
                           child: Row(
@@ -278,7 +284,7 @@ class _IncidentTrackingScreenState extends State<IncidentTrackingScreen> {
                                 style: GoogleFonts.poppins(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w700,
-                                  color: const Color(0xFF2E8B57),
+                                  color: _statusColor(status),
                                 ),
                               ),
                             ],
@@ -290,11 +296,11 @@ class _IncidentTrackingScreenState extends State<IncidentTrackingScreen> {
                             l10n.incidentTrackingEmptyTimeline,
                             style: GoogleFonts.poppins(
                               fontSize: 13,
-                              color: AppTheme.textSecondary,
+                              color: tp.textSecondary,
                             ),
                           )
                         else
-                          _buildTimeline(rows),
+                          _buildTimeline(rows, tp),
                       ],
                     ),
                   ),
@@ -304,7 +310,7 @@ class _IncidentTrackingScreenState extends State<IncidentTrackingScreen> {
     );
   }
 
-  Widget _buildTimeline(List<Map<String, dynamic>> rows) {
+  Widget _buildTimeline(List<Map<String, dynamic>> rows, TpColors tp) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Stack(
@@ -313,7 +319,7 @@ class _IncidentTrackingScreenState extends State<IncidentTrackingScreen> {
             left: 9,
             top: 10,
             bottom: 18,
-            child: Container(width: 2, color: const Color(0xFFE5DFD3)),
+            child: Container(width: 2, color: tp.border),
           ),
           Column(
             children: rows
@@ -323,6 +329,7 @@ class _IncidentTrackingScreenState extends State<IncidentTrackingScreen> {
                     time: (row['time'] ?? '').toString(),
                     done: row['done'] == true,
                     current: row['current'] == true,
+                    tp: tp,
                   ),
                 )
                 .toList(),
@@ -337,10 +344,11 @@ class _IncidentTrackingScreenState extends State<IncidentTrackingScreen> {
     required String time,
     required bool done,
     required bool current,
+    required TpColors tp,
   }) {
     final dotColor = done
-        ? const Color(0xFF2E8B57)
-        : (current ? const Color(0xFFC73E1D) : const Color(0xFFE5DFD3));
+        ? AppTheme.primaryGreen
+        : (current ? AppTheme.primaryRed : tp.border);
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Row(
@@ -352,7 +360,7 @@ class _IncidentTrackingScreenState extends State<IncidentTrackingScreen> {
             height: 20,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: done ? dotColor : Colors.white,
+              color: done ? dotColor : tp.surface,
               border: Border.all(color: dotColor, width: 2),
             ),
             child: done
@@ -368,7 +376,7 @@ class _IncidentTrackingScreenState extends State<IncidentTrackingScreen> {
                   time,
                   style: GoogleFonts.robotoMono(
                     fontSize: 10,
-                    color: AppTheme.textSecondary,
+                    color: tp.textSecondary,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -377,7 +385,7 @@ class _IncidentTrackingScreenState extends State<IncidentTrackingScreen> {
                   style: GoogleFonts.robotoSlab(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: const Color(0xFF1A1F2E),
+                    color: tp.textPrimary,
                   ),
                 ),
               ],

@@ -9,9 +9,11 @@ import 'dart:math' as math;
 import 'constants/app_constants.dart';
 import 'l10n/app_localizations.dart';
 import 'theme/app_theme.dart';
+import 'services/theme_mode_service.dart';
 import 'screens/home_screen.dart';
 import 'widgets/loading_placeholders.dart';
 import 'screens/auth/login_screen.dart';
+import 'utils/auth_guard.dart';
 import 'screens/auth/register_screen.dart';
 import 'screens/language_selection_screen.dart';
 import 'screens/notifications_screen.dart';
@@ -38,6 +40,8 @@ Future<void> main() async {
     AppConstants.localeNotifier.value = Locale(language);
   }
 
+  await ThemeModeService.load();
+
   await Firebase.initializeApp();
   FirebaseMessaging.onBackgroundMessage(TerangaPushMessaging.firebaseBackgroundHandler);
 
@@ -57,12 +61,17 @@ class TerangaPassApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<Locale?>(
-      valueListenable: AppConstants.localeNotifier,
-      builder: (context, locale, _) {
-        return MaterialApp(
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: ThemeModeService.notifier,
+      builder: (context, themeMode, _) {
+        return ValueListenableBuilder<Locale?>(
+          valueListenable: AppConstants.localeNotifier,
+          builder: (context, locale, _) {
+            return MaterialApp(
           debugShowCheckedModeBanner: false,
           theme: AppTheme.lightTheme,
+          darkTheme: AppTheme.darkTheme,
+          themeMode: themeMode,
           navigatorKey: navigatorKey,
           locale: locale ?? const Locale(AppConstants.defaultLanguage),
           supportedLocales: AppLocalizations.supportedLocales,
@@ -92,6 +101,8 @@ class TerangaPassApp extends StatelessWidget {
               );
             },
           ),
+            );
+          },
         );
       },
     );
@@ -107,7 +118,6 @@ class AuthWrapper extends StatefulWidget {
 
 class _AuthWrapperState extends State<AuthWrapper> {
   bool _isLoading = true;
-  bool _isAuthenticated = false;
   bool _languageChosen = true;
 
   @override
@@ -146,7 +156,6 @@ class _AuthWrapperState extends State<AuthWrapper> {
       final isAuthenticated = token != null && token.isNotEmpty;
 
       setState(() {
-        _isAuthenticated = isAuthenticated;
         // Si déjà connecté, pas besoin de montrer l'écran de langue
         _languageChosen = hasLanguage || isAuthenticated;
       });
@@ -158,7 +167,6 @@ class _AuthWrapperState extends State<AuthWrapper> {
       }
     } catch (e) {
       setState(() {
-        _isAuthenticated = false;
         _languageChosen = true;
       });
       isAuthenticatedNotifier.value = false;
@@ -179,9 +187,8 @@ class _AuthWrapperState extends State<AuthWrapper> {
       return const AuthGateLoadingScaffold();
     }
 
-    if (_isAuthenticated) return const HomeScreen();
     if (!_languageChosen) return const LanguageSelectionScreen();
-    return const LoginScreen();
+    return const HomeScreen();
   }
 }
 
@@ -225,12 +232,14 @@ class _GlobalSosOverlayState extends State<_GlobalSosOverlay>
     super.dispose();
   }
 
-  void _openSos() {
+  Future<void> _openSos() async {
     final context = widget.navigatorKey.currentContext;
     if (context == null) return;
-    Navigator.of(
+    await AuthGuard.openProtected(
       context,
-    ).push(MaterialPageRoute(builder: (_) => const SOSScreen()));
+      featureName: AppLocalizations.of(context)!.authFeatureSos,
+      screenBuilder: () => const SOSScreen(),
+    );
   }
 
   @override

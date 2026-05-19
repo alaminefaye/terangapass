@@ -1187,6 +1187,25 @@ class ApiService {
     }
   }
 
+  /// Météo locale (Open-Meteo via backend, cache serveur).
+  Future<Map<String, dynamic>> getWeather({
+    required double latitude,
+    required double longitude,
+  }) async {
+    try {
+      final response = await _dio.get(
+        'utility/weather',
+        queryParameters: {
+          'lat': latitude,
+          'lng': longitude,
+        },
+      );
+      return (response.data['data'] as Map<String, dynamic>? ?? {});
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
   /// Pop-up publicitaire actif pour un écran (home, map, tourism).
   Future<Map<String, dynamic>?> getActivePromoPopup({
     String placement = 'home',
@@ -1271,6 +1290,18 @@ class ApiService {
       final data = map['data'];
       if (data is Map) return Map<String, dynamic>.from(data);
       return map;
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  /// Suppression définitive du compte (code : teranga pass).
+  Future<void> deleteAccount({required String confirmationCode}) async {
+    try {
+      await _dio.delete(
+        'user/account',
+        data: {'confirmation_code': confirmationCode},
+      );
     } on DioException catch (e) {
       throw _handleError(e);
     }

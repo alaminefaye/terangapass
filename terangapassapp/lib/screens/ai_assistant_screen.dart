@@ -6,14 +6,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api_service.dart';
 import '../services/location_service.dart';
 import '../theme/app_theme.dart';
+import '../theme/app_theme_extensions.dart';
+import '../l10n/app_localizations.dart';
 import '../widgets/assistant_markdown_message.dart';
-
-const _ChatMessage _kDefaultWelcome = _ChatMessage(
-  role: _ChatRole.assistant,
-  content:
-      'Bonjour, je suis votre assistant IA TerangaPass. Posez votre question.',
-  excludeFromApiHistory: true,
-);
 
 /// Libellé court pour la puce, question complète envoyée à l’API.
 class _AiSuggestion {
@@ -23,33 +18,32 @@ class _AiSuggestion {
   final String query;
 }
 
-const List<_AiSuggestion> _kAiSuggestions = [
-  _AiSuggestion(
-    label: 'Sites de compétition',
-    query:
-        'Quels sont les sites de compétition listés dans TerangaPass (noms, adresses, coordonnées) ?',
-  ),
-  _AiSuggestion(
-    label: 'Navettes',
-    query: 'Comment fonctionnent les navettes TerangaPass (horaires, arrêts, fréquence) ?',
-  ),
-  _AiSuggestion(
-    label: 'Infos touristiques',
-    query: 'Quels points d’intérêt ou partenaires touristiques sont proposés dans l’application ?',
-  ),
-  _AiSuggestion(
-    label: 'Annonces',
-    query: 'Quelles sont les dernières annonces audio ou notifications importantes à connaître ?',
-  ),
-  _AiSuggestion(
-    label: 'Urgences',
-    query: 'Comment utiliser les fonctions d’urgence, SOS ou alerte médicale dans l’application ?',
-  ),
-  _AiSuggestion(
-    label: 'Calendrier',
-    query: 'Où trouver le calendrier ou les compétitions dans TerangaPass ?',
-  ),
-];
+List<_AiSuggestion> _aiSuggestions(AppLocalizations l10n) => [
+      _AiSuggestion(
+        label: l10n.aiSuggestionCompetitionSites,
+        query: l10n.aiSuggestionCompetitionSitesQuery,
+      ),
+      _AiSuggestion(
+        label: l10n.aiSuggestionShuttles,
+        query: l10n.aiSuggestionShuttlesQuery,
+      ),
+      _AiSuggestion(
+        label: l10n.aiSuggestionTourism,
+        query: l10n.aiSuggestionTourismQuery,
+      ),
+      _AiSuggestion(
+        label: l10n.aiSuggestionAnnouncements,
+        query: l10n.aiSuggestionAnnouncementsQuery,
+      ),
+      _AiSuggestion(
+        label: l10n.aiSuggestionEmergencies,
+        query: l10n.aiSuggestionEmergenciesQuery,
+      ),
+      _AiSuggestion(
+        label: l10n.aiSuggestionCalendar,
+        query: l10n.aiSuggestionCalendarQuery,
+      ),
+    ];
 
 class AIAssistantScreen extends StatefulWidget {
   const AIAssistantScreen({super.key});
@@ -68,11 +62,11 @@ class _AIAssistantScreenState extends State<AIAssistantScreen> {
   final LocationService _locationService = LocationService();
   /// `null` : pas encore demandé ; `true` / `false` : dernier essai de localisation.
   bool? _locationPermissionTried;
+  bool _welcomeSeeded = false;
 
   @override
   void initState() {
     super.initState();
-    _messages.add(_kDefaultWelcome);
     _loadPersistedMessages();
     _loadProfileName();
     WidgetsBinding.instance.addPostFrameCallback((_) => _requestLocationAccess());
@@ -200,23 +194,27 @@ class _AIAssistantScreenState extends State<AIAssistantScreen> {
           data is Map<String, dynamic> ? data['reply']?.toString() : null;
 
       if (!mounted) return;
+      final l10n = AppLocalizations.of(context)!;
       setState(() {
         _messages.add(
           _ChatMessage(
             role: _ChatRole.assistant,
             content: (reply != null && reply.trim().isNotEmpty)
                 ? reply.trim()
-                : 'Je n ai pas pu generer de reponse. Merci de reessayer.',
+                : l10n.aiEmptyReply,
           ),
         );
       });
     } catch (e) {
       if (!mounted) return;
+      final l10n = AppLocalizations.of(context)!;
       setState(() {
         _messages.add(
           _ChatMessage(
             role: _ChatRole.assistant,
-            content: 'Erreur IA: ${e.toString().replaceFirst('Exception: ', '')}',
+            content: l10n.aiErrorPrefix(
+              e.toString().replaceFirst('Exception: ', ''),
+            ),
           ),
         );
       });
@@ -246,11 +244,31 @@ class _AIAssistantScreenState extends State<AIAssistantScreen> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_welcomeSeeded && _messages.isEmpty) {
+      final l10n = AppLocalizations.of(context)!;
+      _messages.add(
+        _ChatMessage(
+          role: _ChatRole.assistant,
+          content: l10n.aiWelcomeMessage,
+          excludeFromApiHistory: true,
+        ),
+      );
+      _welcomeSeeded = true;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final tp = context.tp;
+    final suggestions = _aiSuggestions(l10n);
     return Scaffold(
+      backgroundColor: tp.scaffold,
       appBar: AppBar(
-        title: const Text(
-          'Assistant IA TerangaPass',
+        title: Text(
+          l10n.aiTitle,
           overflow: TextOverflow.ellipsis,
           maxLines: 1,
         ),
@@ -262,7 +280,7 @@ class _AIAssistantScreenState extends State<AIAssistantScreen> {
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            color: AppTheme.backgroundColor,
+            color: tp.surface,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -270,17 +288,17 @@ class _AIAssistantScreenState extends State<AIAssistantScreen> {
                   Padding(
                     padding: const EdgeInsets.only(bottom: 4),
                     child: Text(
-                      'Connecté(e) : $_profileName',
-                      style: const TextStyle(
+                      l10n.aiConnectedAs(_profileName!),
+                      style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color: AppTheme.textPrimary,
+                        color: tp.textPrimary,
                       ),
                     ),
                   ),
-                const Text(
-                  'Réponses basées sur les données TerangaPass (JOJ Dakar 2026).',
-                  style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+                Text(
+                  l10n.aiDisclaimer,
+                  style: TextStyle(fontSize: 13, color: tp.textSecondary),
                 ),
                 if (_locationPermissionTried == false) ...[
                   const SizedBox(height: 6),
@@ -289,7 +307,7 @@ class _AIAssistantScreenState extends State<AIAssistantScreen> {
                         ? null
                         : () => _requestLocationAccess(),
                     icon: const Icon(Icons.location_on_outlined, size: 18),
-                    label: const Text('Autoriser la localisation'),
+                    label: Text(l10n.aiAllowLocation),
                     style: TextButton.styleFrom(
                       foregroundColor: AppTheme.primaryGreen,
                       visualDensity: VisualDensity.compact,
@@ -321,7 +339,7 @@ class _AIAssistantScreenState extends State<AIAssistantScreen> {
                       maxWidth: MediaQuery.of(context).size.width * 0.88,
                     ),
                     decoration: BoxDecoration(
-                      color: isUser ? AppTheme.primaryGreen : Colors.white,
+                      color: isUser ? AppTheme.primaryGreen : tp.surfaceElevated,
                       borderRadius: BorderRadius.only(
                         topLeft: const Radius.circular(16),
                         topRight: const Radius.circular(16),
@@ -330,9 +348,7 @@ class _AIAssistantScreenState extends State<AIAssistantScreen> {
                       ),
                       border: isUser
                           ? null
-                          : Border.all(
-                              color: const Color(0xFFE8EAED),
-                            ),
+                          : Border.all(color: tp.border),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withValues(
@@ -369,9 +385,9 @@ class _AIAssistantScreenState extends State<AIAssistantScreen> {
                 Padding(
                   padding: const EdgeInsets.fromLTRB(12, 0, 12, 6),
                   child: Text(
-                    'Suggestions',
+                    l10n.aiSuggestionsTitle,
                     style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                          color: AppTheme.textSecondary,
+                          color: tp.textSecondary,
                           fontWeight: FontWeight.w600,
                         ),
                   ),
@@ -381,16 +397,16 @@ class _AIAssistantScreenState extends State<AIAssistantScreen> {
                   child: ListView.separated(
                     scrollDirection: Axis.horizontal,
                     padding: const EdgeInsets.symmetric(horizontal: 12),
-                    itemCount: _kAiSuggestions.length,
+                    itemCount: suggestions.length,
                     separatorBuilder: (_, _) => const SizedBox(width: 8),
                     itemBuilder: (context, index) {
-                      final s = _kAiSuggestions[index];
+                      final s = suggestions[index];
                       return ActionChip(
                         label: Text(
                           s.label,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 13,
-                            color: AppTheme.textPrimary,
+                            color: tp.textPrimary,
                           ),
                         ),
                         padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -398,7 +414,7 @@ class _AIAssistantScreenState extends State<AIAssistantScreen> {
                         side: BorderSide(
                           color: AppTheme.primaryGreen.withValues(alpha: 0.35),
                         ),
-                        backgroundColor: Colors.white,
+                        backgroundColor: tp.surface,
                         onPressed: _isSending ? null : () => _sendMessage(s.query),
                       );
                     },
@@ -414,17 +430,23 @@ class _AIAssistantScreenState extends State<AIAssistantScreen> {
                           textInputAction: TextInputAction.send,
                           onSubmitted: (_) => _sendMessage(),
                           enabled: !_isSending,
+                          style: TextStyle(color: tp.textPrimary),
                           decoration: InputDecoration(
-                            hintText: 'Ecrire un message...',
+                            hintText: l10n.aiMessageHint,
+                            hintStyle: TextStyle(color: tp.textSecondary),
                             filled: true,
-                            fillColor: Colors.white,
+                            fillColor: tp.surface,
                             contentPadding: const EdgeInsets.symmetric(
                               horizontal: 12,
                               vertical: 10,
                             ),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide.none,
+                              borderSide: BorderSide(color: tp.border),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: tp.border),
                             ),
                           ),
                         ),
@@ -466,7 +488,6 @@ class _AIAssistantScreenState extends State<AIAssistantScreen> {
           ),
         ],
       ),
-      backgroundColor: const Color(0xFFF7F8FA),
     );
   }
 }

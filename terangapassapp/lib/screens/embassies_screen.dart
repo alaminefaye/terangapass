@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../l10n/app_localizations.dart';
 import '../services/api_service.dart';
 import '../services/offline_pack_service.dart';
 import '../widgets/offline_cache_snack.dart';
 import '../services/location_service.dart';
 import '../theme/app_theme.dart';
+import '../theme/app_theme_extensions.dart';
 import '../widgets/loading_placeholders.dart';
 import 'map_screen.dart';
 
@@ -109,23 +111,16 @@ class _EmbassiesScreenState extends State<EmbassiesScreen> {
     final name = (embassy['name'] ?? '').toString().trim();
     final address = (embassy['address'] ?? '').toString().trim();
     if (lat != null && lng != null) {
-      Navigator.push(
+      MapScreen.push(
         context,
-        MaterialPageRoute(
-          builder: (_) => MapScreen(
-            initialLatLng: LatLng(lat, lng),
-            focusedPlaceName: name,
-          ),
-        ),
+        initialLatLng: LatLng(lat, lng),
+        focusedPlaceName: name,
       );
     } else {
-      Navigator.push(
+      MapScreen.push(
         context,
-        MaterialPageRoute(
-          builder: (_) => MapScreen(
-            initialQuery: address.isNotEmpty ? address : name,
-          ),
-        ),
+        initialQuery: address.isNotEmpty ? address : name,
+        requireAuth: true,
       );
     }
   }
@@ -141,6 +136,7 @@ class _EmbassiesScreenState extends State<EmbassiesScreen> {
   }
 
   void _showMissionDetails(Map<String, dynamic> item) {
+    final l10n = AppLocalizations.of(context)!;
     final name = (item['name'] ?? '-').toString();
     final address = (item['address'] ?? '-').toString();
     final phone = (item['phone'] ?? '').toString().trim();
@@ -157,10 +153,12 @@ class _EmbassiesScreenState extends State<EmbassiesScreen> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) {
+        final sheetTp = context.tp;
         return Container(
-          decoration: const BoxDecoration(
-            color: Color(0xFFF4F1EA),
-            borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+          decoration: BoxDecoration(
+            color: sheetTp.scaffoldAlt,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
+            border: Border(top: BorderSide(color: sheetTp.border)),
           ),
           padding: const EdgeInsets.fromLTRB(16, 10, 16, 20),
           child: SafeArea(
@@ -174,7 +172,7 @@ class _EmbassiesScreenState extends State<EmbassiesScreen> {
                     width: 44,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFD8D2C7),
+                      color: sheetTp.border,
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -185,16 +183,18 @@ class _EmbassiesScreenState extends State<EmbassiesScreen> {
                   style: GoogleFonts.poppins(
                     fontWeight: FontWeight.w700,
                     fontSize: 20,
-                    color: AppTheme.textPrimary,
+                    color: sheetTp.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  missionType == 'consulate' ? 'Consulat' : 'Ambassade',
+                  missionType == 'consulate'
+                      ? l10n.embassyTypeConsulate
+                      : l10n.embassyTypeEmbassy,
                   style: GoogleFonts.poppins(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
-                    color: const Color(0xFF5C5243),
+                    color: sheetTp.textSecondary,
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -202,42 +202,42 @@ class _EmbassiesScreenState extends State<EmbassiesScreen> {
                   address,
                   style: GoogleFonts.poppins(
                     fontSize: 13,
-                    color: AppTheme.textSecondary,
+                    color: sheetTp.textSecondary,
                   ),
                 ),
                 if (openingHours.isNotEmpty) ...[
                   const SizedBox(height: 8),
                   Text(
-                    'Horaires: $openingHours',
-                    style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.textSecondary),
+                    l10n.embassyOpeningHours(openingHours),
+                    style: GoogleFonts.poppins(fontSize: 12, color: sheetTp.textSecondary),
                   ),
                 ],
                 if (rating != null) ...[
                   const SizedBox(height: 4),
                   Text(
-                    'Note: ${rating.toStringAsFixed(1)} / 5',
-                    style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.textSecondary),
+                    l10n.embassyRating(rating.toStringAsFixed(1)),
+                    style: GoogleFonts.poppins(fontSize: 12, color: sheetTp.textSecondary),
                   ),
                 ],
                 if (lat.isNotEmpty && lng.isNotEmpty) ...[
                   const SizedBox(height: 4),
                   Text(
-                    'Coordonnees: $lat, $lng',
-                    style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.textSecondary),
+                    l10n.embassyCoordinates('$lat, $lng'),
+                    style: GoogleFonts.poppins(fontSize: 12, color: sheetTp.textSecondary),
                   ),
                 ],
                 if (phone.isNotEmpty) ...[
                   const SizedBox(height: 4),
                   Text(
-                    'Tel: $phone',
-                    style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.textSecondary),
+                    l10n.embassyPhone(phone),
+                    style: GoogleFonts.poppins(fontSize: 12, color: sheetTp.textSecondary),
                   ),
                 ],
                 if (email.isNotEmpty) ...[
                   const SizedBox(height: 4),
                   Text(
-                    'Email: $email',
-                    style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.textSecondary),
+                    l10n.embassyEmail(email),
+                    style: GoogleFonts.poppins(fontSize: 12, color: sheetTp.textSecondary),
                   ),
                 ],
                 const SizedBox(height: 14),
@@ -245,11 +245,11 @@ class _EmbassiesScreenState extends State<EmbassiesScreen> {
                   spacing: 8,
                   runSpacing: 8,
                   children: [
-                    _pill('Carte', icon: Icons.map_rounded, onTap: () => _openMap(item)),
+                    _pill(l10n.embassyActionMap, icon: Icons.map_rounded, onTap: () => _openMap(item)),
                     if (phone.isNotEmpty)
-                      _pill('Appeler', icon: Icons.phone_rounded, onTap: () => _call(phone)),
+                      _pill(l10n.call, icon: Icons.phone_rounded, onTap: () => _call(phone)),
                     if (website.isNotEmpty)
-                      _pill('Site web', icon: Icons.language_rounded, onTap: () => _openWebsite(website)),
+                      _pill(l10n.embassyActionWebsite, icon: Icons.language_rounded, onTap: () => _openWebsite(website)),
                   ],
                 ),
               ],
@@ -262,6 +262,8 @@ class _EmbassiesScreenState extends State<EmbassiesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final tp = context.tp;
     final q = _searchController.text.trim().toLowerCase();
     final filtered = _embassies.where((e) {
       if (q.isEmpty) return true;
@@ -285,7 +287,7 @@ class _EmbassiesScreenState extends State<EmbassiesScreen> {
         return an.compareTo(bn);
       });
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F1EA),
+      backgroundColor: tp.scaffoldAlt,
       body: SafeArea(
         child: _isLoading
             ? const TerangaBrandedLoading()
@@ -296,7 +298,7 @@ class _EmbassiesScreenState extends State<EmbassiesScreen> {
                   child: Text(
                     _error!,
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.poppins(color: AppTheme.textSecondary),
+                    style: GoogleFonts.poppins(color: tp.textSecondary),
                   ),
                 ),
               )
@@ -308,18 +310,18 @@ class _EmbassiesScreenState extends State<EmbassiesScreen> {
                       children: [
                         IconButton(
                           onPressed: () => Navigator.of(context).pop(),
-                          icon: const Icon(
+                          icon: Icon(
                             Icons.arrow_back_rounded,
-                            color: Color(0xFF1A1F2E),
+                            color: tp.textPrimary,
                           ),
                         ),
                         const Spacer(),
                         Text(
-                          'Ambassades',
+                          l10n.embassiesTitle,
                           style: GoogleFonts.poppins(
                             fontWeight: FontWeight.w600,
                             fontSize: 13,
-                            color: const Color(0xFF1A1F2E),
+                            color: tp.textPrimary,
                           ),
                         ),
                         const Spacer(),
@@ -340,39 +342,39 @@ class _EmbassiesScreenState extends State<EmbassiesScreen> {
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
                                   decoration: BoxDecoration(
-                                    color: Colors.white,
+                                    color: tp.surface,
                                     borderRadius: BorderRadius.circular(14),
-                                    border: Border.all(color: const Color(0xFFE5DFD3)),
+                                    border: Border.all(color: tp.border),
                                   ),
                                   child: TextField(
                                     controller: _searchController,
                                     onChanged: (_) => setState(() {}),
                                     decoration: InputDecoration(
                                       border: InputBorder.none,
-                                      icon: const Icon(Icons.search_rounded, size: 18),
-                                      hintText: 'Rechercher un pays...',
-                                      hintStyle: GoogleFonts.poppins(fontSize: 12),
+                                      icon: Icon(Icons.search_rounded, size: 18, color: tp.textSecondary),
+                                      hintText: l10n.embassiesSearchHint,
+                                      hintStyle: GoogleFonts.poppins(fontSize: 12, color: tp.textSecondary),
                                     ),
-                                    style: GoogleFonts.poppins(fontSize: 13),
+                                    style: GoogleFonts.poppins(fontSize: 13, color: tp.textPrimary),
                                   ),
                                 ),
                                 const SizedBox(height: 8),
                                 Row(
                                   children: [
                                     _sortPill(
-                                      label: 'Distance',
+                                      label: l10n.embassiesSortDistance,
                                       active: _sortMode == 'distance',
                                       onTap: () => setState(() => _sortMode = 'distance'),
                                     ),
                                     const SizedBox(width: 6),
                                     _sortPill(
-                                      label: 'Note',
+                                      label: l10n.embassiesSortRating,
                                       active: _sortMode == 'rating',
                                       onTap: () => setState(() => _sortMode = 'rating'),
                                     ),
                                     const SizedBox(width: 6),
                                     _sortPill(
-                                      label: 'A-Z',
+                                      label: l10n.embassiesSortName,
                                       active: _sortMode == 'name',
                                       onTap: () => setState(() => _sortMode = 'name'),
                                     ),
@@ -398,8 +400,9 @@ class _EmbassiesScreenState extends State<EmbassiesScreen> {
                           margin: const EdgeInsets.only(bottom: 12),
                           padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: tp.surface,
                             borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: tp.border),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -412,7 +415,7 @@ class _EmbassiesScreenState extends State<EmbassiesScreen> {
                                       style: GoogleFonts.poppins(
                                         fontWeight: FontWeight.w700,
                                         fontSize: 15,
-                                        color: AppTheme.textPrimary,
+                                        color: tp.textPrimary,
                                       ),
                                     ),
                                   ),
@@ -420,15 +423,15 @@ class _EmbassiesScreenState extends State<EmbassiesScreen> {
                                     Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                       decoration: BoxDecoration(
-                                        color: const Color(0xFFECE6DC),
+                                        color: tp.chipBackground,
                                         borderRadius: BorderRadius.circular(999),
                                       ),
                                       child: Text(
-                                        'Consulat',
+                                        l10n.embassyTypeConsulate,
                                         style: GoogleFonts.poppins(
                                           fontSize: 10,
                                           fontWeight: FontWeight.w700,
-                                          color: const Color(0xFF5C5243),
+                                          color: tp.textSecondary,
                                         ),
                                       ),
                                     ),
@@ -438,7 +441,7 @@ class _EmbassiesScreenState extends State<EmbassiesScreen> {
                               Text(
                                 address,
                                 style: GoogleFonts.poppins(
-                                  color: AppTheme.textSecondary,
+                                  color: tp.textSecondary,
                                   fontSize: 13,
                                 ),
                               ),
@@ -447,31 +450,33 @@ class _EmbassiesScreenState extends State<EmbassiesScreen> {
                                 Text(
                                   openingHours,
                                   style: GoogleFonts.poppins(
-                                    color: AppTheme.textSecondary,
+                                    color: tp.textSecondary,
                                     fontSize: 11,
                                   ),
                                 ),
                               if (rating != null)
                                 Text(
-                                  'Note: ${rating.toStringAsFixed(1)} / 5',
+                                  l10n.embassyRating(rating.toStringAsFixed(1)),
                                   style: GoogleFonts.poppins(
-                                    color: AppTheme.textSecondary,
+                                    color: tp.textSecondary,
                                     fontSize: 11,
                                   ),
                                 ),
                               if (distKm != null)
                                 Text(
-                                  'Distance: ${distKm.toStringAsFixed(1)} km',
+                                  l10n.embassyDistanceLabel(
+                                    '${distKm.toStringAsFixed(1)} km',
+                                  ),
                                   style: GoogleFonts.poppins(
-                                    color: AppTheme.textSecondary,
+                                    color: tp.textSecondary,
                                     fontSize: 11,
                                   ),
                                 ),
                               if (phone.isNotEmpty)
                                 Text(
-                                  'Tel: $phone',
+                                  l10n.embassyPhone(phone),
                                   style: GoogleFonts.poppins(
-                                    color: AppTheme.textSecondary,
+                                    color: tp.textSecondary,
                                     fontSize: 11,
                                   ),
                                 ),
@@ -480,17 +485,17 @@ class _EmbassiesScreenState extends State<EmbassiesScreen> {
                                 spacing: 6,
                                 runSpacing: 6,
                                 children: [
-                                  _pill('Urgence', urgent: true),
-                                  _pill('Carte', icon: Icons.map_rounded, onTap: () => _openMap(item)),
+                                  _pill(l10n.embassyUrgent, urgent: true),
+                                  _pill(l10n.embassyActionMap, icon: Icons.map_rounded, onTap: () => _openMap(item)),
                                   if (phone.isNotEmpty)
-                                    _pill('Appeler', icon: Icons.phone_rounded, onTap: () => _call(phone)),
+                                    _pill(l10n.call, icon: Icons.phone_rounded, onTap: () => _call(phone)),
                                 ],
                               ),
                               const SizedBox(height: 2),
                               Row(
                                 children: [
                                   const Spacer(),
-                                  const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Colors.grey),
+                                  Icon(Icons.arrow_forward_ios_rounded, size: 14, color: tp.textSecondary),
                                 ],
                               ),
                             ],
@@ -512,21 +517,24 @@ class _EmbassiesScreenState extends State<EmbassiesScreen> {
     bool urgent = false,
     VoidCallback? onTap,
   }) {
+    final tp = context.tp;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(999),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
-          color: urgent ? const Color(0xFFFAE6E1) : const Color(0xFFF4F1EA),
+          color: urgent
+              ? AppTheme.primaryRed.withValues(alpha: tp.isDark ? 0.2 : 0.12)
+              : tp.chipBackground,
           borderRadius: BorderRadius.circular(999),
-          border: urgent ? null : Border.all(color: const Color(0xFFE5DFD3)),
+          border: urgent ? null : Border.all(color: tp.border),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             if (icon != null) ...[
-              Icon(icon, size: 12),
+              Icon(icon, size: 12, color: urgent ? AppTheme.primaryRed : tp.textPrimary),
               const SizedBox(width: 4),
             ],
             Text(
@@ -534,7 +542,7 @@ class _EmbassiesScreenState extends State<EmbassiesScreen> {
               style: GoogleFonts.poppins(
                 fontSize: 10,
                 fontWeight: FontWeight.w700,
-                color: urgent ? const Color(0xFFC73E1D) : const Color(0xFF1A1F2E),
+                color: urgent ? AppTheme.primaryRed : tp.textPrimary,
               ),
             ),
           ],
@@ -548,22 +556,23 @@ class _EmbassiesScreenState extends State<EmbassiesScreen> {
     required bool active,
     required VoidCallback onTap,
   }) {
+    final tp = context.tp;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(999),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: active ? const Color(0xFF1A1F2E) : Colors.white,
+          color: active ? AppTheme.primaryGreen : tp.surface,
           borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: const Color(0xFFE5DFD3)),
+          border: Border.all(color: active ? AppTheme.primaryGreen : tp.border),
         ),
         child: Text(
           label,
           style: GoogleFonts.poppins(
             fontSize: 11,
             fontWeight: FontWeight.w600,
-            color: active ? Colors.white : const Color(0xFF1A1F2E),
+            color: active ? Colors.white : tp.textPrimary,
           ),
         ),
       ),

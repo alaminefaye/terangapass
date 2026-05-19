@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../constants/poi_category_filters.dart';
 import '../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
+import '../theme/app_theme_extensions.dart';
 import '../services/api_service.dart';
 import '../services/location_service.dart';
 import '../services/offline_pack_service.dart';
@@ -13,6 +14,8 @@ import '../widgets/loading_placeholders.dart';
 import '../widgets/offline_cache_snack.dart';
 import '../utils/promo_popup_presenter.dart';
 import '../widgets/recommended_places_section.dart';
+import '../services/guest_data_service.dart';
+import '../utils/auth_guard.dart';
 import 'embassies_screen.dart';
 import 'nearby_screen.dart';
 import 'place_detail_screen.dart';
@@ -49,9 +52,11 @@ class _TourismScreenState extends State<TourismScreen> {
     super.initState();
     _searchController.addListener(_onSearchChanged);
     _loadPointsOfInterest();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        PromoPopupPresenter.showForPlacement(context, 'tourism');
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      PromoPopupPresenter.showForPlacement(context, 'tourism');
+      if (!await AuthGuard.isLoggedIn()) {
+        unawaited(GuestDataService.warmUpOfflineCatalog());
       }
     });
   }
@@ -73,10 +78,11 @@ class _TourismScreenState extends State<TourismScreen> {
   }
 
   Future<void> _runServerSearch() async {
+    final l10n = AppLocalizations.of(context)!;
     final query = _searchController.text.trim();
     if (query.length < 2) {
       setState(() {
-        _searchHintMessage = 'Saisissez au moins 2 caractères pour chercher.';
+        _searchHintMessage = l10n.tourismSearchMinChars;
       });
       return;
     }
@@ -187,15 +193,15 @@ class _TourismScreenState extends State<TourismScreen> {
             .toList();
         _isServerSearchActive = serverSearch;
         _searchHintMessage = serverSearch && _pointsOfInterest.isEmpty
-            ? 'Aucun lieu trouvé pour cette recherche.'
+            ? l10n.tourismSearchNoResults
             : null;
       });
     } catch (e) {
       if (!mounted) return;
       if (serverSearch) {
+        final l10n = AppLocalizations.of(context)!;
         setState(() {
-          _searchHintMessage =
-              'Recherche indisponible pour le moment. Les résultats affichés restent visibles.';
+          _searchHintMessage = l10n.tourismSearchUnavailable;
           _isServerSearchActive = false;
         });
         return;
@@ -273,14 +279,17 @@ class _TourismScreenState extends State<TourismScreen> {
     return '${km.toStringAsFixed(1)} km';
   }
 
-  String _distanceLabelForPoint(Map<String, dynamic> point) {
+  String _distanceLabelForPoint(
+    Map<String, dynamic> point,
+    AppLocalizations l10n,
+  ) {
     final pointLat = _toDouble(point['latitude'] ?? point['lat']);
     final pointLng = _toDouble(point['longitude'] ?? point['lng']);
     if (pointLat == null || pointLng == null) {
-      return 'Coordonnées manquantes';
+      return l10n.tourismCoordinatesMissing;
     }
     if (_userLatitude == null || _userLongitude == null) {
-      return 'Activer la localisation';
+      return l10n.tourismEnableLocation;
     }
 
     final meters = LocationService().calculateDistance(
@@ -292,25 +301,20 @@ class _TourismScreenState extends State<TourismScreen> {
     return _formatDistanceMeters(meters);
   }
 
-  Widget _buildLocationBanner() {
+  Widget _buildLocationBanner(AppLocalizations l10n) {
+    final tp = context.tp;
     final message =
-        (_locationError ?? 'Activer la localisation').toString().trim().isEmpty
-        ? 'Activer la localisation'
-        : (_locationError ?? 'Activer la localisation').toString().trim();
+        (_locationError ?? l10n.tourismEnableLocation).toString().trim().isEmpty
+        ? l10n.tourismEnableLocation
+        : (_locationError ?? l10n.tourismEnableLocation).toString().trim();
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: tp.surface,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 14,
-            offset: const Offset(0, 8),
-          ),
-        ],
+        border: Border.all(color: tp.border),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -333,11 +337,11 @@ class _TourismScreenState extends State<TourismScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Distance indisponible',
+                  l10n.tourismDistanceUnavailable,
                   style: GoogleFonts.poppins(
                     fontSize: 13,
                     fontWeight: FontWeight.bold,
-                    color: AppTheme.textPrimary,
+                    color: tp.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -345,7 +349,7 @@ class _TourismScreenState extends State<TourismScreen> {
                   message,
                   style: GoogleFonts.poppins(
                     fontSize: 12,
-                    color: AppTheme.textSecondary,
+                    color: tp.textSecondary,
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -368,7 +372,7 @@ class _TourismScreenState extends State<TourismScreen> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      child: Text('Réessayer', style: GoogleFonts.poppins()),
+                      child: Text(l10n.retry, style: GoogleFonts.poppins()),
                     ),
                     if (_locationDeniedForever)
                       ElevatedButton(
@@ -385,7 +389,7 @@ class _TourismScreenState extends State<TourismScreen> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        child: Text('Paramètres', style: GoogleFonts.poppins()),
+                        child: Text(l10n.settings, style: GoogleFonts.poppins()),
                       ),
                     if (_locationServiceDisabled && !_locationDeniedForever)
                       ElevatedButton(
@@ -403,7 +407,7 @@ class _TourismScreenState extends State<TourismScreen> {
                           ),
                         ),
                         child: Text(
-                          'Activer GPS',
+                          l10n.tourismEnableGpsButton,
                           style: GoogleFonts.poppins(),
                         ),
                       ),
@@ -485,7 +489,8 @@ class _TourismScreenState extends State<TourismScreen> {
     );
   }
 
-  Widget _buildSearchField() {
+  Widget _buildSearchField(AppLocalizations l10n) {
+    final tp = context.tp;
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Column(
@@ -496,13 +501,13 @@ class _TourismScreenState extends State<TourismScreen> {
             textInputAction: TextInputAction.search,
             onSubmitted: (_) => _runServerSearch(),
             style: GoogleFonts.poppins(
-              color: AppTheme.textPrimary,
+              color: tp.textPrimary,
               fontSize: 14,
             ),
             decoration: InputDecoration(
-              hintText: 'Rechercher un lieu, une adresse…',
+              hintText: l10n.mapPlaceholderSubtitle,
               hintStyle: GoogleFonts.poppins(
-                color: AppTheme.textSecondary,
+                color: tp.textSecondary,
                 fontSize: 13,
               ),
               prefixIcon: IconButton(
@@ -526,18 +531,18 @@ class _TourismScreenState extends State<TourismScreen> {
                     )
                   : null,
           filled: true,
-          fillColor: Colors.white,
+          fillColor: tp.surface,
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 14,
             vertical: 12,
           ),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(14),
-            borderSide: const BorderSide(color: Color(0xFFECE6DC)),
+            borderSide: BorderSide(color: tp.border),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(14),
-            borderSide: const BorderSide(color: Color(0xFFECE6DC)),
+            borderSide: BorderSide(color: tp.border),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(14),
@@ -551,17 +556,17 @@ class _TourismScreenState extends State<TourismScreen> {
               _searchHintMessage!,
               style: GoogleFonts.poppins(
                 fontSize: 11,
-                color: AppTheme.textSecondary,
+                color: tp.textSecondary,
               ),
             ),
           ] else if (!_isServerSearchActive &&
               _searchController.text.trim().isNotEmpty) ...[
             const SizedBox(height: 6),
             Text(
-              'Filtre local sur la liste · touchez 🔍 ou Entrée pour chercher dans toute la base',
+              l10n.tourismLocalFilterHint,
               style: GoogleFonts.poppins(
                 fontSize: 11,
-                color: AppTheme.textSecondary,
+                color: tp.textSecondary,
               ),
             ),
           ],
@@ -583,7 +588,7 @@ class _TourismScreenState extends State<TourismScreen> {
         _poiTotal! > _pointsOfInterest.length;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F1EA),
+      backgroundColor: context.tp.scaffoldAlt,
       body: Column(
         children: [
           Container(
@@ -636,7 +641,7 @@ class _TourismScreenState extends State<TourismScreen> {
                         ),
                         Expanded(
                           child: Text(
-                            'Tourisme & Services',
+                            l10n.tourismTitle,
                             textAlign: TextAlign.center,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -653,7 +658,7 @@ class _TourismScreenState extends State<TourismScreen> {
                             shape: BoxShape.circle,
                           ),
                           child: IconButton(
-                            tooltip: 'À deux pas',
+                            tooltip: l10n.nearbyTitle,
                             icon: const Icon(
                               Icons.near_me_rounded,
                               color: Colors.white,
@@ -676,7 +681,7 @@ class _TourismScreenState extends State<TourismScreen> {
                             shape: BoxShape.circle,
                           ),
                           child: IconButton(
-                            tooltip: 'Ambassades',
+                            tooltip: l10n.tourismCategoryEmbassies,
                             icon: const Icon(
                               Icons.account_balance_rounded,
                               color: Colors.white,
@@ -713,14 +718,14 @@ class _TourismScreenState extends State<TourismScreen> {
                           Icon(
                             Icons.wifi_off_rounded,
                             size: 64,
-                            color: AppTheme.textSecondary,
+                            color: context.tp.textSecondary,
                           ),
                           const SizedBox(height: 16),
                           Text(
                             _errorMessage!,
                             style: GoogleFonts.poppins(
                               fontSize: 14,
-                              color: AppTheme.textSecondary,
+                              color: context.tp.textPrimary,
                             ),
                             textAlign: TextAlign.center,
                           ),
@@ -731,7 +736,7 @@ class _TourismScreenState extends State<TourismScreen> {
                               backgroundColor: AppTheme.primaryGreen,
                             ),
                             child: Text(
-                              'Réessayer',
+                              l10n.retry,
                               style: GoogleFonts.poppins(),
                             ),
                           ),
@@ -751,6 +756,27 @@ class _TourismScreenState extends State<TourismScreen> {
     );
   }
 
+  Widget _buildLimitedHintBanner(TpColors tp) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppTheme.primaryGreen.withValues(alpha: tp.isDark ? 0.18 : 0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: AppTheme.primaryGreen.withValues(alpha: tp.isDark ? 0.35 : 0.25),
+        ),
+      ),
+      child: Text(
+        '${_pointsOfInterest.length} lieux les plus proches affichés sur $_poiTotal au total.',
+        style: GoogleFonts.poppins(
+          fontSize: 12,
+          color: tp.isDark ? const Color(0xFF86EFAC) : const Color(0xFF1D603D),
+        ),
+      ),
+    );
+  }
+
   Widget _buildPlacesList(
     BuildContext context,
     AppLocalizations l10n,
@@ -760,12 +786,13 @@ class _TourismScreenState extends State<TourismScreen> {
     final categoryKey = _activeCategoryKey(l10n);
     final showRecommendedCarousel =
         !_isServerSearchActive && _searchController.text.trim().isEmpty;
+    final tp = context.tp;
     if (points.isEmpty) {
       return ListView(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
         children: [
-          if (_locationError != null) _buildLocationBanner(),
-          _buildSearchField(),
+          if (_locationError != null) _buildLocationBanner(l10n),
+          _buildSearchField(l10n),
           if (showRecommendedCarousel)
             Padding(
               padding: const EdgeInsets.only(bottom: 12),
@@ -776,38 +803,23 @@ class _TourismScreenState extends State<TourismScreen> {
                 limit: 10,
               ),
             ),
-          if (showLimitedHint)
-            Container(
-              margin: const EdgeInsets.only(bottom: 12),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xFFE8F5EE),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                '${_pointsOfInterest.length} lieux les plus proches affichés sur $_poiTotal au total.',
-                style: GoogleFonts.poppins(
-                  fontSize: 12,
-                  color: const Color(0xFF1D603D),
-                ),
-              ),
-            ),
+          if (showLimitedHint) _buildLimitedHintBanner(tp),
           const SizedBox(height: 48),
           Icon(
             Icons.search_off_rounded,
             size: 56,
-            color: AppTheme.textSecondary,
+            color: tp.textSecondary,
           ),
           const SizedBox(height: 16),
           Text(
             _searchController.text.trim().isNotEmpty
-                ? 'Aucun lieu pour cette recherche'
-                : 'Aucun résultat',
+                ? l10n.tourismEmptySearch
+                : l10n.tourismNoResults,
             textAlign: TextAlign.center,
             style: GoogleFonts.poppins(
               fontSize: 18,
               fontWeight: FontWeight.w600,
-              color: AppTheme.textSecondary,
+              color: tp.textPrimary,
             ),
           ),
         ],
@@ -826,11 +838,11 @@ class _TourismScreenState extends State<TourismScreen> {
         var headerIndex = 0;
         if (showBanner) {
           if (index == headerIndex++) {
-            return _buildLocationBanner();
+            return _buildLocationBanner(l10n);
           }
         }
         if (index == headerIndex++) {
-          return _buildSearchField();
+          return _buildSearchField(l10n);
         }
         if (showRecommendedCarousel && index == headerIndex++) {
           return Padding(
@@ -844,36 +856,23 @@ class _TourismScreenState extends State<TourismScreen> {
           );
         }
         if (showLimitedHint && index == headerIndex++) {
-          return Container(
-            margin: const EdgeInsets.only(bottom: 12),
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFE8F5EE),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              '${_pointsOfInterest.length} lieux les plus proches affichés sur $_poiTotal au total.',
-              style: GoogleFonts.poppins(
-                fontSize: 12,
-                color: const Color(0xFF1D603D),
-              ),
-            ),
-          );
+          return _buildLimitedHintBanner(context.tp);
         }
 
         final point = points[index - headerIndex];
         final icon = PoiCategoryFilters.iconForPoint(point);
         final color = PoiCategoryFilters.colorForPoint(point);
         final iconUrl = _getPointIconUrl(point);
-        final distanceLabel = _distanceLabelForPoint(point);
+        final distanceLabel = _distanceLabelForPoint(point, l10n);
         final recommended = point['is_recommended'] == true;
 
+        final tp = context.tp;
         return Container(
           margin: const EdgeInsets.only(bottom: 12),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: tp.surface,
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: const Color(0xFFECE6DC)),
+            border: Border.all(color: tp.border),
           ),
           child: Material(
             color: Colors.transparent,
@@ -919,7 +918,7 @@ class _TourismScreenState extends State<TourismScreen> {
                                   style: GoogleFonts.plusJakartaSans(
                                     fontWeight: FontWeight.w700,
                                     fontSize: 14,
-                                    color: AppTheme.textPrimary,
+                                    color: tp.textPrimary,
                                   ),
                                 ),
                               ),
@@ -931,15 +930,18 @@ class _TourismScreenState extends State<TourismScreen> {
                                     vertical: 3,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFFE8F5EE),
+                                    color: AppTheme.primaryGreen
+                                        .withValues(alpha: tp.isDark ? 0.25 : 0.12),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Text(
-                                    'Recommandé',
+                                    l10n.recommendedBadge,
                                     style: GoogleFonts.poppins(
                                       fontSize: 9,
                                       fontWeight: FontWeight.w700,
-                                      color: const Color(0xFF1D603D),
+                                      color: tp.isDark
+                                          ? const Color(0xFF86EFAC)
+                                          : const Color(0xFF1D603D),
                                     ),
                                   ),
                                 ),
@@ -951,14 +953,14 @@ class _TourismScreenState extends State<TourismScreen> {
                               Icon(
                                 Icons.location_on,
                                 size: 13,
-                                color: AppTheme.textSecondary,
+                                color: tp.textSecondary,
                               ),
                               const SizedBox(width: 3),
                               Text(
                                 distanceLabel,
                                 style: GoogleFonts.plusJakartaSans(
                                   fontSize: 12,
-                                  color: AppTheme.textSecondary,
+                                  color: tp.textSecondary,
                                 ),
                               ),
                             ],
@@ -978,7 +980,7 @@ class _TourismScreenState extends State<TourismScreen> {
                                   style: GoogleFonts.poppins(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
-                                    color: AppTheme.textPrimary,
+                                    color: tp.textPrimary,
                                   ),
                                 ),
                               ],
@@ -990,12 +992,12 @@ class _TourismScreenState extends State<TourismScreen> {
                     Container(
                       padding: const EdgeInsets.all(5),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF6F2EA),
+                        color: tp.chipBackground,
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
                         Icons.arrow_forward_ios_rounded,
-                        color: Colors.grey[400],
+                        color: tp.textSecondary,
                         size: 12,
                       ),
                     ),
@@ -1010,9 +1012,10 @@ class _TourismScreenState extends State<TourismScreen> {
   }
 
   void _showPointDetails(Map<String, dynamic> point) {
+    final l10n = AppLocalizations.of(context)!;
     // Enrichit le point avec la distance calculée localement
     final enriched = Map<String, dynamic>.from(point);
-    final d = _distanceLabelForPoint(point);
+    final d = _distanceLabelForPoint(point, l10n);
     if (d.isNotEmpty) enriched['distance'] = d;
 
     final color = PoiCategoryFilters.colorForPoint(point);

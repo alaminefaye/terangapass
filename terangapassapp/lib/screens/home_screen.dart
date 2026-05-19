@@ -6,6 +6,8 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
+import '../theme/app_theme_extensions.dart';
+import '../widgets/theme_mode_sheet.dart';
 import '../constants/api_constants.dart';
 import '../services/api_service.dart';
 import '../services/teranga_push_messaging.dart';
@@ -28,10 +30,20 @@ import 'currency_converter_screen.dart';
 import 'esim_coming_screen.dart';
 import 'nearby_screen.dart';
 import '../widgets/loading_placeholders.dart';
+import '../widgets/typewriter_search_field.dart';
+import '../widgets/typewriter_hero_message.dart';
+import '../widgets/home_weather_chip.dart';
+import '../services/location_service.dart';
+import '../services/weather_service.dart';
 import '../widgets/map_legend_strip.dart';
 import '../widgets/offline_cache_snack.dart';
 import '../utils/promo_popup_presenter.dart';
 import '../widgets/recommended_places_section.dart';
+import '../widgets/joj_countdown_strip.dart';
+import '../utils/auth_guard.dart';
+import '../state/app_state.dart';
+import '../services/guest_data_service.dart';
+import 'auth/login_screen.dart';
 
 enum _HomeFeatureId {
   audioAnnouncements,
@@ -71,8 +83,14 @@ class _HomeScreenState extends State<HomeScreen>
   late final AnimationController _aiPulseController;
   bool _isNavigating = false;
   int _jojDaysRemaining = 183;
-  String _jojDateLabel = 'Dakar 2026 - 31 oct -> 13 nov';
+  Map<String, dynamic>? _weather;
+  String? _weatherPlaceName;
+  bool _weatherHasGps = false;
+  bool _isLoadingWeather = true;
+  bool _weatherLoadFailed = false;
   final TextEditingController _homeSearchController = TextEditingController();
+  final GlobalKey<RecommendedPlacesSectionState> _recommendedPlacesKey =
+      GlobalKey<RecommendedPlacesSectionState>();
 
   Future<void> _navigateTo(BuildContext context, _HomeNavId id) async {
     if (_isNavigating) return;
@@ -84,30 +102,40 @@ class _HomeScreenState extends State<HomeScreen>
         case _HomeNavId.home:
           return;
         case _HomeNavId.medicalAlert:
-          await Navigator.push(
+          await AuthGuard.openProtected(
             context,
-            MaterialPageRoute(builder: (context) => const MedicalAlertScreen()),
+            featureName: AppLocalizations.of(context)!.authFeatureMedicalAlert,
+            screenBuilder: () => const MedicalAlertScreen(),
           );
           return;
         case _HomeNavId.aiAssistant:
-          await Navigator.push(
+          await AuthGuard.openProtected(
             context,
-            MaterialPageRoute(builder: (context) => const AIAssistantScreen()),
+            featureName: AppLocalizations.of(context)!.authFeatureAiAssistant,
+            screenBuilder: () => const AIAssistantScreen(),
           );
           return;
         case _HomeNavId.incidentReport:
-          await Navigator.push(
+          await AuthGuard.openProtected(
             context,
-            MaterialPageRoute(
-              builder: (context) => const IncidentReportScreen(),
-            ),
+            featureName: AppLocalizations.of(context)!.authFeatureReport,
+            screenBuilder: () => const IncidentReportScreen(),
           );
           return;
         case _HomeNavId.profile:
-          await Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const ProfileScreen()),
-          );
+          if (await AuthGuard.isLoggedIn()) {
+            await Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const ProfileScreen()),
+            );
+          } else {
+            await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const LoginScreen(returnOnSuccess: true),
+              ),
+            );
+          }
           return;
       }
     } catch (e, st) {
@@ -139,19 +167,34 @@ class _HomeScreenState extends State<HomeScreen>
     });
   }
 
-  /// Recharge annonces, sites JOJ, notifications et compte à rebours.
-  Future<void> _refreshHomeData({bool forceOfflinePack = false}) async {
+  /// Recharge les données de l'accueil.
+  /// [homePullOnly] : tirer pour actualiser — uniquement ce qui est affiché sur l'accueil.
+  Future<void> _refreshHomeData({
+    bool forceOfflinePack = false,
+    bool homePullOnly = false,
+  }) async {
     unawaited(TerangaPushMessaging.registerDeviceTokenIfAuthed());
-    await Future.wait<void>([
-      _loadOfficialAnnouncement(force: true),
-      _loadCompetitionSites(force: true),
-      _loadUnreadNotificationsCount(),
-      _loadJojCountdown(),
-    ]);
+    if (homePullOnly) {
+      await Future.wait<void>([
+        _loadUnreadNotificationsCount(),
+        _loadJojCountdown(),
+        _loadWeather(),
+      ]);
+    } else {
+      await Future.wait<void>([
+        _loadOfficialAnnouncement(force: true),
+        _loadCompetitionSites(force: true),
+        _loadUnreadNotificationsCount(),
+        _loadJojCountdown(),
+        _loadWeather(),
+      ]);
+    }
+    await _recommendedPlacesKey.currentState?.reload();
     final api = ApiService();
-    if (forceOfflinePack) {
+    final guest = !await AuthGuard.isLoggedIn();
+    if (guest || forceOfflinePack) {
       try {
-        await OfflinePackService().refresh(api);
+        await GuestDataService.warmUpOfflineCatalog(force: forceOfflinePack);
       } catch (e, st) {
         debugPrint('[Home] offline pack refresh: $e\n$st');
       }
@@ -167,7 +210,8 @@ class _HomeScreenState extends State<HomeScreen>
     }
   }
 
-  Future<void> _onPullToRefresh() => _refreshHomeData(forceOfflinePack: true);
+  Future<void> _onPullToRefresh() =>
+      _refreshHomeData(forceOfflinePack: true, homePullOnly: true);
 
   @override
   void dispose() {
@@ -185,21 +229,64 @@ class _HomeScreenState extends State<HomeScreen>
     }
   }
 
+  Future<void> _loadWeather() async {
+    if (!mounted) return;
+    setState(() {
+      _isLoadingWeather = true;
+      _weatherLoadFailed = false;
+    });
+
+    WeatherLocationResult location;
+    try {
+      location = await LocationService().resolveForWeather();
+    } catch (_) {
+      location = const WeatherLocationResult(
+        latitude: 14.6937,
+        longitude: -17.4441,
+        placeLabel: '',
+        isGpsBased: false,
+      );
+    }
+
+    try {
+      final data = await WeatherService().fetch(
+        latitude: location.latitude,
+        longitude: location.longitude,
+      );
+      if (!mounted) return;
+      setState(() {
+        _weather = data;
+        _weatherHasGps = location.isGpsBased;
+        _weatherPlaceName = location.isGpsBased &&
+                location.placeLabel.trim().isNotEmpty
+            ? location.placeLabel.trim()
+            : null;
+        _weatherLoadFailed = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _weather = null;
+        _weatherLoadFailed = true;
+      });
+    } finally {
+      if (mounted) {
+        setState(() => _isLoadingWeather = false);
+      }
+    }
+  }
+
   Future<void> _loadJojCountdown() async {
     try {
       final api = ApiService();
       final data = await api.getJojCountdown();
       if (!mounted) return;
       final days = data['days_remaining'];
-      final label = (data['label'] ?? '').toString().trim();
       setState(() {
         if (days is int) {
           _jojDaysRemaining = days;
         } else if (days is num) {
           _jojDaysRemaining = days.toInt();
-        }
-        if (label.isNotEmpty) {
-          _jojDateLabel = label;
         }
       });
     } catch (_) {
@@ -487,18 +574,12 @@ class _HomeScreenState extends State<HomeScreen>
 
   @override
   Widget build(BuildContext context) {
-    final keepLegacySections = [
-      _buildMainFeaturesSection,
-      _buildOfficialAnnouncementSection,
-      _buildJOJInfoSection,
-    ];
-    assert(keepLegacySections.isNotEmpty);
     return Scaffold(
-      backgroundColor: const Color(0xFFFAF7F0),
+      backgroundColor: context.tp.scaffold,
       body: SafeArea(
         child: RefreshIndicator(
           color: AppTheme.primaryGreen,
-          backgroundColor: Colors.white,
+          backgroundColor: context.tp.surface,
           displacement: 40,
           onRefresh: _onPullToRefresh,
           child: CustomScrollView(
@@ -530,14 +611,16 @@ class _HomeScreenState extends State<HomeScreen>
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: _buildJojCountdownStrip(context),
+                  child: JojCountdownStrip(
+                    daysRemaining: _jojDaysRemaining,
+                  ),
                 ),
               ),
               const SliverToBoxAdapter(child: SizedBox(height: 14)),
-              const SliverToBoxAdapter(
+              SliverToBoxAdapter(
                 child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16),
-                  child: RecommendedPlacesSection(),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: RecommendedPlacesSection(key: _recommendedPlacesKey),
                 ),
               ),
               const SliverToBoxAdapter(child: SizedBox(height: 14)),
@@ -590,9 +673,53 @@ class _HomeScreenState extends State<HomeScreen>
             'Teranga Pass',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.w700,
-              color: const Color(0xFF1A1F2E),
+              color: context.tp.textPrimary,
             ),
           ),
+        ),
+        IconButton(
+          tooltip: AppLocalizations.of(context)!.profileThemeSetting,
+          onPressed: () => showThemeModeSheet(context),
+          icon: Icon(
+            Theme.of(context).brightness == Brightness.dark
+                ? Icons.light_mode_outlined
+                : Icons.dark_mode_outlined,
+            color: context.tp.textPrimary,
+            size: 22,
+          ),
+        ),
+        ValueListenableBuilder<bool>(
+          valueListenable: isAuthenticatedNotifier,
+          builder: (context, authed, _) {
+            if (authed) return const SizedBox.shrink();
+            return Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: TextButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          const LoginScreen(returnOnSuccess: true),
+                    ),
+                  );
+                },
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: Text(
+                  AppLocalizations.of(context)!.homeLogin,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.primaryGreen,
+                  ),
+                ),
+              ),
+            );
+          },
         ),
         InkWell(
           borderRadius: BorderRadius.circular(12),
@@ -610,9 +737,9 @@ class _HomeScreenState extends State<HomeScreen>
                 width: 38,
                 height: 38,
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: context.tp.surface,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFE5DFD3)),
+                  border: Border.all(color: context.tp.border),
                 ),
                 child: const Icon(Icons.notifications_none_rounded),
               ),
@@ -647,6 +774,7 @@ class _HomeScreenState extends State<HomeScreen>
 
   Widget _buildHeroBanner(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+
     return ClipRRect(
       borderRadius: BorderRadius.circular(18),
       child: SizedBox(
@@ -662,33 +790,44 @@ class _HomeScreenState extends State<HomeScreen>
               colorBlendMode: BlendMode.darken,
             ),
             Positioned(
+              top: 10,
+              left: 10,
+              child: HomeWeatherChip(
+                isLoading: _isLoadingWeather,
+                placeName: _isLoadingWeather || !_weatherHasGps
+                    ? null
+                    : _weatherPlaceName,
+                temperatureC: _weather?['temperature_c'] is int
+                    ? _weather!['temperature_c'] as int
+                    : (_weather?['temperature_c'] as num?)?.round(),
+                label: _isLoadingWeather
+                    ? '…'
+                    : _weatherLoadFailed
+                        ? l10n.weatherUnavailable
+                        : ((_weather?['label'] ?? '').toString().isNotEmpty
+                            ? (_weather!['label'] ?? '').toString()
+                            : l10n.weatherDefaultLabel),
+                iconKey: (_weather?['icon'] ?? 'cloudy').toString(),
+              ),
+            ),
+            Positioned(
               bottom: 14,
               left: 16,
               right: 16,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    l10n.homeHeroWelcome,
-                    style: const TextStyle(
-                      color: Colors.white70,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    l10n.homeTagline,
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 22,
-                      fontWeight: FontWeight.w700,
-                      height: 1.15,
-                    ),
-                  ),
-                ],
+              child: TypewriterHeroMessage(
+                welcomeLine: l10n.homeHeroWelcome,
+                taglineLine: l10n.homeTagline,
+                welcomeStyle: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+                taglineStyle: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                  height: 1.15,
+                ),
               ),
             ),
           ],
@@ -723,49 +862,68 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Widget _buildQuickSearchBar(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppTheme.textSecondary.withValues(alpha: 0.2)),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            Icons.search_rounded,
-            color: AppTheme.textSecondary.withValues(alpha: 0.8),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: TextField(
-              controller: _homeSearchController,
-              textInputAction: TextInputAction.search,
-              onSubmitted: (_) => _openMapFromHomeSearch(context),
-              decoration: InputDecoration(
-                isDense: true,
-                border: InputBorder.none,
-                hintText: AppLocalizations.of(context)!.homeSearchHint,
-                hintStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppTheme.textSecondary,
+    final tp = context.tp;
+    final l10n = AppLocalizations.of(context)!;
+    final parsed = TypewriterSearchField.termsFromHint(l10n.homeSearchHint);
+    final terms = parsed.isEmpty ? [l10n.homeSearchHint] : parsed;
+    final hintStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(
+      fontSize: 13,
+      color: tp.textSecondary,
+    );
+    final textStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(
+      fontSize: 14,
+      color: tp.textPrimary,
+    );
+
+    return Material(
+      color: tp.surface,
+      elevation: 0,
+      borderRadius: BorderRadius.circular(16),
+      clipBehavior: Clip.antiAlias,
+      child: Container(
+        height: 52,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: tp.border),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            const SizedBox(width: 14),
+            Icon(
+              Icons.search_rounded,
+              color: tp.textSecondary,
+              size: 22,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: TypewriterSearchField(
+                controller: _homeSearchController,
+                terms: terms,
+                onSubmitted: () => _openMapFromHomeSearch(context),
+                textStyle: textStyle,
+                hintStyle: hintStyle,
+              ),
+            ),
+            SizedBox(
+              width: 52,
+              height: 52,
+              child: Material(
+                color: AppTheme.primaryGreen,
+                child: InkWell(
+                  onTap: () => _openMapFromHomeSearch(context),
+                  child: const Center(
+                    child: Icon(
+                      Icons.arrow_forward_rounded,
+                      color: Colors.white,
+                      size: 22,
+                    ),
+                  ),
                 ),
               ),
-              style: Theme.of(context).textTheme.bodyMedium,
             ),
-          ),
-          InkWell(
-            borderRadius: BorderRadius.circular(10),
-            onTap: () => _openMapFromHomeSearch(context),
-            child: Container(
-              padding: const EdgeInsets.all(7),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFAF7F0),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Icon(Icons.arrow_forward_rounded, size: 18),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -825,15 +983,16 @@ class _HomeScreenState extends State<HomeScreen>
       ),
       itemBuilder: (context, index) {
         final pillar = pillars[index];
+        final tp = context.tp;
         return InkWell(
           borderRadius: BorderRadius.circular(16),
           onTap: () => _openPillar(context, pillar.id),
           child: Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: tp.surface,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppTheme.textSecondary.withValues(alpha: 0.15)),
+              border: Border.all(color: tp.border),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -861,7 +1020,7 @@ class _HomeScreenState extends State<HomeScreen>
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppTheme.textSecondary,
+                    color: tp.textSecondary,
                   ),
                 ),
               ],
@@ -869,58 +1028,6 @@ class _HomeScreenState extends State<HomeScreen>
           ),
         );
       },
-    );
-  }
-
-  Widget _buildJojCountdownStrip(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        gradient: const LinearGradient(
-          colors: [Color(0xFF1A1F2E), Color(0xFF2A2F4E)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-      ),
-      child: Row(
-        children: [
-          Text(
-            _jojDaysRemaining.toString(),
-            style: TextStyle(
-              fontSize: 34,
-              color: Color(0xFFD4A017),
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  l10n.homeJojCountdownLabel,
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 11,
-                    letterSpacing: 0.8,
-                  ),
-                ),
-                SizedBox(height: 2),
-                Text(
-                  _jojDateLabel,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -938,7 +1045,7 @@ class _HomeScreenState extends State<HomeScreen>
           context: context,
           icon: Icons.sim_card_rounded,
           iconColor: const Color(0xFF7B2FBE),
-          title: 'eSIM',
+          title: l10n.esimComingTitle,
           subtitle: l10n.homeEsimConnectSubtitle,
           onTap: () {
             Navigator.push(
@@ -1000,11 +1107,10 @@ class _HomeScreenState extends State<HomeScreen>
           title: l10n.homeMyReportsTitle,
           subtitle: l10n.homeMyReportsSubtitle,
           onTap: () {
-            Navigator.push(
+            AuthGuard.openProtected(
               context,
-              MaterialPageRoute(
-                builder: (context) => const IncidentHistoryScreen(),
-              ),
+              featureName: AppLocalizations.of(context)!.authFeatureMyReports,
+              screenBuilder: () => const IncidentHistoryScreen(),
             );
           },
         ),
@@ -1020,15 +1126,16 @@ class _HomeScreenState extends State<HomeScreen>
     required String subtitle,
     required VoidCallback onTap,
   }) {
+    final tp = context.tp;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: tp.surface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppTheme.textSecondary.withValues(alpha: 0.15)),
+          border: Border.all(color: tp.border),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1045,10 +1152,10 @@ class _HomeScreenState extends State<HomeScreen>
             const SizedBox(height: 10),
             Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
-                color: Color(0xFF1A1F2E),
+                color: tp.textPrimary,
               ),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
@@ -1056,9 +1163,9 @@ class _HomeScreenState extends State<HomeScreen>
             const SizedBox(height: 3),
             Text(
               subtitle,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
-                color: AppTheme.textSecondary,
+                color: tp.textSecondary,
               ),
             ),
           ],
@@ -1097,12 +1204,13 @@ class _HomeScreenState extends State<HomeScreen>
     final rootContext = context;
     await showModalBottomSheet<void>(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: context.tp.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
       ),
-      builder: (context) {
-        final l10n = AppLocalizations.of(context)!;
+      builder: (sheetContext) {
+        final l10n = AppLocalizations.of(sheetContext)!;
+        final tp = sheetContext.tp;
         return SafeArea(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
@@ -1115,7 +1223,7 @@ class _HomeScreenState extends State<HomeScreen>
                     width: 42,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade300,
+                      color: tp.border,
                       borderRadius: BorderRadius.circular(99),
                     ),
                   ),
@@ -1123,16 +1231,16 @@ class _HomeScreenState extends State<HomeScreen>
                 const SizedBox(height: 10),
                 Text(
                   l10n.homeHelpSheetTitle,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF1A1F2E),
+                    color: tp.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   l10n.homeHelpSheetSubtitle,
-                  style: const TextStyle(color: AppTheme.textSecondary, fontSize: 13),
+                  style: TextStyle(color: tp.textSecondary, fontSize: 13),
                 ),
                 const SizedBox(height: 12),
                 _buildHelpActionTile(
@@ -1142,9 +1250,10 @@ class _HomeScreenState extends State<HomeScreen>
                   title: l10n.sosEmergencyTitle,
                   onTap: () {
                     Navigator.of(context).pop();
-                    Navigator.push(
+                    AuthGuard.openProtected(
                       rootContext,
-                      MaterialPageRoute(builder: (context) => const SOSScreen()),
+                      featureName: AppLocalizations.of(context)!.authFeatureSos,
+                      screenBuilder: () => const SOSScreen(),
                     );
                   },
                 ),
@@ -1155,11 +1264,10 @@ class _HomeScreenState extends State<HomeScreen>
                   title: l10n.medicalAlertTitle,
                   onTap: () {
                     Navigator.of(context).pop();
-                    Navigator.push(
+                    AuthGuard.openProtected(
                       rootContext,
-                      MaterialPageRoute(
-                        builder: (context) => const MedicalAlertScreen(),
-                      ),
+                      featureName: AppLocalizations.of(context)!.authFeatureMedicalAlert,
+                      screenBuilder: () => const MedicalAlertScreen(),
                     );
                   },
                 ),
@@ -1170,11 +1278,10 @@ class _HomeScreenState extends State<HomeScreen>
                   title: l10n.homeFeatureReportIncident,
                   onTap: () {
                     Navigator.of(context).pop();
-                    Navigator.push(
+                    AuthGuard.openProtected(
                       rootContext,
-                      MaterialPageRoute(
-                        builder: (context) => const IncidentReportScreen(),
-                      ),
+                      featureName: AppLocalizations.of(context)!.authFeatureReport,
+                      screenBuilder: () => const IncidentReportScreen(),
                     );
                   },
                 ),
@@ -1223,11 +1330,13 @@ class _HomeScreenState extends State<HomeScreen>
     required String title,
     required VoidCallback onTap,
   }) {
+    final tp = context.tp;
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: const Color(0xFFFAF7F0),
+        color: tp.chipBackground,
         borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: tp.border),
       ),
       child: ListTile(
         onTap: onTap,
@@ -1242,13 +1351,13 @@ class _HomeScreenState extends State<HomeScreen>
         ),
         title: Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontWeight: FontWeight.w600,
             fontSize: 14,
-            color: Color(0xFF1A1F2E),
+            color: tp.textPrimary,
           ),
         ),
-        trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
+        trailing: Icon(Icons.arrow_forward_ios_rounded, size: 14, color: tp.textSecondary),
       ),
     );
   }
@@ -1319,11 +1428,10 @@ class _HomeScreenState extends State<HomeScreen>
           onTap: () {
             final id = feature['id'] as _HomeFeatureId;
             if (id == _HomeFeatureId.incidentReport) {
-              Navigator.push(
+              AuthGuard.openProtected(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => const IncidentReportScreen(),
-                ),
+                featureName: AppLocalizations.of(context)!.authFeatureReport,
+                screenBuilder: () => const IncidentReportScreen(),
               );
             } else if (id == _HomeFeatureId.audioAnnouncements) {
               Navigator.push(
@@ -1666,7 +1774,8 @@ class _HomeScreenState extends State<HomeScreen>
                               ),
                               const SizedBox(height: 10),
                               ElevatedButton(
-                                onPressed: _loadCompetitionSites,
+                                onPressed: () =>
+                                    _loadCompetitionSites(force: true),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: AppTheme.primaryGreen,
                                 ),
@@ -1787,9 +1896,9 @@ class _HomeScreenState extends State<HomeScreen>
               child: Container(
                 height: 72,
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.96),
+                  color: context.tp.bottomBar,
                   border: Border(
-                    top: BorderSide(color: Colors.grey.withValues(alpha: 0.15)),
+                    top: BorderSide(color: context.tp.border),
                   ),
                   borderRadius: BorderRadius.circular(18),
                 ),
@@ -2025,7 +2134,7 @@ class _HomeScreenState extends State<HomeScreen>
                 height: 1.0,
                 color: isActive
                     ? AppTheme.primaryGreen
-                    : AppTheme.textSecondary,
+                    : context.tp.textSecondary,
                 fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
               ),
               textAlign: TextAlign.center,

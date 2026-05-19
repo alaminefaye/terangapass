@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../l10n/app_localizations.dart';
 import '../../theme/app_theme.dart';
+import '../../theme/app_theme_extensions.dart';
 import '../../services/api_error_messages.dart';
 import '../../services/api_service.dart';
 import '../../state/app_state.dart';
@@ -423,7 +424,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      backgroundColor: const Color(0xFFF3FBF6),
+      backgroundColor: context.tp.scaffold,
       extendBody: true,
       body: Stack(
         fit: StackFit.expand,
@@ -525,8 +526,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         height: 72,
                         width: 72,
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: context.tp.surface,
                           borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: context.tp.border),
                           boxShadow: [
                             BoxShadow(
                               color: Colors.black.withValues(alpha: 0.10),
@@ -582,8 +584,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     Container(
                       padding: const EdgeInsets.fromLTRB(14, 14, 14, 16),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: context.tp.surface,
                         borderRadius: BorderRadius.circular(18),
+                        border: Border.all(color: context.tp.border),
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black.withValues(alpha: 0.06),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../theme/app_theme.dart';
+import '../theme/app_theme_extensions.dart';
 
 /// Logo Teranga Pass avec animation « respiration » (échelle + opacité).
 class AnimatedTerangaLogo extends StatefulWidget {
@@ -140,7 +141,7 @@ class TerangaBrandedLoading extends StatelessWidget {
           style: GoogleFonts.poppins(
             fontSize: dense ? 13 : 15,
             fontWeight: FontWeight.w600,
-            color: const Color(0xFF374151),
+            color: context.tp.textPrimary,
             height: 1.35,
           ),
         ),
@@ -198,7 +199,7 @@ class AuthGateLoadingScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: backgroundColor ?? const Color(0xFFFAF7F0),
+      backgroundColor: backgroundColor ?? context.tp.scaffold,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -211,7 +212,7 @@ class AuthGateLoadingScaffold extends StatelessWidget {
               style: GoogleFonts.poppins(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: const Color(0xFF374151),
+                color: context.tp.textPrimary,
               ),
             ),
             const SizedBox(height: 22),
@@ -244,12 +245,12 @@ class CardListLoadingSkeleton extends StatelessWidget {
   final int itemCount;
   final EdgeInsets padding;
 
-  static Widget _bar(double w, double h) {
+  static Widget _bar(double w, double h, Color color) {
     return Container(
       width: w,
       height: h,
       decoration: BoxDecoration(
-        color: Colors.grey.shade200,
+        color: color,
         borderRadius: BorderRadius.circular(6),
       ),
     );
@@ -257,6 +258,7 @@ class CardListLoadingSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tp = context.tp;
     return ListView.separated(
       padding: padding,
       itemCount: itemCount,
@@ -265,10 +267,10 @@ class CardListLoadingSkeleton extends StatelessWidget {
         return Container(
           height: 96,
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: tp.surface,
             borderRadius: BorderRadius.circular(14),
             border: Border(
-              left: BorderSide(color: Colors.grey.shade300, width: 4),
+              left: BorderSide(color: tp.border, width: 4),
             ),
           ),
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
@@ -277,15 +279,15 @@ class CardListLoadingSkeleton extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  _bar(100, 14),
+                  _bar(100, 14, tp.skeleton),
                   const Spacer(),
-                  _bar(40, 12),
+                  _bar(40, 12, tp.skeleton),
                 ],
               ),
               const SizedBox(height: 12),
-              _bar(double.infinity, 16),
+              _bar(double.infinity, 16, tp.skeleton),
               const SizedBox(height: 8),
-              _bar(double.infinity, 12),
+              _bar(double.infinity, 12, tp.skeleton),
             ],
           ),
         );
@@ -312,7 +314,7 @@ class CompactRowSkeleton extends StatelessWidget {
             Container(
               height: 34,
               decoration: BoxDecoration(
-                color: Colors.grey.shade200,
+                color: context.tp.skeleton,
                 borderRadius: BorderRadius.circular(8),
               ),
             ),

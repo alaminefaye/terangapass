@@ -21,7 +21,10 @@ import '../widgets/map_legend_strip.dart';
 import '../services/offline_pack_service.dart';
 import '../widgets/offline_cache_snack.dart';
 import '../utils/poi_media_helpers.dart';
+import '../utils/auth_guard.dart';
+import '../theme/app_theme_extensions.dart';
 import '../utils/promo_popup_presenter.dart';
+import '../services/guest_data_service.dart';
 import 'place_detail_screen.dart';
 
 
@@ -36,6 +39,38 @@ class MapScreen extends StatefulWidget {
     this.initialLatLng,
     this.focusedPlaceName,
   });
+
+  /// Ouvre la carte ; connexion requise pour un lieu ciblé ou itinéraire.
+  static Future<void> push(
+    BuildContext context, {
+    String? initialQuery,
+    LatLng? initialLatLng,
+    String? focusedPlaceName,
+    bool requireAuth = false,
+  }) async {
+    final needsAuth = requireAuth ||
+        initialLatLng != null ||
+        (focusedPlaceName != null && focusedPlaceName.trim().isNotEmpty);
+    if (needsAuth) {
+      final ok = await AuthGuard.requireAuth(
+        context,
+        featureName: AppLocalizations.of(context)!.authFeatureMapAndRoute,
+        guestExplorationHint: false,
+      );
+      if (!ok) return;
+    }
+    if (!context.mounted) return;
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => MapScreen(
+          initialQuery: initialQuery,
+          initialLatLng: initialLatLng,
+          focusedPlaceName: focusedPlaceName,
+        ),
+      ),
+    );
+  }
 
   @override
   State<MapScreen> createState() => _MapScreenState();
@@ -117,15 +152,19 @@ class _MapScreenState extends State<MapScreen> {
     }
     _initNotifications();
     _initTts();
-    _initLocationAndLoad().then((_) {
-      // Calcul automatique de l'itinéraire si on a un lieu ciblé.
-      if (_hasDestination && mounted) {
+    _initLocationAndLoad().then((_) async {
+      if (_hasDestination && mounted && await AuthGuard.isLoggedIn()) {
         _calculateRoute();
       }
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         PromoPopupPresenter.showForPlacement(context, 'map');
+      }
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (mounted && !await AuthGuard.isLoggedIn()) {
+        unawaited(GuestDataService.warmUpOfflineCatalog());
       }
     });
   }
@@ -148,10 +187,21 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
+  Future<bool> _ensureAuthForItinerary() async {
+    if (await AuthGuard.isLoggedIn()) return true;
+    if (!mounted) return false;
+    return AuthGuard.requireAuth(
+      context,
+      featureName: AppLocalizations.of(context)!.authFeatureRoute,
+      guestExplorationHint: false,
+    );
+  }
+
   /// Itinéraire Google Directions (km / durée réalistes), secours OSRM.
   Future<void> _calculateRoute() async {
     final dest = _destination;
     if (dest == null) return;
+    if (!await _ensureAuthForItinerary()) return;
 
     final origin = LatLng(
       _currentLat ?? _fallbackLat,
@@ -218,8 +268,9 @@ class _MapScreenState extends State<MapScreen> {
       if (!mounted) return;
 
       if (response.statusCode != 200) {
+        final l10n = AppLocalizations.of(context)!;
         setState(() {
-          _routeError = 'Erreur serveur (${response.statusCode})';
+          _routeError = l10n.mapRouteServerError(response.statusCode);
           _isLoadingRoute = false;
         });
         return;
@@ -228,8 +279,9 @@ class _MapScreenState extends State<MapScreen> {
       final data = jsonDecode(response.body) as Map<String, dynamic>;
       final routes = data['routes'] as List?;
       if (routes == null || routes.isEmpty) {
+        final l10n = AppLocalizations.of(context)!;
         setState(() {
-          _routeError = 'Aucun itinéraire trouvé';
+          _routeError = l10n.mapRouteNotFound;
           _isLoadingRoute = false;
         });
         return;
@@ -264,9 +316,9 @@ class _MapScreenState extends State<MapScreen> {
       );
     } catch (_) {
       if (!mounted) return;
+      final l10n = AppLocalizations.of(context)!;
       setState(() {
-        _routeError =
-            'Impossible de calculer l\'itinéraire. Vérifiez Directions API sur Google Cloud.';
+        _routeError = l10n.mapRouteDirectionsApiError;
         _isLoadingRoute = false;
       });
     }
@@ -389,7 +441,9 @@ class _MapScreenState extends State<MapScreen> {
     };
   }
 
-  void _startInAppNavigation() {
+  Future<void> _startInAppNavigation() async {
+    if (!await _ensureAuthForItinerary()) return;
+    if (!mounted) return;
     if (_routePoints.isEmpty || _isNavigating) return;
     _lastSpokenStepIndex = -1;
     _maneuverPreviewSpoken.clear();
@@ -530,14 +584,16 @@ class _MapScreenState extends State<MapScreen> {
       // Notification d'approche (200 m)
       if (remaining <= 200 && !_approachNotified) {
         _approachNotified = true;
+        if (!mounted) return;
+        final l10n = AppLocalizations.of(context)!;
+        final dist = '${remaining.round()} m';
         _sendNavNotification(
           id: 1,
-          title: 'Vous approchez !',
-          body: 'Votre destination est à ${remaining.round()} mètres.',
+          title: l10n.mapNavApproachingTitle,
+          body: l10n.mapNavApproachingBody(dist),
         );
         if (mounted) {
-          final approachText =
-              'Dans ${remaining.round()} mètres, vous arriverez à destination';
+          final approachText = l10n.mapNavInMeters('${remaining.round()}');
           setState(() {
             _navInstruction = approachText;
             _navIcon = Icons.flag_rounded;
@@ -549,13 +605,15 @@ class _MapScreenState extends State<MapScreen> {
       // Arrivée à destination (30 m)
       if (remaining <= 30 && !_arrivalNotified) {
         _arrivalNotified = true;
+        if (!mounted) return;
+        final l10n = AppLocalizations.of(context)!;
         _sendNavNotification(
           id: 2,
-          title: 'Vous êtes arrivé !',
-          body: 'Vous avez atteint votre destination : ${_destinationName ?? ""}',
+          title: l10n.mapNavArrivedTitle,
+          body: l10n.mapNavArrivedBody,
         );
         if (mounted) {
-          const arrivalText = 'Vous êtes arrivé à destination';
+          final arrivalText = l10n.mapNavArrivedVoice;
           setState(() {
             _navInstruction = arrivalText;
             _navIcon = Icons.flag_rounded;
@@ -631,11 +689,85 @@ class _MapScreenState extends State<MapScreen> {
     return double.infinity;
   }
 
+  Future<bool> _loadOfflinePointsIntoState() async {
+    final offlinePoi = await OfflinePackService().readOfflinePoiList();
+    final offlineSites =
+        await OfflinePackService().readOfflineCompetitionSitesList();
+    final offlineEmb =
+        await OfflinePackService().readOfflineEmbassiesList();
+    if (offlinePoi.isEmpty &&
+        offlineSites.isEmpty &&
+        offlineEmb.isEmpty) {
+      return false;
+    }
+
+    final lat = _currentLat;
+    final lng = _currentLng;
+    final sitePoints = offlineSites.map((s) {
+      final m = Map<String, dynamic>.from(
+        s.map((k, v) => MapEntry(k.toString(), v)),
+      );
+      final pLat = _toDouble(m['latitude']);
+      final pLng = _toDouble(m['longitude']);
+      double? dm;
+      if (lat != null && lng != null && pLat != null && pLng != null) {
+        dm = LocationService().calculateDistance(lat, lng, pLat, pLng);
+      }
+      return <String, dynamic>{
+        'id': 'site_${m['id']}',
+        'name': m['name'],
+        'category': 'Sites JOJ',
+        'distance': m['location'] ?? '',
+        'distance_meters': dm,
+        'latitude': m['latitude'],
+        'longitude': m['longitude'],
+        'address': m['address'] ?? m['location'],
+      };
+    }).toList();
+    final embassyPoints = offlineEmb
+        .map(
+          (e) => _mapEmbassyToPoint(
+            Map<String, dynamic>.from(
+              e.map((k, v) => MapEntry(k.toString(), v)),
+            ),
+          ),
+        )
+        .toList();
+    final merged = [
+      ...offlinePoi,
+      ...sitePoints,
+      ...embassyPoints,
+    ]..sort(
+        (a, b) => _sortDistanceMeters(a).compareTo(_sortDistanceMeters(b)),
+      );
+    const nearbySheetLimit = 40;
+    final l10n = AppLocalizations.of(context)!;
+    final filtered =
+        merged.where((p) => _matchesCurrentFilter(p, l10n)).toList();
+    if (!mounted) return true;
+    setState(() {
+      _allPoints = merged;
+      _pointsOfInterest = filtered;
+      _nearbyListPoints = filtered.take(nearbySheetLimit).toList();
+      _pointsErrorMessage = null;
+    });
+    _syncMapToPoints();
+    return true;
+  }
+
   Future<void> _loadPointsOfInterest() async {
     setState(() {
       _isLoadingPoints = true;
       _pointsErrorMessage = null;
     });
+
+    final guest = !await AuthGuard.isLoggedIn();
+    if (guest) {
+      final hadOffline = await _loadOfflinePointsIntoState();
+      if (hadOffline && mounted) {
+        setState(() => _isLoadingPoints = false);
+      }
+    }
 
     try {
       final apiService = ApiService();
@@ -740,77 +872,19 @@ class _MapScreenState extends State<MapScreen> {
       _syncMapToPoints();
     } catch (e) {
       if (!mounted) return;
-      final offlinePoi = await OfflinePackService().readOfflinePoiList();
-      final offlineSites =
-          await OfflinePackService().readOfflineCompetitionSitesList();
-      final offlineEmb =
-          await OfflinePackService().readOfflineEmbassiesList();
-      if (offlinePoi.isNotEmpty ||
-          offlineSites.isNotEmpty ||
-          offlineEmb.isNotEmpty) {
-        final lat = _currentLat;
-        final lng = _currentLng;
-        final sitePoints = offlineSites.map((s) {
-          final m = Map<String, dynamic>.from(
-            s.map((k, v) => MapEntry(k.toString(), v)),
-          );
-          final pLat = _toDouble(m['latitude']);
-          final pLng = _toDouble(m['longitude']);
-          double? dm;
-          if (lat != null &&
-              lng != null &&
-              pLat != null &&
-              pLng != null) {
-            dm = LocationService().calculateDistance(lat, lng, pLat, pLng);
-          }
-          return <String, dynamic>{
-            'id': 'site_${m['id']}',
-            'name': m['name'],
-            'category': 'Sites JOJ',
-            'distance': m['location'] ?? '',
-            'distance_meters': dm,
-            'latitude': m['latitude'],
-            'longitude': m['longitude'],
-            'address': m['address'] ?? m['location'],
-          };
-        }).toList();
-        final embassyPoints = offlineEmb
-            .map(
-              (e) => _mapEmbassyToPoint(
-                Map<String, dynamic>.from(
-                  e.map((k, v) => MapEntry(k.toString(), v)),
-                ),
-              ),
-            )
-            .toList();
-        final merged = [
-          ...offlinePoi,
-          ...sitePoints,
-          ...embassyPoints,
-        ]..sort(
-            (a, b) =>
-                _sortDistanceMeters(a).compareTo(_sortDistanceMeters(b)),
-          );
-        const nearbySheetLimit = 40;
-        final l10n = AppLocalizations.of(context)!;
-        final filtered =
-            merged.where((p) => _matchesCurrentFilter(p, l10n)).toList();
-        setState(() {
-          _allPoints = merged;
-          _pointsOfInterest = filtered;
-          _nearbyListPoints = filtered.take(nearbySheetLimit).toList();
-          _pointsErrorMessage = null;
-        });
-        _syncMapToPoints();
+      if (await _loadOfflinePointsIntoState()) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) showOfflineCacheSnackBar(context);
         });
       } else {
+        final raw = e.toString().replaceAll('Exception: ', '');
         setState(() {
           _allPoints = [];
           _pointsOfInterest = [];
           _nearbyListPoints = [];
-          _pointsErrorMessage = e.toString().replaceAll('Exception: ', '');
+          _pointsErrorMessage = guest
+              ? 'Lieux indisponibles pour le moment. Vérifiez internet, attendez la mise à jour des données sur l’accueil, ou réessayez.'
+              : raw;
         });
       }
     } finally {
@@ -1009,7 +1083,7 @@ class _MapScreenState extends State<MapScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F1EA),
+      backgroundColor: context.tp.scaffoldAlt,
       body: SafeArea(
         child: Stack(
           children: [
@@ -1036,100 +1110,22 @@ class _MapScreenState extends State<MapScreen> {
                 child: _buildNavHud(),
               ),
             if (!_isNavigating)
-            Positioned(
-              top: 10,
-              left: 16,
-              right: 16,
-              child: Row(
-                children: [
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: IconButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      icon: const Icon(Icons.arrow_back_rounded),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 12,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.search_rounded,
-                            color: AppTheme.textSecondary,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: TextField(
-                              controller: _searchController,
-                              onChanged: (_) => _applyLocalFilters(),
-                              decoration: InputDecoration(
-                                isDense: true,
-                                border: InputBorder.none,
-                                hintText: l10n.mapPlaceholderSubtitle,
-                                hintStyle: GoogleFonts.poppins(
-                                  color: AppTheme.textSecondary,
-                                  fontSize: 12,
-                                ),
-                              ),
-                              style: GoogleFonts.poppins(
-                                color: AppTheme.textPrimary,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
+              Positioned(
+                top: 8,
+                left: 16,
+                right: 16,
+                child: _buildMapTopChrome(context, l10n),
               ),
-            ),
-            if (!_isNavigating)
-            Positioned(
-              top: 68,
-              left: 16,
-              right: 16,
-              child: SizedBox(
-                height: 40,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: PoiCategoryFilters.forMap(l10n).length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 6),
-                  itemBuilder: (context, index) {
-                    return _buildFilterChip(index, l10n);
-                  },
-                ),
-              ),
-            ),
-            Positioned(
-              top: 118,
-              left: 16,
-              right: 100,
-              child: const MapLegendStrip.mapHint(),
-            ),
             Positioned(
               right: 16,
               bottom: 250,
               child: FloatingActionButton.small(
                 heroTag: 'map_locate',
-                backgroundColor: Colors.white,
+                backgroundColor: context.tp.surface,
                 onPressed: _centerOnCurrentLocation,
                 child: Icon(
                   Icons.my_location_rounded,
-                  color: _isLocating ? AppTheme.primaryGreen : AppTheme.textPrimary,
+                  color: _isLocating ? AppTheme.primaryGreen : context.tp.textPrimary,
                 ),
               ),
             ),
@@ -1147,14 +1143,16 @@ class _MapScreenState extends State<MapScreen> {
               minChildSize: 0.20,
               maxChildSize: 0.78,
               builder: (context, scrollController) {
+                final sheetTp = context.tp;
                 return Container(
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: sheetTp.surface,
                     borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
+                    border: Border(top: BorderSide(color: sheetTp.border)),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.08),
+                        color: Colors.black.withValues(alpha: 0.2),
                         blurRadius: 12,
                         offset: const Offset(0, -2),
                       ),
@@ -1168,7 +1166,7 @@ class _MapScreenState extends State<MapScreen> {
                           width: 42,
                           height: 4,
                           decoration: BoxDecoration(
-                            color: Colors.grey.shade300,
+                            color: sheetTp.border,
                             borderRadius: BorderRadius.circular(99),
                           ),
                         ),
@@ -1179,7 +1177,7 @@ class _MapScreenState extends State<MapScreen> {
                         style: GoogleFonts.poppins(
                           fontWeight: FontWeight.w700,
                           fontSize: 14,
-                          color: AppTheme.textPrimary,
+                          color: sheetTp.textPrimary,
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -1195,7 +1193,7 @@ class _MapScreenState extends State<MapScreen> {
                                   _pointsErrorMessage!,
                                   style: GoogleFonts.poppins(
                                     fontSize: 12,
-                                    color: AppTheme.textSecondary,
+                                    color: sheetTp.textSecondary,
                                   ),
                                   textAlign: TextAlign.center,
                                 ),
@@ -1206,7 +1204,7 @@ class _MapScreenState extends State<MapScreen> {
                                   l10n.mapNoPoints,
                                   style: GoogleFonts.poppins(
                                     fontSize: 13,
-                                    color: AppTheme.textSecondary,
+                                    color: sheetTp.textSecondary,
                                   ),
                                 ),
                               )
@@ -1233,7 +1231,9 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
-  void _focusPointOnMap(Map<String, dynamic> point) {
+  Future<void> _focusPointOnMap(Map<String, dynamic> point) async {
+    if (!await _ensureAuthForItinerary()) return;
+    if (!mounted) return;
     final name = (point['name'] ?? '').toString().trim();
     final lat = point['latitude'] ?? point['lat'];
     final lng = point['longitude'] ?? point['lng'] ?? point['lon'];
@@ -1296,15 +1296,18 @@ class _MapScreenState extends State<MapScreen> {
 
   Widget _buildDestinationPanel(BuildContext context) {
     final name = _destinationName ?? '';
+    final tp = context.tp;
+    final l10n = AppLocalizations.of(context)!;
 
     // Pendant la navigation : pas de second « Démarrer », uniquement arrêter.
     if (_isNavigating) {
       return Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+        decoration: BoxDecoration(
+          color: tp.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
+          border: Border(top: BorderSide(color: tp.border)),
           boxShadow: [
-            BoxShadow(color: Colors.black12, blurRadius: 12, offset: Offset(0, -2)),
+            BoxShadow(color: Colors.black.withValues(alpha: 0.25), blurRadius: 12, offset: const Offset(0, -2)),
           ],
         ),
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
@@ -1317,7 +1320,7 @@ class _MapScreenState extends State<MapScreen> {
                 width: 42,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
+                  color: tp.border,
                   borderRadius: BorderRadius.circular(99),
                 ),
               ),
@@ -1339,19 +1342,19 @@ class _MapScreenState extends State<MapScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Navigation en cours',
+                        l10n.mapNavInProgress,
                         style: GoogleFonts.poppins(
                           fontWeight: FontWeight.w700,
                           fontSize: 14,
-                          color: const Color(0xFF1A1F2E),
+                          color: tp.textPrimary,
                         ),
                       ),
                       if (_navRemainingDistance != null)
                         Text(
-                          'Reste $_navRemainingDistance',
+                          l10n.mapNavRemaining(_navRemainingDistance!),
                           style: GoogleFonts.poppins(
                             fontSize: 12,
-                            color: AppTheme.textSecondary,
+                            color: tp.textSecondary,
                           ),
                         ),
                     ],
@@ -1359,8 +1362,8 @@ class _MapScreenState extends State<MapScreen> {
                 ),
                 IconButton(
                   onPressed: _dismissDestination,
-                  icon: const Icon(Icons.close_rounded, color: AppTheme.textSecondary),
-                  tooltip: 'Fermer',
+                  icon: Icon(Icons.close_rounded, color: tp.textSecondary),
+                  tooltip: l10n.close,
                 ),
               ],
             ),
@@ -1370,7 +1373,7 @@ class _MapScreenState extends State<MapScreen> {
               child: OutlinedButton.icon(
                 onPressed: _stopNavigation,
                 icon: const Icon(Icons.stop_rounded, size: 20),
-                label: const Text('Arrêter la navigation'),
+                label: Text(l10n.mapNavStop),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppTheme.primaryRed,
                   side: const BorderSide(color: AppTheme.primaryRed),
@@ -1391,11 +1394,12 @@ class _MapScreenState extends State<MapScreen> {
     }
 
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      decoration: BoxDecoration(
+        color: tp.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
+        border: Border(top: BorderSide(color: tp.border)),
         boxShadow: [
-          BoxShadow(color: Colors.black12, blurRadius: 12, offset: Offset(0, -2)),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.25), blurRadius: 12, offset: const Offset(0, -2)),
         ],
       ),
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
@@ -1408,7 +1412,7 @@ class _MapScreenState extends State<MapScreen> {
               width: 42,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.grey.shade300,
+                color: tp.border,
                 borderRadius: BorderRadius.circular(99),
               ),
             ),
@@ -1435,21 +1439,24 @@ class _MapScreenState extends State<MapScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      name.isEmpty ? 'Destination' : name,
+                      name.isEmpty ? l10n.jojDestinationFallback : name,
                       style: GoogleFonts.poppins(
                         fontWeight: FontWeight.w700,
                         fontSize: 15,
-                        color: const Color(0xFF1A1F2E),
+                        color: tp.textPrimary,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                     if (_routeDistance != null && _routeDuration != null)
                       Text(
-                        '$_routeDistance · $_routeDuration en voiture',
+                        l10n.mapRouteSummaryDriving(
+                          _routeDistance!,
+                          _routeDuration!,
+                        ),
                         style: GoogleFonts.poppins(
                           fontSize: 12,
-                          color: AppTheme.textSecondary,
+                          color: tp.textSecondary,
                         ),
                       ),
                   ],
@@ -1457,8 +1464,8 @@ class _MapScreenState extends State<MapScreen> {
               ),
               IconButton(
                 onPressed: _dismissDestination,
-                icon: const Icon(Icons.close_rounded, color: AppTheme.textSecondary),
-                tooltip: 'Fermer',
+                icon: Icon(Icons.close_rounded, color: tp.textSecondary),
+                tooltip: l10n.close,
               ),
             ],
           ),
@@ -1488,7 +1495,9 @@ class _MapScreenState extends State<MapScreen> {
                         )
                       : const Icon(Icons.alt_route_rounded, size: 18),
                   label: Text(
-                    _routePoints.isNotEmpty ? 'Recalculer' : 'Voir l\'itinéraire',
+                    _routePoints.isNotEmpty
+                        ? l10n.mapRouteRecalculate
+                        : l10n.mapRouteView,
                   ),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: const Color(0xFF2E8B57),
@@ -1514,7 +1523,7 @@ class _MapScreenState extends State<MapScreen> {
                             await _calculateRoute();
                           }
                           if (mounted && _routePoints.isNotEmpty) {
-                            _startInAppNavigation();
+                            await _startInAppNavigation();
                           }
                         },
                   icon: _isLoadingRoute
@@ -1527,11 +1536,11 @@ class _MapScreenState extends State<MapScreen> {
                           ),
                         )
                       : const Icon(Icons.navigation_rounded, size: 18),
-                  label: const Text('Démarrer'),
+                  label: Text(l10n.mapNavStart),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF2E8B57),
                     foregroundColor: Colors.white,
-                    disabledBackgroundColor: Colors.grey.shade300,
+                    disabledBackgroundColor: tp.isDark ? tp.border : Colors.grey.shade300,
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     textStyle: GoogleFonts.poppins(
                       fontSize: 13,
@@ -1636,10 +1645,121 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
+  /// Barre supérieure carte : recherche + filtres + légende dans un même bloc visuel.
+  Widget _buildMapTopChrome(BuildContext context, AppLocalizations l10n) {
+    final tp = context.tp;
+
+    return Material(
+      color: Colors.transparent,
+      child: Container(
+        decoration: BoxDecoration(
+          color: tp.surface.withValues(alpha: 0.98),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: tp.border),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: tp.isDark ? 0.4 : 0.12),
+              blurRadius: 14,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Ligne recherche unifiée (retour + champ)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(6, 6, 8, 6),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () => Navigator.of(context).pop(),
+                      borderRadius: BorderRadius.circular(12),
+                      child: SizedBox(
+                        width: 44,
+                        height: 44,
+                        child: Icon(
+                          Icons.arrow_back_rounded,
+                          color: tp.textPrimary,
+                          size: 22,
+                        ),
+                      ),
+                    ),
+                  ),
+                  Container(
+                    width: 1,
+                    height: 28,
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    color: tp.border,
+                  ),
+                  Expanded(
+                    child: TextField(
+                      controller: _searchController,
+                      onChanged: (_) => _applyLocalFilters(),
+                      textInputAction: TextInputAction.search,
+                      style: GoogleFonts.poppins(
+                        color: tp.textPrimary,
+                        fontSize: 14,
+                        height: 1.25,
+                      ),
+                      decoration: InputDecoration(
+                        isDense: true,
+                        hintText: l10n.mapPlaceholderSubtitle,
+                        hintStyle: GoogleFonts.poppins(
+                          color: tp.textSecondary,
+                          fontSize: 13,
+                        ),
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 4,
+                          vertical: 10,
+                        ),
+                        prefixIcon: Icon(
+                          Icons.search_rounded,
+                          color: tp.textSecondary,
+                          size: 22,
+                        ),
+                        prefixIconConstraints: const BoxConstraints(
+                          minWidth: 40,
+                          minHeight: 40,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Divider(height: 1, thickness: 1, color: tp.border),
+            // Filtres catégories
+            SizedBox(
+              height: 44,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                itemCount: PoiCategoryFilters.forMap(l10n).length,
+                separatorBuilder: (_, _) => const SizedBox(width: 6),
+                itemBuilder: (context, index) => _buildFilterChip(index, l10n),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(10, 0, 10, 10),
+              child: const MapLegendStrip.mapHint(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildFilterChip(int index, AppLocalizations l10n) {
     final filters = PoiCategoryFilters.forMap(l10n);
     final filter = filters[index];
     final isSelected = _filterChipIndex == index;
+    final tp = context.tp;
 
     return ChoiceChip(
       label: Text(
@@ -1647,7 +1767,7 @@ class _MapScreenState extends State<MapScreen> {
         style: GoogleFonts.poppins(
           fontWeight: FontWeight.w600,
           fontSize: 11,
-          color: isSelected ? Colors.white : AppTheme.textPrimary,
+          color: isSelected ? Colors.white : tp.textPrimary,
         ),
       ),
       selected: isSelected,
@@ -1657,12 +1777,10 @@ class _MapScreenState extends State<MapScreen> {
         });
         _applyLocalFilters();
       },
-      backgroundColor: Colors.white,
-      selectedColor: const Color(0xFF1A1F2E),
+      backgroundColor: tp.surface,
+      selectedColor: AppTheme.primaryGreen,
       side: BorderSide(
-        color: isSelected
-            ? const Color(0xFF1A1F2E)
-            : Colors.grey.withValues(alpha: 0.3),
+        color: isSelected ? AppTheme.primaryGreen : tp.border,
       ),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
     );
@@ -1677,6 +1795,7 @@ class _MapScreenState extends State<MapScreen> {
     final thumbnailUrl = PoiMediaHelpers.thumbnailUrl(point);
     final categoryColor = _colorForCategory(category);
     final categoryIcon = _iconForCategory(category);
+    final tp = context.tp;
 
     return Material(
       color: Colors.transparent,
@@ -1687,9 +1806,9 @@ class _MapScreenState extends State<MapScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
           decoration: BoxDecoration(
-            color: const Color(0xFFFAF8F3),
+            color: tp.surfaceElevated,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFE8E1D5)),
+            border: Border.all(color: tp.border),
           ),
           child: Row(
             children: [
@@ -1746,7 +1865,7 @@ class _MapScreenState extends State<MapScreen> {
                       style: GoogleFonts.poppins(
                         fontWeight: FontWeight.w700,
                         fontSize: 16,
-                        color: const Color(0xFF1A1F2E),
+                        color: tp.textPrimary,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -1756,7 +1875,7 @@ class _MapScreenState extends State<MapScreen> {
                       distanceLabel,
                       style: GoogleFonts.poppins(
                         fontSize: 13,
-                        color: AppTheme.textSecondary,
+                        color: tp.textSecondary,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -1772,7 +1891,7 @@ class _MapScreenState extends State<MapScreen> {
                   tooltip: l10n.call,
                 )
               else
-                Icon(Icons.chevron_right, color: Colors.grey[400]),
+                Icon(Icons.chevron_right, color: tp.textSecondary),
             ],
           ),
         ),

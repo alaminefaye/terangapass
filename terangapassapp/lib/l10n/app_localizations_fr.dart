@@ -629,6 +629,39 @@ class AppLocalizationsFr extends AppLocalizations {
   String get profileLogout => 'Déconnexion';
 
   @override
+  String get profileDeleteAccount => 'Supprimer mon compte';
+
+  @override
+  String get profileDeleteAccountTitle => 'Supprimer le compte';
+
+  @override
+  String get profileDeleteAccountBody =>
+      'Cette action est irréversible. Vos alertes, signalements et données associées seront supprimés définitivement. Pour confirmer, saisissez exactement le code suivant dans le champ ci-dessous :';
+
+  @override
+  String get profileDeleteAccountCodeLabel => 'Code de confirmation';
+
+  @override
+  String get profileDeleteAccountCodeHint => 'teranga pass';
+
+  @override
+  String get profileDeleteAccountCodeFieldHint => 'Saisissez le code ici';
+
+  @override
+  String get profileDeleteAccountCodeError =>
+      'Code incorrect. Saisissez exactement : teranga pass';
+
+  @override
+  String get profileDeleteAccountConfirm => 'Supprimer définitivement';
+
+  @override
+  String get profileDeleteAccountSuccess => 'Votre compte a été supprimé.';
+
+  @override
+  String get profileDeleteAccountFailed =>
+      'Impossible de supprimer le compte pour le moment.';
+
+  @override
   String get profileDefaultSosTitle => 'Alerte SOS';
 
   @override
@@ -808,6 +841,18 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get mapFilterHospitals => 'Hôpitaux';
+
+  @override
+  String get mapFilterBanks => 'Banques';
+
+  @override
+  String get mapFilterGasStations => 'Stations';
+
+  @override
+  String get mapFilterShops => 'Boutiques';
+
+  @override
+  String get mapFilterConsulates => 'Consulats';
 
   @override
   String get notificationsFallbackTitle => 'Notification';
@@ -1010,17 +1055,36 @@ class AppLocalizationsFr extends AppLocalizations {
   String get nearbySponsorBadge => 'Partenaire';
 
   @override
+  String get profileThemeSetting => 'Apparence';
+
+  @override
+  String get profileThemeSettingHint =>
+      'Choisissez le mode clair, sombre ou automatique.';
+
+  @override
+  String get profileThemeSystem => 'Automatique (système)';
+
+  @override
+  String get profileThemeLight => 'Mode clair';
+
+  @override
+  String get profileThemeDark => 'Mode sombre';
+
+  @override
   String get profileEsimTitle => 'Forfaits eSIM';
 
   @override
-  String get profileEsimSubtitle => 'Data voyage (bientôt)';
+  String get profileEsimSubtitle => 'Fonctionnalité à venir';
 
   @override
-  String get esimComingTitle => 'eSIM Teranga Pass';
+  String get esimComingBadge => 'Fonctionnalité à venir';
+
+  @override
+  String get esimComingTitle => 'Forfaits eSIM';
 
   @override
   String get esimComingBody =>
-      'L’intégration partenaire (ex. Airalo), les paiements (PayDunya, Wave) et l’activation par QR arriveront dans une prochaine version. Cet écran sert de repère pour la démo et la recette produit.';
+      'L’achat de forfaits internet pour vos voyages au Sénégal sera bientôt disponible directement dans Teranga Pass.\n\nMerci de votre patience.';
 
   @override
   String get mapLegendTitle => 'Légende';
@@ -1155,7 +1219,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get homeJojCountdownLabel => 'Jours avant les JOJ';
 
   @override
-  String get homeEsimConnectSubtitle => 'Connectez-vous';
+  String get homeJojOlympicSubtitle => 'JEUX OLYMPIQUES DE LA JEUNESSE';
+
+  @override
+  String get homeJojCityLine => 'Dakar 2026';
+
+  @override
+  String get homeJojDateRange => '31 octobre -> 13 novembre';
+
+  @override
+  String get homeEsimConnectSubtitle => 'Bientôt disponible';
 
   @override
   String get homeNearbySubtitle => 'Autour de moi';
@@ -1171,4 +1244,491 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get homeCurrencyTitle => 'Convertisseur';
+
+  @override
+  String get authRequiredTitle => 'Connexion requise';
+
+  @override
+  String authRequiredBody(Object featureName) {
+    return 'Pour utiliser « $featureName », connectez-vous ou créez un compte.';
+  }
+
+  @override
+  String authRequiredBodyGuestHint(Object featureName) {
+    return 'Pour utiliser « $featureName », connectez-vous pour enregistrer vos actions.';
+  }
+
+  @override
+  String get authRequiredExploreHint =>
+      'Vous pouvez continuer à explorer le tourisme et les lieux recommandés sans compte.';
+
+  @override
+  String get authLater => 'Plus tard';
+
+  @override
+  String get authFeatureMedicalAlert => 'Alerte médicale';
+
+  @override
+  String get authFeatureAiAssistant => 'Assistant IA';
+
+  @override
+  String get authFeatureReport => 'Signalement';
+
+  @override
+  String get authFeatureMyReports => 'Mes signalements';
+
+  @override
+  String get authFeatureSos => 'SOS urgence';
+
+  @override
+  String get authFeatureMapAndRoute => 'la carte et l\'itinéraire';
+
+  @override
+  String get authFeatureRoute => 'l\'itinéraire';
+
+  @override
+  String get authFeatureLeaveReview => 'Laisser un avis';
+
+  @override
+  String get weatherUnavailable => 'Indisponible';
+
+  @override
+  String get weatherDefaultLabel => 'Météo';
+
+  @override
+  String get homeLogin => 'Connexion';
+
+  @override
+  String get recommendedSectionTitle => 'Nos recommandations';
+
+  @override
+  String get recommendedSectionSubtitle =>
+      'Sélection Teranga Pass · hôtels, restos et lieux utiles';
+
+  @override
+  String get recommendedBadge => 'Recommandé';
+
+  @override
+  String get viewOnMap => 'Voir sur la carte';
+
+  @override
+  String get loadingPleaseWait => 'Patientez un instant…';
+
+  @override
+  String get promoCloseBarrier => 'Fermer la publicité';
+
+  @override
+  String get promoLearnMore => 'En savoir plus';
+
+  @override
+  String promoSponsoredLabel(Object sponsor) {
+    return 'Publicité · $sponsor';
+  }
+
+  @override
+  String get aiWelcomeMessage =>
+      'Bonjour, je suis votre assistant IA TerangaPass. Posez votre question.';
+
+  @override
+  String get aiDisclaimer =>
+      'Réponses basées sur les données TerangaPass (JOJ Dakar 2026).';
+
+  @override
+  String get aiSuggestionCompetitionSites => 'Sites de compétition';
+
+  @override
+  String get aiSuggestionCompetitionSitesQuery =>
+      'Quels sont les sites de compétition JOJ ?';
+
+  @override
+  String get aiSuggestionShuttles => 'Navettes';
+
+  @override
+  String get aiSuggestionShuttlesQuery => 'Horaires des navettes';
+
+  @override
+  String get aiSuggestionTourism => 'Infos touristiques';
+
+  @override
+  String get aiSuggestionTourismQuery => 'Lieux touristiques à Dakar';
+
+  @override
+  String get aiSuggestionAnnouncements => 'Annonces';
+
+  @override
+  String get aiSuggestionAnnouncementsQuery => 'Dernières annonces audio';
+
+  @override
+  String get aiSuggestionEmergencies => 'Urgences';
+
+  @override
+  String get aiSuggestionEmergenciesQuery => 'Numéros d\'urgence au Sénégal';
+
+  @override
+  String get aiSuggestionCalendar => 'Calendrier';
+
+  @override
+  String get aiSuggestionCalendarQuery => 'Calendrier des compétitions JOJ';
+
+  @override
+  String get aiEmptyReply => 'Je n\'ai pas pu générer de réponse. Réessayez.';
+
+  @override
+  String aiErrorPrefix(Object error) {
+    return 'Erreur IA : $error';
+  }
+
+  @override
+  String get aiTitle => 'Assistant IA TerangaPass';
+
+  @override
+  String aiConnectedAs(Object name) {
+    return 'Connecté(e) : $name';
+  }
+
+  @override
+  String get aiAllowLocation => 'Autoriser la localisation';
+
+  @override
+  String get aiSuggestionsTitle => 'Suggestions';
+
+  @override
+  String get aiMessageHint => 'Écrire un message...';
+
+  @override
+  String get placeLeaveReviewTitle => 'Laisser un avis';
+
+  @override
+  String get placeReviewCommentHint => 'Votre commentaire (optionnel)…';
+
+  @override
+  String get placeReviewPublish => 'Publier';
+
+  @override
+  String get placeReviewPublished => 'Avis publié.';
+
+  @override
+  String get placeReviewSavedOffline =>
+      'Avis sauvegardé sur cet appareil. Pour le partager à tous les utilisateurs, connectez-vous.';
+
+  @override
+  String get placeReviewsUnavailableDetail =>
+      'Les avis ne sont pas disponibles pour ce lieu.';
+
+  @override
+  String get placeReviewsEmptyDetail =>
+      'Aucun avis pour le moment.\nSoyez le premier à laisser un commentaire !';
+
+  @override
+  String get placePhotoGallery => 'Galerie photos';
+
+  @override
+  String get placeInfoDistance => 'Distance';
+
+  @override
+  String get placeInfoAddress => 'Adresse';
+
+  @override
+  String get placeInfoPhone => 'Téléphone';
+
+  @override
+  String get placeInfoHours => 'Horaires';
+
+  @override
+  String get placeInfoDuration => 'Durée estimée';
+
+  @override
+  String get placeInfoDirections => 'Comment s\'y rendre';
+
+  @override
+  String get placeWebsite => 'Site web';
+
+  @override
+  String get placeDescription => 'Description';
+
+  @override
+  String get placeReviewsSectionTitle => 'Avis & commentaires';
+
+  @override
+  String placeReviewCount(int count) {
+    return '$count avis';
+  }
+
+  @override
+  String get placeReviewsUnavailable =>
+      'Les avis ne sont pas disponibles pour le moment.';
+
+  @override
+  String get placeReviewsEmpty =>
+      'Aucun avis pour le moment. Soyez le premier !';
+
+  @override
+  String get reviewAuthorMe => 'Moi';
+
+  @override
+  String get reviewAuthorAnonymous => 'Anonyme';
+
+  @override
+  String get embassiesTitle => 'Ambassades';
+
+  @override
+  String get embassiesSearchHint => 'Rechercher un pays...';
+
+  @override
+  String get embassiesSortDistance => 'Distance';
+
+  @override
+  String get embassiesSortRating => 'Note';
+
+  @override
+  String get embassiesSortName => 'A-Z';
+
+  @override
+  String get embassyTypeConsulate => 'Consulat';
+
+  @override
+  String get embassyTypeEmbassy => 'Ambassade';
+
+  @override
+  String embassyOpeningHours(Object hours) {
+    return 'Horaires : $hours';
+  }
+
+  @override
+  String embassyRating(Object rating) {
+    return 'Note : $rating / 5';
+  }
+
+  @override
+  String embassyCoordinates(Object coords) {
+    return 'Coordonnées : $coords';
+  }
+
+  @override
+  String embassyPhone(Object phone) {
+    return 'Tél : $phone';
+  }
+
+  @override
+  String embassyEmail(Object email) {
+    return 'Email : $email';
+  }
+
+  @override
+  String get embassyActionMap => 'Carte';
+
+  @override
+  String get embassyActionWebsite => 'Site web';
+
+  @override
+  String get embassyUrgent => 'Urgence';
+
+  @override
+  String get embassyFilterConsulates => 'Consulats';
+
+  @override
+  String get embassyFilterEmbassies => 'Ambassades';
+
+  @override
+  String embassyDistanceLabel(Object distance) {
+    return 'Distance : $distance';
+  }
+
+  @override
+  String get tourismSearchMinChars =>
+      'Saisissez au moins 2 caractères pour rechercher.';
+
+  @override
+  String get tourismSearchNoResults =>
+      'Aucun lieu trouvé pour cette recherche.';
+
+  @override
+  String get tourismSearchUnavailable =>
+      'Recherche indisponible pour le moment.';
+
+  @override
+  String get tourismLocalFilterHint => 'Filtre local sur la liste affichée.';
+
+  @override
+  String get tourismEmptySearch => 'Aucun lieu pour cette recherche';
+
+  @override
+  String get nearbyErrorLocationDisabled =>
+      'La localisation du téléphone est désactivée. Activez-la dans les réglages.';
+
+  @override
+  String get nearbyErrorPermissionDenied =>
+      'La permission de localisation est refusée. Autorisez-la pour voir les lieux proches.';
+
+  @override
+  String get nearbyErrorPositionTimeout =>
+      'Position introuvable pour le moment. Réessayez.';
+
+  @override
+  String nearbyFallbackOutOfRadius(int radius) {
+    return 'Aucun lieu dans un rayon de $radius m. Élargissez le rayon ou changez de catégorie.';
+  }
+
+  @override
+  String get incidentVideoGallery => 'Galerie vidéo';
+
+  @override
+  String get incidentVideoCamera => 'Caméra vidéo';
+
+  @override
+  String get incidentAddVideoError => 'Impossible d\'ajouter la vidéo';
+
+  @override
+  String get incidentTrackAction => 'Suivre';
+
+  @override
+  String get incidentReportNavShort => 'Signaler';
+
+  @override
+  String get incidentHistoryTooltip => 'Historique';
+
+  @override
+  String get incidentPrivacyNotice =>
+      'Vos preuves seront chiffrées et transmises de façon sécurisée.';
+
+  @override
+  String get incidentEvidencePhoto => 'Photo';
+
+  @override
+  String get incidentEvidenceVideo => 'Vidéo';
+
+  @override
+  String get incidentEvidenceAudio => 'Audio';
+
+  @override
+  String incidentVideosAddedCount(int count) {
+    return '$count vidéo(s) ajoutée(s)';
+  }
+
+  @override
+  String incidentDossierRef(Object year, Object month, Object id) {
+    return 'Dossier TP-$year-$month-$id';
+  }
+
+  @override
+  String incidentDossierRefShort(Object id) {
+    return 'Dossier #$id';
+  }
+
+  @override
+  String get jojNoEventsForDate => 'Aucun événement pour cette date';
+
+  @override
+  String get jojCurrencyConverterTooltip => 'Convertisseur';
+
+  @override
+  String mapRouteServerError(int code) {
+    return 'Erreur serveur ($code)';
+  }
+
+  @override
+  String get mapRouteNotFound => 'Aucun itinéraire trouvé';
+
+  @override
+  String get mapRouteDirectionsApiError =>
+      'Impossible de calculer l\'itinéraire. Réessayez.';
+
+  @override
+  String get mapGuestPointsUnavailable =>
+      'Lieux indisponibles pour le moment. Connectez-vous pour tout afficher.';
+
+  @override
+  String get mapMissingCoordinates => 'Coordonnées manquantes';
+
+  @override
+  String get mapNavInProgress => 'Navigation en cours';
+
+  @override
+  String mapNavRemaining(Object distance) {
+    return 'Reste $distance';
+  }
+
+  @override
+  String get mapNavStop => 'Arrêter la navigation';
+
+  @override
+  String mapRouteSummaryDriving(Object distance, Object duration) {
+    return '$distance · $duration en voiture';
+  }
+
+  @override
+  String get mapRouteRecalculate => 'Recalculer';
+
+  @override
+  String get mapRouteView => 'Voir l\'itinéraire';
+
+  @override
+  String get mapNavStart => 'Démarrer';
+
+  @override
+  String get mapNavDefaultInstruction => 'Navigation…';
+
+  @override
+  String mapNavRemainingDistance(Object distance) {
+    return 'Distance restante : $distance';
+  }
+
+  @override
+  String get mapNavFollowRoute => 'Suivez la route';
+
+  @override
+  String get mapNavFollowRouteToDestination =>
+      'Suivez la route vers votre destination';
+
+  @override
+  String mapNavInMeters(Object distance) {
+    return 'Dans $distance mètres';
+  }
+
+  @override
+  String mapNavInKilometers(Object distance) {
+    return 'Dans $distance kilomètres';
+  }
+
+  @override
+  String get mapNavApproachingTitle => 'Vous approchez !';
+
+  @override
+  String mapNavApproachingBody(Object distance) {
+    return 'Votre destination est à $distance';
+  }
+
+  @override
+  String get mapNavArrivedTitle => 'Vous êtes arrivé !';
+
+  @override
+  String get mapNavArrivedBody => 'Vous êtes arrivé à destination.';
+
+  @override
+  String get mapNavArrivedVoice => 'Vous êtes arrivé à destination';
+
+  @override
+  String mapNavInstructionDepart(Object destination) {
+    return 'Partez vers $destination';
+  }
+
+  @override
+  String mapNavInstructionContinue(Object road) {
+    return 'Continuez sur $road';
+  }
+
+  @override
+  String mapNavInstructionTurn(Object direction, Object road) {
+    return 'Tournez $direction sur $road';
+  }
+
+  @override
+  String mapNavInstructionRoundabout(Object exit) {
+    return 'Au rond-point, prenez la $exit sortie';
+  }
+
+  @override
+  String mapNavInstructionArrive(Object destination) {
+    return 'Vous êtes arrivé à $destination';
+  }
 }

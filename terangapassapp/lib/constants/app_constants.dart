@@ -44,4 +44,7 @@ class AppConstants {
 
   /// Mis à `true` une fois que l'utilisateur a choisi sa langue (écran onboarding).
   static const String languageChosenKey = 'language_chosen';
+
+  /// Mode d’affichage : `system`, `light` ou `dark`.
+  static const String themeModeKey = 'theme_mode';
 }

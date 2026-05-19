@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
+import '../theme/app_theme_extensions.dart';
 
 class EsimComingScreen extends StatelessWidget {
   const EsimComingScreen({super.key});
@@ -11,7 +12,7 @@ class EsimComingScreen extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F1EA),
+      backgroundColor: context.tp.scaffoldAlt,
       appBar: AppBar(
         backgroundColor: AppTheme.primaryGreen,
         foregroundColor: Colors.white,
@@ -28,12 +29,31 @@ class EsimComingScreen extends StatelessWidget {
           children: [
             Icon(Icons.sim_card_rounded, size: 48, color: AppTheme.primaryGreen),
             const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: AppTheme.primaryGreen.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: AppTheme.primaryGreen.withValues(alpha: 0.35),
+                ),
+              ),
+              child: Text(
+                l10n.esimComingBadge,
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.primaryGreen,
+                ),
+              ),
+            ),
+            const SizedBox(height: 14),
             Text(
               l10n.esimComingTitle,
               style: GoogleFonts.poppins(
                 fontSize: 22,
                 fontWeight: FontWeight.w700,
-                color: const Color(0xFF1A1F2E),
+                color: context.tp.textPrimary,
               ),
             ),
             const SizedBox(height: 12),

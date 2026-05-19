@@ -4,7 +4,9 @@ import '../constants/poi_category_filters.dart';
 import '../services/api_service.dart';
 import '../services/location_service.dart';
 import '../theme/app_theme.dart';
+import '../theme/app_theme_extensions.dart';
 import '../utils/poi_media_helpers.dart';
+import '../l10n/app_localizations.dart';
 import '../screens/place_detail_screen.dart';
 
 /// Carrousel horizontal des lieux recommandés (hôtels, restaurants, etc.).
@@ -22,10 +24,10 @@ class RecommendedPlacesSection extends StatefulWidget {
   final bool compact;
 
   @override
-  State<RecommendedPlacesSection> createState() => _RecommendedPlacesSectionState();
+  State<RecommendedPlacesSection> createState() => RecommendedPlacesSectionState();
 }
 
-class _RecommendedPlacesSectionState extends State<RecommendedPlacesSection> {
+class RecommendedPlacesSectionState extends State<RecommendedPlacesSection> {
   List<Map<String, dynamic>> _places = [];
   bool _loading = true;
 
@@ -43,6 +45,9 @@ class _RecommendedPlacesSectionState extends State<RecommendedPlacesSection> {
       _load();
     }
   }
+
+  /// Recharge les lieux recommandés (pull-to-refresh accueil).
+  Future<void> reload() => _load();
 
   Future<void> _load() async {
     setState(() => _loading = true);
@@ -108,6 +113,8 @@ class _RecommendedPlacesSectionState extends State<RecommendedPlacesSection> {
     final cardWidth = widget.compact ? 200.0 : 240.0;
     final imageHeight = widget.compact ? 100.0 : 120.0;
 
+    final tp = context.tp;
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -121,11 +128,11 @@ class _RecommendedPlacesSectionState extends State<RecommendedPlacesSection> {
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                'Nos recommandations',
+                l10n.recommendedSectionTitle,
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: widget.compact ? 15 : 17,
                   fontWeight: FontWeight.w800,
-                  color: AppTheme.textPrimary,
+                  color: tp.textPrimary,
                 ),
               ),
             ),
@@ -133,10 +140,10 @@ class _RecommendedPlacesSectionState extends State<RecommendedPlacesSection> {
         ),
         const SizedBox(height: 4),
         Text(
-          'Sélection Teranga Pass · hôtels, restaurants et adresses de confiance',
+          l10n.recommendedSectionSubtitle,
           style: GoogleFonts.poppins(
             fontSize: 11,
-            color: AppTheme.textSecondary,
+            color: tp.textSecondary,
           ),
         ),
         const SizedBox(height: 12),
@@ -186,10 +193,12 @@ class _RecommendedPlaceCard extends StatelessWidget {
     final color = PoiCategoryFilters.colorForPoint(place);
     final icon = PoiCategoryFilters.iconForPoint(place);
 
+    final tp = context.tp;
+    final l10n = AppLocalizations.of(context)!;
     return SizedBox(
       width: width,
       child: Material(
-        color: Colors.white,
+        color: tp.surface,
         borderRadius: BorderRadius.circular(16),
         elevation: 0,
         child: InkWell(
@@ -198,7 +207,7 @@ class _RecommendedPlaceCard extends StatelessWidget {
           child: Ink(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFE8F5EE), width: 1.5),
+              border: Border.all(color: tp.border, width: 1.5),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -236,7 +245,7 @@ class _RecommendedPlaceCard extends StatelessWidget {
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
-                          'Recommandé',
+                          l10n.recommendedBadge,
                           style: GoogleFonts.poppins(
                             fontSize: 9,
                             fontWeight: FontWeight.w700,
@@ -260,7 +269,7 @@ class _RecommendedPlaceCard extends StatelessWidget {
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
-                            color: AppTheme.textPrimary,
+                            color: tp.textPrimary,
                           ),
                         ),
                         const SizedBox(height: 2),
@@ -270,7 +279,7 @@ class _RecommendedPlaceCard extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.poppins(
                             fontSize: 10,
-                            color: AppTheme.textSecondary,
+                            color: tp.textSecondary,
                           ),
                         ),
                         const Spacer(),
@@ -301,7 +310,7 @@ class _RecommendedPlaceCard extends StatelessWidget {
                                   textAlign: TextAlign.end,
                                   style: GoogleFonts.poppins(
                                     fontSize: 10,
-                                    color: AppTheme.textSecondary,
+                                    color: tp.textSecondary,
                                   ),
                                 ),
                               ),

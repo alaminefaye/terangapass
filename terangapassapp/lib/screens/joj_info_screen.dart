@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
+import '../theme/app_theme_extensions.dart';
 import '../services/api_service.dart';
 import '../services/offline_pack_service.dart';
 import '../widgets/loading_placeholders.dart';
@@ -184,6 +185,7 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final tp = context.tp;
     final topInset = MediaQuery.of(context).padding.top;
     final dayChips = _buildDayChips(_calendar);
     final selectedKey = _selectedDayKey ?? dayChips.firstOrNull?['key'];
@@ -192,7 +194,7 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
     final keepLegacyBuilders = [_buildCalendarTab, _buildSportsTab, _buildAccessTab];
     assert(keepLegacyBuilders.isNotEmpty);
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F1EA),
+      backgroundColor: tp.scaffoldAlt,
       body: _isLoading
             ? const TerangaBrandedLoading()
             : _errorMessage != null
@@ -202,7 +204,7 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
                   child: Text(
                     _errorMessage!,
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.poppins(color: AppTheme.textSecondary),
+                    style: GoogleFonts.poppins(color: tp.textSecondary),
                   ),
                 ),
               )
@@ -245,7 +247,7 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
                             ),
                             const Spacer(),
                             IconButton(
-                              tooltip: 'Convertisseur',
+                              tooltip: l10n.jojCurrencyConverterTooltip,
                               onPressed: () {
                                 Navigator.push(
                                   context,
@@ -264,7 +266,7 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          'JEUX OLYMPIQUES DE LA JEUNESSE',
+                          l10n.homeJojOlympicSubtitle,
                           style: GoogleFonts.poppins(
                             color: const Color(0xFFD4A017),
                             fontSize: 10,
@@ -274,7 +276,7 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Dakar 2026',
+                          l10n.homeJojCityLine,
                           style: GoogleFonts.robotoSlab(
                             color: Colors.white,
                             fontSize: 24,
@@ -282,7 +284,7 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
                           ),
                         ),
                         Text(
-                          '31 octobre -> 13 novembre',
+                          l10n.homeJojDateRange,
                           style: GoogleFonts.poppins(
                             color: Colors.white70,
                             fontSize: 12,
@@ -323,7 +325,7 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
                                   l10n.jojCalendarComingSoon,
                                   textAlign: TextAlign.center,
                                   style: GoogleFonts.poppins(
-                                    color: AppTheme.textSecondary,
+                                    color: tp.textSecondary,
                                   ),
                                 ),
                               ),
@@ -333,10 +335,10 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
                               Padding(
                                 padding: const EdgeInsets.only(top: 24),
                                 child: Text(
-                                  'Aucun evenement pour cette date',
+                                  l10n.jojNoEventsForDate,
                                   textAlign: TextAlign.center,
                                   style: GoogleFonts.poppins(
-                                    color: AppTheme.textSecondary,
+                                    color: tp.textSecondary,
                                   ),
                                 ),
                               ),
@@ -353,6 +355,7 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
 
   Widget _buildCalendarTab() {
     final l10n = AppLocalizations.of(context)!;
+    final tp = context.tp;
     if (_calendar.isEmpty) {
       return Center(
         child: Padding(
@@ -364,11 +367,12 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
               Container(
                 padding: const EdgeInsets.all(30),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: tp.surface,
                   shape: BoxShape.circle,
+                  border: Border.all(color: tp.border),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.05),
+                      color: Colors.black.withValues(alpha: tp.isDark ? 0.25 : 0.05),
                       blurRadius: 20,
                       offset: const Offset(0, 10),
                     ),
@@ -377,7 +381,7 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
                 child: Icon(
                   Icons.calendar_today_outlined,
                   size: 64,
-                  color: AppTheme.textSecondary,
+                  color: tp.textSecondary,
                 ),
               ),
               const SizedBox(height: 24),
@@ -386,7 +390,7 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
                 style: GoogleFonts.poppins(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
-                  color: AppTheme.textSecondary,
+                  color: tp.textSecondary,
                 ),
               ),
             ],
@@ -402,18 +406,19 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
 
   Widget _buildCalendarEvent(Map<String, dynamic> event) {
     final l10n = AppLocalizations.of(context)!;
+    final tp = context.tp;
     final rawDate = (event['date'] ?? '').toString();
     final startDate = (event['start_date'] ?? '').toString();
     final timeLabel = startDate.length >= 10 ? startDate.substring(5, 10) : '--:--';
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: tp.surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE5DFD3)),
+        border: Border.all(color: tp.border),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Colors.black.withValues(alpha: tp.isDark ? 0.2 : 0.05),
             offset: const Offset(0, 6),
             blurRadius: 12,
           ),
@@ -431,8 +436,8 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
                 Container(
                   width: 62,
                   padding: const EdgeInsets.only(right: 10),
-                  decoration: const BoxDecoration(
-                    border: Border(right: BorderSide(color: Color(0xFFE5DFD3))),
+                  decoration: BoxDecoration(
+                    border: Border(right: BorderSide(color: tp.border)),
                   ),
                   child: Column(
                     children: [
@@ -441,13 +446,14 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
                         style: GoogleFonts.robotoSlab(
                           fontWeight: FontWeight.w700,
                           fontSize: 16,
+                          color: tp.textPrimary,
                         ),
                       ),
                       Text(
                         'EVENT',
                         style: GoogleFonts.poppins(
                           fontSize: 9,
-                          color: AppTheme.textSecondary,
+                          color: tp.textSecondary,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -476,7 +482,7 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
                         style: GoogleFonts.robotoSlab(
                           fontWeight: FontWeight.w600,
                           fontSize: 14,
-                          color: AppTheme.textPrimary,
+                          color: tp.textPrimary,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -488,14 +494,14 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
                             '📍 ${(event['location'] ?? l10n.jojDefaultLocation).toString()}',
                             style: GoogleFonts.poppins(
                               fontSize: 11,
-                              color: AppTheme.textSecondary,
+                              color: tp.textSecondary,
                             ),
                           ),
                           Text(
                             rawDate,
                             style: GoogleFonts.poppins(
                               fontSize: 11,
-                              color: AppTheme.textSecondary,
+                              color: tp.textSecondary,
                             ),
                           ),
                         ],
@@ -505,7 +511,7 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
                 ),
                 Icon(
                   Icons.chevron_right_rounded,
-                  color: AppTheme.textSecondary,
+                  color: tp.textSecondary,
                   size: 20,
                 ),
               ],
@@ -530,10 +536,12 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) {
+        final sheetTp = context.tp;
         return Container(
-          decoration: const BoxDecoration(
-            color: Color(0xFFF4F1EA),
-            borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+          decoration: BoxDecoration(
+            color: sheetTp.scaffoldAlt,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
+            border: Border(top: BorderSide(color: sheetTp.border)),
           ),
           padding: const EdgeInsets.fromLTRB(18, 12, 18, 24),
           child: SafeArea(
@@ -547,7 +555,7 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
                     width: 44,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFD8D2C7),
+                      color: sheetTp.border,
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -568,7 +576,7 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
                   style: GoogleFonts.robotoSlab(
                     fontSize: 22,
                     fontWeight: FontWeight.w700,
-                    color: const Color(0xFF1A1F2E),
+                    color: sheetTp.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -583,7 +591,7 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
                     description,
                     style: GoogleFonts.poppins(
                       fontSize: 13,
-                      color: AppTheme.textSecondary,
+                      color: sheetTp.textSecondary,
                     ),
                   ),
                 ],
@@ -601,7 +609,7 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
                       style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF1A1F2E),
+                      backgroundColor: AppTheme.primaryGreen,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(
@@ -619,18 +627,19 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
   }
 
   Widget _detailRow(IconData icon, String value) {
+    final tp = context.tp;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
         children: [
-          Icon(icon, size: 16, color: AppTheme.textSecondary),
+          Icon(icon, size: 16, color: tp.textSecondary),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               value,
               style: GoogleFonts.poppins(
                 fontSize: 13,
-                color: AppTheme.textPrimary,
+                color: tp.textPrimary,
               ),
             ),
           ),
@@ -644,18 +653,16 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
       (event['title'] ?? '').toString().trim(),
       (event['location'] ?? '').toString().trim(),
     ].where((e) => e.isNotEmpty).join(' ');
-    Navigator.push(
+    MapScreen.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => MapScreen(
-          initialQuery: query.isEmpty ? 'Dakar' : query,
-        ),
-      ),
+      initialQuery: query.isEmpty ? 'Dakar' : query,
+      requireAuth: true,
     );
   }
 
   Widget _buildSportsTab() {
     final l10n = AppLocalizations.of(context)!;
+    final tp = context.tp;
     if (_sports.isEmpty) {
       return Center(
         child: Padding(
@@ -666,11 +673,12 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
               Container(
                 padding: const EdgeInsets.all(30),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: tp.surface,
                   shape: BoxShape.circle,
+                  border: Border.all(color: tp.border),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.05),
+                      color: Colors.black.withValues(alpha: tp.isDark ? 0.25 : 0.05),
                       blurRadius: 20,
                       offset: const Offset(0, 10),
                     ),
@@ -679,7 +687,7 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
                 child: Icon(
                   Icons.sports_rounded,
                   size: 64,
-                  color: AppTheme.textSecondary,
+                  color: tp.textSecondary,
                 ),
               ),
               const SizedBox(height: 24),
@@ -688,7 +696,7 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
                 style: GoogleFonts.poppins(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
-                  color: AppTheme.textSecondary,
+                  color: tp.textSecondary,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -710,11 +718,12 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
         final sport = _sports[index];
         return Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: tp.surface,
             borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: tp.border),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
+                color: Colors.black.withValues(alpha: tp.isDark ? 0.2 : 0.05),
                 offset: const Offset(0, 8),
                 blurRadius: 16,
               ),
@@ -748,7 +757,7 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
                       style: GoogleFonts.poppins(
                         fontWeight: FontWeight.w600,
                         fontSize: 14,
-                        color: AppTheme.textPrimary,
+                        color: tp.textPrimary,
                       ),
                       textAlign: TextAlign.center,
                       maxLines: 2,
@@ -773,14 +782,16 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
 
   Widget _buildSiteCard(Map<String, dynamic> site) {
     final l10n = AppLocalizations.of(context)!;
+    final tp = context.tp;
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: tp.surface,
         borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: tp.border),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Colors.black.withValues(alpha: tp.isDark ? 0.2 : 0.05),
             offset: const Offset(0, 10),
             blurRadius: 20,
           ),
@@ -820,7 +831,7 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
                         style: GoogleFonts.poppins(
                           fontWeight: FontWeight.bold,
                           fontSize: 18,
-                          color: AppTheme.textPrimary,
+                          color: tp.textPrimary,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -829,7 +840,7 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
                           Icon(
                             Icons.location_on_outlined,
                             size: 14,
-                            color: AppTheme.textSecondary,
+                            color: tp.textSecondary,
                           ),
                           const SizedBox(width: 4),
                           Text(
@@ -837,7 +848,7 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
                                 l10n.jojDefaultLocation,
                             style: GoogleFonts.poppins(
                               fontSize: 14,
-                              color: AppTheme.textSecondary,
+                              color: tp.textSecondary,
                             ),
                           ),
                         ],
@@ -880,7 +891,7 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
                 site['description'] as String,
                 style: GoogleFonts.poppins(
                   fontSize: 14,
-                  color: AppTheme.textSecondary,
+                  color: tp.textSecondary,
                   height: 1.5,
                 ),
               ),
@@ -958,23 +969,16 @@ class _JOJInfoScreenState extends State<JOJInfoScreen>
     ].join(' ');
 
     if (lat != null && lng != null) {
-      Navigator.push(
+      MapScreen.push(
         context,
-        MaterialPageRoute(
-          builder: (_) => MapScreen(
-            initialLatLng: LatLng(lat, lng),
-            focusedPlaceName: name.isNotEmpty ? name : null,
-          ),
-        ),
+        initialLatLng: LatLng(lat, lng),
+        focusedPlaceName: name.isNotEmpty ? name : null,
       );
     } else {
-      Navigator.push(
+      MapScreen.push(
         context,
-        MaterialPageRoute(
-          builder: (_) => MapScreen(
-            initialQuery: query.isEmpty ? 'Dakar' : query,
-          ),
-        ),
+        initialQuery: query.isEmpty ? 'Dakar' : query,
+        requireAuth: true,
       );
     }
   }
@@ -995,15 +999,18 @@ class _JojDayChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tp = context.tp;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         width: 48,
         margin: const EdgeInsets.only(right: 6),
         decoration: BoxDecoration(
-          color: active ? const Color(0xFF1A1F2E) : Colors.white,
+          color: active ? AppTheme.primaryGreen : tp.surface,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFFE5DFD3)),
+          border: Border.all(
+            color: active ? AppTheme.primaryGreen : tp.border,
+          ),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -1012,7 +1019,7 @@ class _JojDayChip extends StatelessWidget {
               day,
               style: GoogleFonts.poppins(
                 fontSize: 9,
-                color: active ? Colors.white70 : AppTheme.textSecondary,
+                color: active ? Colors.white70 : tp.textSecondary,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -1020,7 +1027,7 @@ class _JojDayChip extends StatelessWidget {
               num,
               style: GoogleFonts.poppins(
                 fontSize: 17,
-                color: active ? Colors.white : const Color(0xFF1A1F2E),
+                color: active ? Colors.white : tp.textPrimary,
                 fontWeight: FontWeight.w700,
               ),
             ),

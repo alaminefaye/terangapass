@@ -53,6 +53,21 @@ Route::prefix('v1')->group(function () {
     Route::get('/promotions/popup', [PromoPopupController::class, 'active']);
     Route::post('/promotions/popup/{id}/impression', [PromoPopupController::class, 'recordImpression']);
     Route::post('/promotions/popup/{id}/click', [PromoPopupController::class, 'recordClick']);
+
+    // Lecture publique (mode invité — carte, tourisme, JOJ, annonces…)
+    Route::get('/announcements/audio', [AudioAnnouncementController::class, 'index']);
+    Route::get('/sites/competitions', [CompetitionSiteController::class, 'index']);
+    Route::get('/sites/calendar', [CompetitionSiteController::class, 'calendar']);
+    Route::get('/transport/shuttles', [TransportController::class, 'shuttles']);
+    Route::get('/places/recommended', [RecommendedPlacesController::class, 'index']);
+    Route::get('/tourism/points-of-interest', [TourismController::class, 'pointsOfInterest']);
+    Route::get('/tourism/embassies', [TourismController::class, 'embassies']);
+    Route::get('/tourism/points-of-interest/{id}/reviews', [TourismController::class, 'getReviews']);
+    Route::get('/nearby', [NearbyController::class, 'index']);
+    Route::get('/joj/countdown', [UtilityController::class, 'jojCountdown']);
+    Route::get('/utility/weather', [UtilityController::class, 'weather']);
+    Route::get('/utility/currency/convert', [UtilityController::class, 'convertCurrency']);
+    Route::get('/notifications', [NotificationController::class, 'index']);
 });
 
 // Routes protégées (nécessitent une authentification)
@@ -60,6 +75,7 @@ Route::prefix('v1')->group(function () {
 Route::middleware(['api.user.active'])->prefix('v1')->group(function () {
     Route::get('/user/profile', [UserController::class, 'profile']);
     Route::put('/user/profile', [UserController::class, 'updateProfile']);
+    Route::delete('/user/account', [UserController::class, 'deleteAccount']);
 
     // Device Tokens
     Route::post('/device-tokens/register', [DeviceTokenController::class, 'register']);
@@ -75,8 +91,7 @@ Route::middleware(['api.user.active'])->prefix('v1')->group(function () {
     Route::get('/incidents/history', [IncidentController::class, 'history']);
     Route::get('/incidents/{id}/tracking', [IncidentController::class, 'tracking']);
 
-    // Notifications (admin broadcasts + historique personnel de l'utilisateur)
-    Route::get('/notifications', [NotificationController::class, 'index']);
+    // Notifications personnelles & actions admin
     Route::put('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
     Route::get('/my-notifications', [NotificationController::class, 'myNotifications']);
     Route::put('/my-notifications/{id}/read', [NotificationController::class, 'markMyNotificationAsRead']);
@@ -85,35 +100,12 @@ Route::middleware(['api.user.active'])->prefix('v1')->group(function () {
     Route::delete('/my-notifications/clear-all', [NotificationController::class, 'clearAllMyNotifications']);
     Route::delete('/my-notifications/{id}', [NotificationController::class, 'deleteMyNotification']);
 
-    // Annonces Audio
-    Route::get('/announcements/audio', [AudioAnnouncementController::class, 'index']);
-
-    // Sites JOJ
-    Route::get('/sites/competitions', [CompetitionSiteController::class, 'index']);
-    Route::get('/sites/calendar', [CompetitionSiteController::class, 'calendar']);
-
-    // Transport
-    Route::get('/transport/shuttles', [TransportController::class, 'shuttles']);
-
-    // Lieux recommandés (hôtels, restaurants, etc.)
-    Route::get('/places/recommended', [RecommendedPlacesController::class, 'index']);
-
-    // Tourisme
-    Route::get('/tourism/points-of-interest', [TourismController::class, 'pointsOfInterest']);
-    Route::get('/tourism/embassies', [TourismController::class, 'embassies']);
-    Route::get('/nearby', [NearbyController::class, 'index']);
-
-    // Avis sur les lieux touristiques
-    Route::get('/tourism/points-of-interest/{id}/reviews', [TourismController::class, 'getReviews']);
+    // Avis (publication réservée aux comptes connectés)
     Route::post('/tourism/points-of-interest/{id}/reviews', [TourismController::class, 'addReview']);
 
     // Assistant IA
     Route::post('/ai/chat', [AIChatController::class, 'chat']);
 
-    // Utilitaires
-    Route::get('/joj/countdown', [UtilityController::class, 'jojCountdown']);
-    Route::get('/utility/currency/convert', [UtilityController::class, 'convertCurrency']);
-
-    // Pass / billetterie pilote (QR signé)
+    // Pass / billetterie pilote (QR signé — compte requis)
     Route::get('/pass/ticket', [PassTicketController::class, 'my']);
 });

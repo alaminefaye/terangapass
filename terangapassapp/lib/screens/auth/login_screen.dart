@@ -4,13 +4,17 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../constants/app_constants.dart';
 import '../../l10n/app_localizations.dart';
 import '../../theme/app_theme.dart';
+import '../../theme/app_theme_extensions.dart';
 import '../../services/api_error_messages.dart';
 import '../../services/api_service.dart';
 import '../../state/app_state.dart';
 import '../../utils/login_identifier.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+  const LoginScreen({super.key, this.returnOnSuccess = false});
+
+  /// Si vrai, ferme l'écran avec `true` après connexion (depuis un garde invité).
+  final bool returnOnSuccess;
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -170,8 +174,11 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (mounted) {
         isAuthenticatedNotifier.value = true;
-        // Navigation vers l'écran d'accueil
-        Navigator.of(context).pushReplacementNamed('/home');
+        if (widget.returnOnSuccess) {
+          Navigator.of(context).pop(true);
+        } else {
+          Navigator.of(context).pushReplacementNamed('/home');
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -209,7 +216,7 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      backgroundColor: const Color(0xFFF3FBF6),
+      backgroundColor: context.tp.scaffold,
       extendBody: true,
       body: Stack(
         fit: StackFit.expand,
@@ -303,8 +310,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         height: 72,
                         width: 72,
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: context.tp.surface,
                           borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: context.tp.border),
                           boxShadow: [
                             BoxShadow(
                               color: Colors.black.withValues(alpha: 0.10),
@@ -331,7 +339,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       style: GoogleFonts.poppins(
                         fontSize: 26,
                         fontWeight: FontWeight.w700,
-                        color: const Color(0xFF111827),
+                        color: context.tp.textPrimary,
                         height: 1.05,
                       ),
                       textAlign: TextAlign.center,
@@ -341,7 +349,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       l10n.loginTagline,
                       style: GoogleFonts.poppins(
                         fontSize: 12,
-                        color: const Color(0xFF6B7280),
+                        color: context.tp.textSecondary,
                         height: 1.3,
                       ),
                       textAlign: TextAlign.center,
@@ -360,15 +368,18 @@ class _LoginScreenState extends State<LoginScreen> {
                     Container(
                       padding: const EdgeInsets.fromLTRB(14, 14, 14, 16),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: context.tp.surface,
                         borderRadius: BorderRadius.circular(18),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.06),
-                            blurRadius: 22,
-                            offset: const Offset(0, 12),
-                          ),
-                        ],
+                        border: Border.all(color: context.tp.border),
+                        boxShadow: context.tp.isDark
+                            ? null
+                            : [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.06),
+                                  blurRadius: 22,
+                                  offset: const Offset(0, 12),
+                                ),
+                              ],
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -592,6 +603,24 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ),
                           ),
                           const SizedBox(height: 8),
+                          if (!widget.returnOnSuccess) ...[
+                            TextButton(
+                              onPressed: _isLoading
+                                  ? null
+                                  : () {
+                                      Navigator.of(context)
+                                          .pushReplacementNamed('/home');
+                                    },
+                              child: Text(
+                                'Explorer sans compte',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 12,
+                                  color: AppTheme.textSecondary,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
                           TextButton(
                             onPressed: () {
                               Navigator.pushNamed(context, '/register');

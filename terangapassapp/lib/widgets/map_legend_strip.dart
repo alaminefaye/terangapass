@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
+import '../theme/app_theme_extensions.dart';
 
 /// Légende compacte pour les cartes « près de moi » et carte interactive.
 class MapLegendStrip extends StatelessWidget {
@@ -20,6 +21,7 @@ class MapLegendStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final tp = context.tp;
 
     if (_variant == _LegendVariant.mapHint ||
         _variant == _LegendVariant.homeJoj) {
@@ -27,11 +29,12 @@ class MapLegendStrip extends StatelessWidget {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.96),
+          color: tp.surface.withValues(alpha: 0.96),
           borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: tp.border),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.06),
+              color: Colors.black.withValues(alpha: tp.isDark ? 0.35 : 0.06),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -43,7 +46,7 @@ class MapLegendStrip extends StatelessWidget {
             Icon(
               joj ? Icons.location_on_rounded : Icons.info_outline_rounded,
               size: joj ? 18 : 16,
-              color: joj ? AppTheme.primaryGreen : AppTheme.textSecondary,
+              color: joj ? AppTheme.primaryGreen : tp.textSecondary,
             ),
             const SizedBox(width: 8),
             Expanded(
@@ -52,7 +55,7 @@ class MapLegendStrip extends StatelessWidget {
                 style: GoogleFonts.poppins(
                   fontSize: 11,
                   height: 1.35,
-                  color: AppTheme.textSecondary,
+                  color: tp.textSecondary,
                 ),
               ),
             ),
@@ -61,43 +64,55 @@ class MapLegendStrip extends StatelessWidget {
       );
     }
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.98),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.black.withValues(alpha: 0.06)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            l10n.mapLegendTitle,
-            style: GoogleFonts.poppins(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: AppTheme.textPrimary,
+    // « À deux pas » : carte légende lisible (sous la carte ou en overlay).
+    return Material(
+      color: Colors.transparent,
+      elevation: 4,
+      shadowColor: Colors.black.withValues(alpha: tp.isDark ? 0.5 : 0.15),
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: tp.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: tp.border),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              l10n.mapLegendTitle,
+              style: GoogleFonts.poppins(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: tp.textPrimary,
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          _LegendRow(
-            icon: Icons.person_pin_circle_rounded,
-            color: _userBlue,
-            label: l10n.mapLegendYou,
-          ),
-          const SizedBox(height: 6),
-          _LegendRow(
-            icon: Icons.place_rounded,
-            color: AppTheme.primaryGreen,
-            label: l10n.mapLegendPlace,
-          ),
-          const SizedBox(height: 6),
-          _LegendRow(
-            icon: Icons.place_rounded,
-            color: Colors.amber[800]!,
-            label: l10n.mapLegendSponsor,
-          ),
-        ],
+            const SizedBox(height: 8),
+            _LegendRow(
+              icon: Icons.person_pin_circle_rounded,
+              color: _userBlue,
+              label: l10n.mapLegendYou,
+              textColor: tp.textPrimary,
+            ),
+            const SizedBox(height: 6),
+            _LegendRow(
+              icon: Icons.place_rounded,
+              color: AppTheme.primaryGreen,
+              label: l10n.mapLegendPlace,
+              textColor: tp.textPrimary,
+            ),
+            const SizedBox(height: 6),
+            _LegendRow(
+              icon: Icons.place_rounded,
+              color: Colors.amber[800]!,
+              label: l10n.mapLegendSponsor,
+              textColor: tp.textPrimary,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -110,11 +125,13 @@ class _LegendRow extends StatelessWidget {
     required this.icon,
     required this.color,
     required this.label,
+    required this.textColor,
   });
 
   final IconData icon;
   final Color color;
   final String label;
+  final Color textColor;
 
   @override
   Widget build(BuildContext context) {
@@ -125,7 +142,7 @@ class _LegendRow extends StatelessWidget {
         Expanded(
           child: Text(
             label,
-            style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.textPrimary),
+            style: GoogleFonts.poppins(fontSize: 12, color: textColor),
           ),
         ),
       ],

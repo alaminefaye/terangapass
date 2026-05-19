@@ -7,6 +7,7 @@ import 'package:record/record.dart';
 import 'dart:io';
 import '../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
+import '../theme/app_theme_extensions.dart';
 import '../services/location_service.dart';
 import '../services/api_service.dart';
 import 'incident_history_screen.dart';
@@ -66,11 +67,12 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
     final l10n = AppLocalizations.of(context)!;
     final source = await showModalBottomSheet<ImageSource>(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: context.tp.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) {
+        final sheetTp = context.tp;
         return SafeArea(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -80,19 +82,19 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                 width: 44,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
+                  color: sheetTp.border,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
               const SizedBox(height: 10),
               ListTile(
                 leading: const Icon(Icons.photo_library_rounded),
-                title: Text(l10n.incidentGallery, style: GoogleFonts.poppins()),
+                title: Text(l10n.incidentGallery, style: GoogleFonts.poppins(color: sheetTp.textPrimary)),
                 onTap: () => Navigator.of(context).pop(ImageSource.gallery),
               ),
               ListTile(
                 leading: const Icon(Icons.photo_camera_rounded),
-                title: Text(l10n.incidentCamera, style: GoogleFonts.poppins()),
+                title: Text(l10n.incidentCamera, style: GoogleFonts.poppins(color: sheetTp.textPrimary)),
                 onTap: () => Navigator.of(context).pop(ImageSource.camera),
               ),
               const SizedBox(height: 8),
@@ -229,13 +231,15 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
   }
 
   Future<void> _addVideo() async {
+    final l10n = AppLocalizations.of(context)!;
     final source = await showModalBottomSheet<ImageSource>(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: context.tp.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) {
+        final sheetTp = context.tp;
         return SafeArea(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -245,19 +249,19 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                 width: 44,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
+                  color: sheetTp.border,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
               const SizedBox(height: 10),
               ListTile(
                 leading: const Icon(Icons.video_library_rounded),
-                title: Text('Galerie video', style: GoogleFonts.poppins()),
+                title: Text(l10n.incidentVideoGallery, style: GoogleFonts.poppins(color: sheetTp.textPrimary)),
                 onTap: () => Navigator.of(context).pop(ImageSource.gallery),
               ),
               ListTile(
                 leading: const Icon(Icons.videocam_rounded),
-                title: Text('Camera video', style: GoogleFonts.poppins()),
+                title: Text(l10n.incidentVideoCamera, style: GoogleFonts.poppins(color: sheetTp.textPrimary)),
                 onTap: () => Navigator.of(context).pop(ImageSource.camera),
               ),
               const SizedBox(height: 8),
@@ -280,7 +284,7 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Impossible d ajouter la video',
+            l10n.incidentAddVideoError,
             style: GoogleFonts.poppins(),
           ),
           backgroundColor: AppTheme.primaryRed,
@@ -389,7 +393,7 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                   Navigator.of(context).pop();
                 },
                 child: Text(
-                  'Suivre',
+                  AppLocalizations.of(context)!.incidentTrackAction,
                   style: GoogleFonts.poppins(
                     color: const Color(0xFFC73E1D),
                     fontWeight: FontWeight.w700,
@@ -424,8 +428,9 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final tp = context.tp;
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F1EA),
+      backgroundColor: tp.scaffoldAlt,
       body: SafeArea(
         child: Column(
           children: [
@@ -438,24 +443,24 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                   child: Row(
                     children: [
                       IconButton(
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.arrow_back_rounded,
-                          color: Color(0xFF1A1F2E),
+                          color: tp.textPrimary,
                         ),
                         onPressed: () => Navigator.of(context).pop(),
                       ),
                       const Spacer(),
                       Text(
-                        'Signaler',
+                        l10n.incidentReportNavShort,
                         style: GoogleFonts.poppins(
-                          color: const Color(0xFF1A1F2E),
+                          color: tp.textPrimary,
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                       const Spacer(),
                       IconButton(
-                        tooltip: 'Historique',
+                        tooltip: l10n.incidentHistoryTooltip,
                         onPressed: () {
                           Navigator.push(
                             context,
@@ -464,9 +469,9 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                             ),
                           );
                         },
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.history_rounded,
-                          color: Color(0xFF1A1F2E),
+                          color: tp.textPrimary,
                         ),
                       ),
                     ],
@@ -478,20 +483,20 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Signaler un incident',
+                        l10n.incidentReportTitle,
                         style: GoogleFonts.robotoSlab(
                           fontSize: 35,
                           height: 1.02,
                           fontWeight: FontWeight.w700,
-                          color: const Color(0xFF1A1F2E),
+                          color: tp.textPrimary,
                         ),
                       ),
                       const SizedBox(height: 3),
                       Text(
-                        'Vos preuves seront chiffrees et geolocalisees',
+                        l10n.incidentPrivacyNotice,
                         style: GoogleFonts.poppins(
                           fontSize: 12,
-                          color: AppTheme.textSecondary,
+                          color: tp.textSecondary,
                         ),
                       ),
                     ],
@@ -513,7 +518,7 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                             fontWeight: FontWeight.w700,
                             fontSize: 10,
                             letterSpacing: 1.8,
-                            color: AppTheme.textSecondary,
+                            color: tp.textSecondary,
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -543,7 +548,7 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                             ),
                             _buildIncidentTypeTile(
                               'autre',
-                              'Autre',
+                              l10n.incidentTypeOtherLabel,
                               Icons.campaign_rounded,
                             ),
                           ],
@@ -558,19 +563,19 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                             fontWeight: FontWeight.w700,
                             fontSize: 10,
                             letterSpacing: 1.8,
-                            color: AppTheme.textSecondary,
+                            color: tp.textSecondary,
                           ),
                         ),
                         const SizedBox(height: 8),
 
                         Container(
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: tp.surface,
                             borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: const Color(0xFFE5DFD3)),
+                            border: Border.all(color: tp.border),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.05),
+                                color: Colors.black.withValues(alpha: tp.isDark ? 0.2 : 0.05),
                                 blurRadius: 15,
                                 offset: const Offset(0, 5),
                               ),
@@ -582,7 +587,7 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                             decoration: InputDecoration(
                               hintText: l10n.incidentDescriptionHint,
                               hintStyle: GoogleFonts.poppins(
-                                color: AppTheme.textSecondary,
+                                color: tp.textSecondary,
                               ),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(14),
@@ -593,9 +598,9 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                                 vertical: 12,
                               ),
                               filled: true,
-                              fillColor: Colors.white,
+                              fillColor: tp.surface,
                             ),
-                            style: GoogleFonts.poppins(),
+                            style: GoogleFonts.poppins(color: tp.textPrimary),
                           ),
                         ),
 
@@ -608,7 +613,7 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                             fontWeight: FontWeight.w700,
                             fontSize: 10,
                             letterSpacing: 1.8,
-                            color: AppTheme.textSecondary,
+                            color: tp.textSecondary,
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -617,7 +622,7 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                           children: [
                             Expanded(
                               child: _buildEvidenceCard(
-                                label: 'Photo',
+                                label: l10n.incidentEvidencePhoto,
                                 icon: Icons.photo_camera_rounded,
                                 gradient: const [Color(0xFF3FA95E), Color(0xFF93B63D)],
                                 onTap: _addPhoto,
@@ -626,7 +631,7 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                             const SizedBox(width: 10),
                             Expanded(
                               child: _buildEvidenceCard(
-                                label: 'Video',
+                                label: l10n.incidentEvidenceVideo,
                                 icon: Icons.videocam_rounded,
                                 gradient: const [Color(0xFF3FA95E), Color(0xFFB2A92F)],
                                 highlighted: _videos.isNotEmpty,
@@ -636,7 +641,7 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                             const SizedBox(width: 10),
                             Expanded(
                               child: _buildEvidenceCard(
-                                label: 'Audio',
+                                label: l10n.incidentEvidenceAudio,
                                 icon: _isRecording ? Icons.stop_rounded : Icons.mic_rounded,
                                 isOutline: true,
                                 highlighted: _audioPath != null || _isRecording,
@@ -651,12 +656,12 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
                             decoration: BoxDecoration(
-                              color: Colors.white,
+                              color: tp.surface,
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
                                 color: _isRecording
                                     ? AppTheme.primaryRed.withValues(alpha: 0.4)
-                                    : const Color(0xFFE5DFD3),
+                                    : tp.border,
                               ),
                             ),
                             child: Row(
@@ -671,11 +676,13 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
-                                    _isRecording ? 'Enregistrement en cours...' : 'Message vocal ajoute',
+                                    _isRecording
+                                        ? l10n.incidentRecordingInProgress
+                                        : l10n.incidentAudioAdded,
                                     style: GoogleFonts.poppins(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w600,
-                                      color: AppTheme.textPrimary,
+                                      color: tp.textPrimary,
                                     ),
                                   ),
                                 ),
@@ -699,7 +706,7 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                                   height: 72,
                                   decoration: BoxDecoration(
                                     borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(color: const Color(0xFFE5DFD3)),
+                                    border: Border.all(color: tp.border),
                                   ),
                                   child: ClipRRect(
                                     borderRadius: BorderRadius.circular(11),
@@ -717,25 +724,25 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
                             decoration: BoxDecoration(
-                              color: Colors.white,
+                              color: tp.surface,
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: const Color(0xFFE5DFD3)),
+                              border: Border.all(color: tp.border),
                             ),
                             child: Row(
                               children: [
-                                const Icon(
+                                Icon(
                                   Icons.videocam_rounded,
                                   size: 16,
-                                  color: Color(0xFF595959),
+                                  color: tp.textSecondary,
                                 ),
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
-                                    '${_videos.length} video(s) ajoutee(s)',
+                                    l10n.incidentVideosAddedCount(_videos.length),
                                     style: GoogleFonts.poppins(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w600,
-                                      color: AppTheme.textPrimary,
+                                      color: tp.textPrimary,
                                     ),
                                   ),
                                 ),
@@ -751,11 +758,12 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                           Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: Colors.white,
+                              color: tp.surface,
                               borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: tp.border),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.05),
+                                  color: Colors.black.withValues(alpha: tp.isDark ? 0.2 : 0.05),
                                   blurRadius: 15,
                                   offset: const Offset(0, 5),
                                 ),
@@ -788,7 +796,7 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                                         style: GoogleFonts.poppins(
                                           fontWeight: FontWeight.bold,
                                           fontSize: 16,
-                                          color: AppTheme.textPrimary,
+                                          color: tp.textPrimary,
                                         ),
                                       ),
                                       const SizedBox(height: 5),
@@ -796,7 +804,7 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                                         _currentLocation!,
                                         style: GoogleFonts.poppins(
                                           fontSize: 14,
-                                          color: AppTheme.textSecondary,
+                                          color: tp.textSecondary,
                                         ),
                                       ),
                                     ],
@@ -877,6 +885,7 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
 
   Widget _buildIncidentTypeTile(String value, String label, IconData icon) {
     final isSelected = _selectedIncidentType == value;
+    final tp = context.tp;
 
     return GestureDetector(
       onTap: () {
@@ -888,10 +897,10 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: tp.surface,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? const Color(0xFFC73E1D) : const Color(0xFFE5DFD3),
+            color: isSelected ? AppTheme.primaryRed : tp.border,
             width: isSelected ? 1.5 : 1,
           ),
         ),
@@ -901,13 +910,13 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
               padding: const EdgeInsets.all(7),
               decoration: BoxDecoration(
                 color: isSelected
-                    ? const Color(0xFFC73E1D)
-                    : const Color(0xFFFAE6E1),
+                    ? AppTheme.primaryRed
+                    : AppTheme.primaryRed.withValues(alpha: tp.isDark ? 0.2 : 0.12),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(
                 icon,
-                color: isSelected ? Colors.white : const Color(0xFFC73E1D),
+                color: isSelected ? Colors.white : AppTheme.primaryRed,
                 size: 14,
               ),
             ),
@@ -918,9 +927,7 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                 style: GoogleFonts.poppins(
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
                   fontSize: 12,
-                  color: isSelected
-                      ? const Color(0xFFC73E1D)
-                      : AppTheme.textPrimary,
+                  color: isSelected ? AppTheme.primaryRed : tp.textPrimary,
                 ),
               ),
             ),
@@ -928,7 +935,7 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
               Container(
                 padding: const EdgeInsets.all(4),
                 decoration: const BoxDecoration(
-                  color: Color(0xFFC73E1D),
+                  color: AppTheme.primaryRed,
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(Icons.check, color: Colors.white, size: 14),
@@ -947,6 +954,7 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
     bool isOutline = false,
     bool highlighted = false,
   }) {
+    final tp = context.tp;
     final hasGradient = gradient != null && gradient.isNotEmpty;
     return GestureDetector(
       onTap: onTap,
@@ -954,16 +962,16 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
         height: 86,
         decoration: BoxDecoration(
           gradient: hasGradient ? LinearGradient(colors: gradient) : null,
-          color: hasGradient ? null : Colors.white,
+          color: hasGradient ? null : tp.surface,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: highlighted
-                ? const Color(0xFFC73E1D)
-                : (isOutline ? const Color(0xFFE5DFD3) : Colors.transparent),
+                ? AppTheme.primaryRed
+                : (isOutline ? tp.border : Colors.transparent),
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.06),
+              color: Colors.black.withValues(alpha: tp.isDark ? 0.2 : 0.06),
               blurRadius: 8,
               offset: const Offset(0, 4),
             ),
@@ -975,7 +983,7 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
             Icon(
               icon,
               size: 20,
-              color: hasGradient ? Colors.white : const Color(0xFF808080),
+              color: hasGradient ? Colors.white : tp.textSecondary,
             ),
             const SizedBox(height: 6),
             Text(
@@ -983,7 +991,7 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
               style: GoogleFonts.poppins(
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
-                color: hasGradient ? Colors.white : const Color(0xFF595959),
+                color: hasGradient ? Colors.white : tp.textPrimary,
               ),
             ),
           ],

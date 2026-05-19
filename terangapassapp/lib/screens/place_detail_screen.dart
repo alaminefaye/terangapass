@@ -3,8 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../l10n/app_localizations.dart';
 import '../services/api_service.dart';
 import '../theme/app_theme.dart';
+import '../theme/app_theme_extensions.dart';
+import '../utils/auth_guard.dart';
 import 'map_screen.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
@@ -62,13 +65,17 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
     }
   }
 
-  Future<void> _saveLocalReview(int rating, String comment) async {
+  Future<void> _saveLocalReview(
+    int rating,
+    String comment,
+    String author,
+  ) async {
     final prefs = await SharedPreferences.getInstance();
     final existing = await _loadLocalReviews();
     existing.insert(0, {
       'rating': rating,
       'comment': comment.trim(),
-      'author': 'Moi',
+      'author': author,
       'created_at': DateTime.now().toIso8601String(),
       'local': true,
     });
@@ -149,24 +156,17 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
     final lng = _toDouble(widget.point['longitude'] ?? widget.point['lng']);
 
     if (lat != null && lng != null) {
-      Navigator.push(
+      await MapScreen.push(
         context,
-        MaterialPageRoute(
-          builder: (_) => MapScreen(
-            initialLatLng: LatLng(lat, lng),
-            focusedPlaceName: name,
-          ),
-        ),
+        initialLatLng: LatLng(lat, lng),
+        focusedPlaceName: name,
       );
     } else {
       final query = address.isNotEmpty ? address : name;
-      Navigator.push(
+      await MapScreen.push(
         context,
-        MaterialPageRoute(
-          builder: (_) => MapScreen(
-            initialQuery: query.isEmpty ? 'Dakar' : query,
-          ),
-        ),
+        initialQuery: query.isEmpty ? 'Dakar' : query,
+        requireAuth: true,
       );
     }
   }
@@ -284,7 +284,14 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
     );
   }
 
-  void _openAddReviewDialog() {
+  Future<void> _openAddReviewDialog() async {
+    final l10n = AppLocalizations.of(context)!;
+    if (!await AuthGuard.requireAuth(
+      context,
+      featureName: l10n.authFeatureLeaveReview,
+    )) {
+      return;
+    }
     final id = _partnerId;
     if (id == null) return;
 
@@ -307,11 +314,11 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Laisser un avis',
+                      l10n.placeLeaveReviewTitle,
                       style: GoogleFonts.poppins(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: AppTheme.textPrimary,
+                        color: context.tp.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -350,7 +357,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                       controller: commentController,
                       maxLines: 3,
                       decoration: InputDecoration(
-                        hintText: 'Votre commentaire (optionnel)…',
+                        hintText: l10n.placeReviewCommentHint,
                         hintStyle: GoogleFonts.poppins(
                             fontSize: 13, color: Colors.grey),
                         filled: true,
@@ -378,11 +385,11 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                               ),
                               child: Center(
                                 child: Text(
-                                  'Annuler',
+                                  l10n.cancel,
                                   style: GoogleFonts.poppins(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w500,
-                                    color: AppTheme.textSecondary,
+                                    color: context.tp.textSecondary,
                                   ),
                                 ),
                               ),
@@ -412,6 +419,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                                       await _saveLocalReview(
                                         selectedRating,
                                         commentController.text.trim(),
+                                        l10n.reviewAuthorMe,
                                       );
                                     }
 
@@ -424,10 +432,8 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                                         SnackBar(
                                           content: Text(
                                             savedToServer
-                                                ? 'Avis publié.'
-                                                : 'Avis sauvegardé sur cet appareil. '
-                                                    'Pour le partager à tous les utilisateurs, '
-                                                    'connectez-vous et réessayez.',
+                                                ? l10n.placeReviewPublished
+                                                : l10n.placeReviewSavedOffline,
                                             style:
                                                 GoogleFonts.poppins(fontSize: 12),
                                           ),
@@ -469,7 +475,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                                         ),
                                       )
                                     : Text(
-                                        'Publier',
+                                        l10n.placeReviewPublish,
                                         style: GoogleFonts.poppins(
                                           fontSize: 14,
                                           fontWeight: FontWeight.w600,
@@ -517,12 +523,14 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
     required String label,
     required String value,
   }) {
+    final tp = context.tp;
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: tp.surface,
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: tp.border),
       ),
       child: Row(
         children: [
@@ -543,7 +551,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                   label,
                   style: GoogleFonts.poppins(
                     fontSize: 10,
-                    color: AppTheme.textSecondary,
+                    color: context.tp.textSecondary,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -551,7 +559,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                   value,
                   style: GoogleFonts.poppins(
                     fontSize: 13,
-                    color: AppTheme.textPrimary,
+                    color: context.tp.textPrimary,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -565,6 +573,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final point = widget.point;
     final color = widget.color;
 
@@ -597,7 +606,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
     final topPadding = MediaQuery.of(context).padding.top;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: context.tp.scaffold,
       // Bouton retour flottant — toujours visible, jamais de barre colorée
       body: Stack(
         children: [
@@ -662,7 +671,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
               children: [
                 // Carte identité : avatar + nom + catégorie + note
                 Container(
-                  color: Colors.white,
+                  color: context.tp.surface,
                   padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -715,7 +724,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                               style: GoogleFonts.poppins(
                                 fontSize: 19,
                                 fontWeight: FontWeight.bold,
-                                color: AppTheme.textPrimary,
+                                color: context.tp.textPrimary,
                               ),
                             ),
                             const SizedBox(height: 5),
@@ -766,10 +775,10 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                               ),
                               if (_reviewCount > 0)
                                 Text(
-                                  '$_reviewCount avis',
+                                  l10n.placeReviewCount(_reviewCount),
                                   style: GoogleFonts.poppins(
                                     fontSize: 9,
-                                    color: AppTheme.textSecondary,
+                                    color: context.tp.textSecondary,
                                   ),
                                 ),
                             ],
@@ -818,11 +827,11 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                   if (photos.isNotEmpty) ...[
                     const SizedBox(height: 20),
                     Text(
-                      'Galerie photos',
+                      l10n.placePhotoGallery,
                       style: GoogleFonts.poppins(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
-                        color: AppTheme.textPrimary,
+                        color: context.tp.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 10),
@@ -864,42 +873,42 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                     _infoTile(
                       icon: Icons.near_me_rounded,
                       color: AppTheme.primaryGreen,
-                      label: 'Distance',
+                      label: l10n.placeInfoDistance,
                       value: distanceVal,
                     ),
                   if (address != null && address.isNotEmpty)
                     _infoTile(
                       icon: Icons.location_on_rounded,
                       color: Colors.red,
-                      label: 'Adresse',
+                      label: l10n.placeInfoAddress,
                       value: address,
                     ),
                   if (phone != null && phone.isNotEmpty)
                     _infoTile(
                       icon: Icons.phone_rounded,
                       color: Colors.blue,
-                      label: 'Téléphone',
+                      label: l10n.placeInfoPhone,
                       value: phone,
                     ),
                   if (openingHours != null && openingHours.isNotEmpty)
                     _infoTile(
                       icon: Icons.access_time_rounded,
                       color: Colors.orange,
-                      label: 'Horaires',
+                      label: l10n.placeInfoHours,
                       value: openingHours,
                     ),
                   if (duration != null && duration.isNotEmpty)
                     _infoTile(
                       icon: Icons.hourglass_bottom_rounded,
                       color: Colors.purple,
-                      label: 'Durée estimée',
+                      label: l10n.placeInfoDuration,
                       value: duration,
                     ),
                   if (transport != null && transport.isNotEmpty)
                     _infoTile(
                       icon: Icons.directions_rounded,
                       color: Colors.teal,
-                      label: 'Comment s\'y rendre',
+                      label: l10n.placeInfoDirections,
                       value: transport,
                     ),
                   if (website != null && website.isNotEmpty)
@@ -918,8 +927,9 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 14, vertical: 12),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: context.tp.surface,
                           borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: context.tp.border),
                         ),
                         child: Row(
                           children: [
@@ -938,10 +948,10 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'Site web',
+                                    l10n.placeWebsite,
                                     style: GoogleFonts.poppins(
                                       fontSize: 10,
-                                      color: AppTheme.textSecondary,
+                                      color: context.tp.textSecondary,
                                       fontWeight: FontWeight.w500,
                                     ),
                                   ),
@@ -970,11 +980,11 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                   if (description != null && description.isNotEmpty) ...[
                     const SizedBox(height: 4),
                     Text(
-                      'Description',
+                      l10n.placeDescription,
                       style: GoogleFonts.poppins(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
-                        color: AppTheme.textPrimary,
+                        color: context.tp.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -982,14 +992,15 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                       width: double.infinity,
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: context.tp.surface,
                         borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: context.tp.border),
                       ),
                       child: Text(
                         description,
                         style: GoogleFonts.poppins(
                           fontSize: 13,
-                          color: AppTheme.textSecondary,
+                          color: context.tp.textSecondary,
                           height: 1.5,
                         ),
                       ),
@@ -1023,7 +1034,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                               color: Colors.white, size: 20),
                           const SizedBox(width: 8),
                           Text(
-                            'Voir sur la carte',
+                            l10n.viewOnMap,
                             style: GoogleFonts.poppins(
                               color: Colors.white,
                               fontSize: 15,
@@ -1054,7 +1065,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                                 color: Colors.blue, size: 20),
                             const SizedBox(width: 8),
                             Text(
-                              'Appeler',
+                              l10n.call,
                               style: GoogleFonts.poppins(
                                 color: Colors.blue,
                                 fontSize: 15,
@@ -1073,17 +1084,17 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                     children: [
                       Expanded(
                         child: Text(
-                          'Avis & commentaires',
+                          l10n.placeReviewsSectionTitle,
                           style: GoogleFonts.poppins(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            color: AppTheme.textPrimary,
+                            color: context.tp.textPrimary,
                           ),
                         ),
                       ),
                       if (_reviewsLoaded && _reviews.isNotEmpty)
                         Text(
-                          '${_averageRating?.toStringAsFixed(1) ?? ''} ★  $_reviewCount avis',
+                          '${_averageRating?.toStringAsFixed(1) ?? ''} ★  ${l10n.placeReviewCount(_reviewCount)}',
                           style: GoogleFonts.poppins(
                             fontSize: 12,
                             color: Colors.amber.shade700,
@@ -1104,11 +1115,12 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: context.tp.surface,
                         borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: context.tp.border),
                       ),
                       child: Text(
-                        'Les avis ne sont pas disponibles pour ce lieu.',
+                        l10n.placeReviewsUnavailableDetail,
                         style: GoogleFonts.poppins(
                             fontSize: 12, color: AppTheme.textSecondary),
                       ),
@@ -1117,20 +1129,21 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: context.tp.surface,
                         borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: context.tp.border),
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.chat_bubble_outline_rounded,
-                              size: 18, color: Colors.grey),
+                          Icon(Icons.chat_bubble_outline_rounded,
+                              size: 18, color: context.tp.textSecondary),
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text(
-                              'Aucun avis pour le moment.\nSoyez le premier à laisser un commentaire !',
+                              l10n.placeReviewsEmptyDetail,
                               style: GoogleFonts.poppins(
                                 fontSize: 12,
-                                color: AppTheme.textSecondary,
+                                color: context.tp.textSecondary,
                                 height: 1.5,
                               ),
                             ),
@@ -1145,7 +1158,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                       final comment =
                           review['comment'] as String? ?? '';
                       final author =
-                          review['author'] as String? ?? 'Anonyme';
+                          review['author'] as String? ?? l10n.reviewAuthorAnonymous;
                       final dateStr =
                           review['created_at'] as String? ?? '';
                       String formattedDate = '';
@@ -1159,8 +1172,9 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                         margin: const EdgeInsets.only(bottom: 10),
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: context.tp.surface,
                           borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: context.tp.border),
                         ),
                         child: Column(
                           crossAxisAlignment:
@@ -1199,7 +1213,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                                         style: GoogleFonts.poppins(
                                           fontSize: 12,
                                           fontWeight: FontWeight.w600,
-                                          color: AppTheme.textPrimary,
+                                          color: context.tp.textPrimary,
                                         ),
                                       ),
                                       Row(
@@ -1225,7 +1239,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                                     formattedDate,
                                     style: GoogleFonts.poppins(
                                       fontSize: 10,
-                                      color: AppTheme.textSecondary,
+                                      color: context.tp.textSecondary,
                                     ),
                                   ),
                               ],
@@ -1236,7 +1250,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                                 comment,
                                 style: GoogleFonts.poppins(
                                   fontSize: 13,
-                                  color: AppTheme.textPrimary,
+                                  color: context.tp.textPrimary,
                                   height: 1.4,
                                 ),
                               ),
@@ -1266,7 +1280,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                                 color: Colors.amber, size: 20),
                             const SizedBox(width: 8),
                             Text(
-                              'Laisser un avis',
+                              l10n.placeLeaveReviewTitle,
                               style: GoogleFonts.poppins(
                                 color: Colors.amber.shade700,
                                 fontSize: 15,

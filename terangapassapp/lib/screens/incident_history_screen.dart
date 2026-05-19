@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../l10n/app_localizations.dart';
 import '../services/api_service.dart';
 import '../theme/app_theme.dart';
+import '../theme/app_theme_extensions.dart';
 import '../widgets/loading_placeholders.dart';
 import 'alert_tracking_screen.dart';
 import 'incident_tracking_screen.dart';
@@ -226,9 +227,10 @@ class _IncidentHistoryScreenState extends State<IncidentHistoryScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final tp = context.tp;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F1EA),
+      backgroundColor: tp.scaffoldAlt,
       body: SafeArea(
         child: Column(
           children: [
@@ -241,9 +243,9 @@ class _IncidentHistoryScreenState extends State<IncidentHistoryScreen> {
                 children: [
                   IconButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.arrow_back_rounded,
-                      color: Color(0xFF1A1F2E),
+                      color: tp.textPrimary,
                     ),
                   ),
                   const Spacer(),
@@ -251,7 +253,7 @@ class _IncidentHistoryScreenState extends State<IncidentHistoryScreen> {
                     l10n.historyUnifiedTitle,
                     textAlign: TextAlign.center,
                     style: GoogleFonts.poppins(
-                      color: const Color(0xFF1A1F2E),
+                      color: tp.textPrimary,
                       fontWeight: FontWeight.w600,
                       fontSize: 13,
                     ),
@@ -271,7 +273,7 @@ class _IncidentHistoryScreenState extends State<IncidentHistoryScreen> {
                         child: Text(
                           _error!,
                           textAlign: TextAlign.center,
-                          style: GoogleFonts.poppins(color: AppTheme.textSecondary),
+                          style: GoogleFonts.poppins(color: tp.textSecondary),
                         ),
                       ),
                     )
@@ -280,7 +282,7 @@ class _IncidentHistoryScreenState extends State<IncidentHistoryScreen> {
                       child: Text(
                         l10n.historyUnifiedEmpty,
                         textAlign: TextAlign.center,
-                        style: GoogleFonts.poppins(color: AppTheme.textSecondary),
+                        style: GoogleFonts.poppins(color: tp.textSecondary),
                       ),
                     )
                   : RefreshIndicator(
@@ -302,8 +304,9 @@ class _IncidentHistoryScreenState extends State<IncidentHistoryScreen> {
                           return Container(
                             margin: const EdgeInsets.only(bottom: 12),
                             decoration: BoxDecoration(
-                              color: Colors.white,
+                              color: tp.surface,
                               borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: tp.border),
                             ),
                             child: ListTile(
                               contentPadding: const EdgeInsets.symmetric(
@@ -329,7 +332,7 @@ class _IncidentHistoryScreenState extends State<IncidentHistoryScreen> {
                                 style: GoogleFonts.poppins(
                                   fontWeight: FontWeight.w700,
                                   fontSize: 14,
-                                  color: AppTheme.textPrimary,
+                                  color: tp.textPrimary,
                                 ),
                               ),
                               subtitle: Column(
@@ -352,15 +355,16 @@ class _IncidentHistoryScreenState extends State<IncidentHistoryScreen> {
                                       overflow: TextOverflow.ellipsis,
                                       style: GoogleFonts.poppins(
                                         fontSize: 12,
-                                        color: AppTheme.textSecondary,
+                                        color: tp.textSecondary,
                                       ),
                                     ),
                                   ],
                                 ],
                               ),
-                              trailing: const Icon(
+                              trailing: Icon(
                                 Icons.arrow_forward_ios_rounded,
                                 size: 14,
+                                color: tp.textSecondary,
                               ),
                               onTap: () {
                                 if (kind == IncidentHistoryScreen._kindIncident) {

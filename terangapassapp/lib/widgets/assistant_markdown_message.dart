@@ -3,6 +3,7 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../theme/app_theme.dart';
+import '../theme/app_theme_extensions.dart';
 
 /// Transforme les numéros visibles en liens `tel:` (hors blocs ``` ... ```).
 String prepareAssistantMarkdown(String raw) {
@@ -77,38 +78,39 @@ class AssistantMarkdownMessage extends StatelessWidget {
     }
     final prepared = prepareAssistantMarkdown(content);
     final base = Theme.of(context).textTheme.bodyMedium ?? const TextStyle();
+    final tp = context.tp;
 
     final sheet = MarkdownStyleSheet(
       p: base.copyWith(
         fontSize: 14,
         height: 1.48,
-        color: AppTheme.textPrimary,
+        color: tp.textPrimary,
       ),
       h1: base.copyWith(
         fontSize: 18,
         fontWeight: FontWeight.w800,
         height: 1.25,
-        color: AppTheme.textPrimary,
+        color: tp.textPrimary,
       ),
       h2: base.copyWith(
         fontSize: 16,
         fontWeight: FontWeight.w800,
         height: 1.3,
-        color: AppTheme.textPrimary,
+        color: tp.textPrimary,
       ),
       h3: base.copyWith(
         fontSize: 15,
         fontWeight: FontWeight.w700,
         height: 1.3,
-        color: AppTheme.textPrimary,
+        color: tp.textPrimary,
       ),
       strong: base.copyWith(
         fontWeight: FontWeight.w700,
-        color: AppTheme.textPrimary,
+        color: tp.textPrimary,
       ),
       em: base.copyWith(
         fontStyle: FontStyle.italic,
-        color: AppTheme.textPrimary,
+        color: tp.textPrimary,
       ),
       listBullet: base.copyWith(
         fontSize: 14,
@@ -119,11 +121,11 @@ class AssistantMarkdownMessage extends StatelessWidget {
       blockSpacing: 10,
       blockquote: base.copyWith(
         fontSize: 14,
-        color: AppTheme.textSecondary,
+        color: tp.textSecondary,
         fontStyle: FontStyle.italic,
       ),
       blockquoteDecoration: BoxDecoration(
-        color: const Color(0xFFF0FDF4),
+        color: AppTheme.primaryGreen.withValues(alpha: tp.isDark ? 0.15 : 0.08),
         borderRadius: BorderRadius.circular(8),
         border: Border(
           left: BorderSide(color: AppTheme.primaryGreen, width: 3),
@@ -134,28 +136,27 @@ class AssistantMarkdownMessage extends StatelessWidget {
       code: base.copyWith(
         fontSize: 13,
         fontFamily: 'monospace',
-        backgroundColor: const Color(0xFFEEF2F6),
-        color: const Color(0xFF374151),
+        backgroundColor: tp.chipBackground,
+        color: tp.textPrimary,
       ),
-      // Blocs ``` … ``` : zone séparée, monospace, pas confondue avec un lien
       codeblockDecoration: BoxDecoration(
-        color: const Color(0xFFF3F4F6),
+        color: tp.surfaceElevated,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
+        border: Border.all(color: tp.border),
       ),
       codeblockPadding: const EdgeInsets.all(12),
       codeblockAlign: WrapAlignment.start,
       horizontalRuleDecoration: BoxDecoration(
         border: Border(
-          top: BorderSide(color: Colors.grey.shade300, width: 1),
+          top: BorderSide(color: tp.border, width: 1),
         ),
       ),
       a: base.copyWith(
         fontSize: 14,
-        color: const Color(0xFF15803D),
+        color: tp.isDark ? const Color(0xFF86EFAC) : const Color(0xFF15803D),
         fontWeight: FontWeight.w600,
         decoration: TextDecoration.underline,
-        decorationColor: const Color(0xFF15803D),
+        decorationColor: tp.isDark ? const Color(0xFF86EFAC) : const Color(0xFF15803D),
       ),
     );
 

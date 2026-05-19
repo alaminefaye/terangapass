@@ -21,11 +21,11 @@ class PoiCategoryFilters {
   /// Catégories communes (sans Secours / Sites JOJ).
   static List<PoiCategoryFilter> standard(AppLocalizations l10n) => [
     PoiCategoryFilter(label: l10n.nearbyAll, categoryKey: null),
-    const PoiCategoryFilter(label: 'Restos', categoryKey: 'restaurant'),
-    const PoiCategoryFilter(label: 'Banques', categoryKey: 'bank'),
-    const PoiCategoryFilter(label: 'Stations', categoryKey: 'gas_station'),
+    PoiCategoryFilter(label: l10n.mapFilterRestaurants, categoryKey: 'restaurant'),
+    PoiCategoryFilter(label: l10n.mapFilterBanks, categoryKey: 'bank'),
+    PoiCategoryFilter(label: l10n.mapFilterGasStations, categoryKey: 'gas_station'),
     PoiCategoryFilter(label: l10n.nearbyChipHotels, categoryKey: 'hotel'),
-    const PoiCategoryFilter(label: 'Pharmacies', categoryKey: 'pharmacy'),
+    PoiCategoryFilter(label: l10n.mapFilterPharmacies, categoryKey: 'pharmacy'),
     PoiCategoryFilter(label: l10n.nearbyChipHospitals, categoryKey: 'hospital'),
     PoiCategoryFilter(label: l10n.nearbyChipClinics, categoryKey: 'clinic'),
     PoiCategoryFilter(label: l10n.nearbyChipNotaries, categoryKey: 'notary'),
@@ -43,9 +43,9 @@ class PoiCategoryFilters {
       label: l10n.nearbyChipReligiousSites,
       categoryKey: 'religious_site',
     ),
-    const PoiCategoryFilter(label: 'Boutiques', categoryKey: 'shop'),
-    const PoiCategoryFilter(label: 'Ambassades', categoryKey: 'embassy'),
-    const PoiCategoryFilter(label: 'Consulats', categoryKey: 'consulate'),
+    PoiCategoryFilter(label: l10n.mapFilterShops, categoryKey: 'shop'),
+    PoiCategoryFilter(label: l10n.tourismCategoryEmbassies, categoryKey: 'embassy'),
+    PoiCategoryFilter(label: l10n.mapFilterConsulates, categoryKey: 'consulate'),
   ];
 
   /// Carte « Se déplacer » : Secours + Sites JOJ + toutes les catégories.
