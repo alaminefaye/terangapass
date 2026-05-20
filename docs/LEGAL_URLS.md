@@ -18,6 +18,15 @@ Alias : `https://www.terangapass.com/cgu` ou `/terms` → redirige vers la versi
 | Français | **https://www.terangapass.com/politique-confidentialite** |
 | English | https://www.terangapass.com/privacy-policy |
 
+## Assistance / support (App Store Connect — champ obligatoire)
+
+| Langue | URL |
+|--------|-----|
+| Français | **https://www.terangapass.com/assistance** |
+| English | https://www.terangapass.com/support |
+
+Alias : `/aide` → redirige vers `/assistance`.
+
 ## Configuration serveur
 
 Dans `.env` de production :

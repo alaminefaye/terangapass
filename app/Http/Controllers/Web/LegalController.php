@@ -27,6 +27,16 @@ class LegalController extends Controller
         return view('legal.privacy-policy-en', $this->legalContext('en'));
     }
 
+    public function support(): View
+    {
+        return view('legal.support', $this->legalContext('fr'));
+    }
+
+    public function supportEn(): View
+    {
+        return view('legal.support-en', $this->legalContext('en'));
+    }
+
     /**
      * @return array<string, mixed>
      */

@@ -130,41 +130,80 @@ class TerangaBrandedLoading extends StatelessWidget {
     final logoRadius = dense ? 18.0 : 22.0;
     final label = message ?? defaultLoadingMessage;
 
-    final branded = Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        AnimatedTerangaLogo(size: logoSize, borderRadius: logoRadius),
-        SizedBox(height: dense ? 14 : 22),
-        Text(
-          label,
-          textAlign: TextAlign.center,
-          style: GoogleFonts.poppins(
-            fontSize: dense ? 13 : 15,
-            fontWeight: FontWeight.w600,
-            color: context.tp.textPrimary,
-            height: 1.35,
-          ),
-        ),
-        const SizedBox(height: 14),
-        SizedBox(
-          width: dense ? 148 : 172,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(99),
-            child: LinearProgressIndicator(
-              minHeight: 3,
-              backgroundColor: AppTheme.primaryGreen.withValues(alpha: 0.14),
-              color: AppTheme.primaryGreen,
+    Widget brandedContent({
+      required double logo,
+      required double radius,
+      required double gapAfterLogo,
+      required double gapAfterText,
+      required double fontSize,
+      required double barWidth,
+    }) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AnimatedTerangaLogo(size: logo, borderRadius: radius),
+          SizedBox(height: gapAfterLogo),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.poppins(
+              fontSize: fontSize,
+              fontWeight: FontWeight.w600,
+              color: context.tp.textPrimary,
+              height: 1.25,
             ),
           ),
-        ),
-      ],
-    );
+          SizedBox(height: gapAfterText),
+          SizedBox(
+            width: barWidth,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(99),
+              child: LinearProgressIndicator(
+                minHeight: 3,
+                backgroundColor: AppTheme.primaryGreen.withValues(alpha: 0.14),
+                color: AppTheme.primaryGreen,
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    Widget brandedForConstraints(BoxConstraints constraints) {
+      final maxH = constraints.maxHeight;
+      final tight = maxH.isFinite && maxH < 128;
+      if (tight) {
+        return brandedContent(
+          logo: 52,
+          radius: 14,
+          gapAfterLogo: 8,
+          gapAfterText: 8,
+          fontSize: 12,
+          barWidth: 120,
+        );
+      }
+      return brandedContent(
+        logo: logoSize,
+        radius: logoRadius,
+        gapAfterLogo: dense ? 12 : 22,
+        gapAfterText: dense ? 10 : 14,
+        fontSize: dense ? 13 : 15,
+        barWidth: dense ? 148 : 172,
+      );
+    }
 
     if (!showSkeletonList) {
       return Center(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 32),
-          child: branded,
+          child: LayoutBuilder(
+            builder: (context, constraints) => FittedBox(
+              fit: BoxFit.scaleDown,
+              child: brandedForConstraints(constraints),
+            ),
+          ),
         ),
       );
     }
@@ -182,7 +221,12 @@ class TerangaBrandedLoading extends StatelessWidget {
         Center(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 28),
-            child: branded,
+            child: LayoutBuilder(
+              builder: (context, constraints) => FittedBox(
+                fit: BoxFit.scaleDown,
+                child: brandedForConstraints(constraints),
+              ),
+            ),
           ),
         ),
       ],
@@ -200,35 +244,8 @@ class AuthGateLoadingScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: backgroundColor ?? context.tp.scaffold,
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const AnimatedTerangaLogo(size: 72, borderRadius: 16),
-            const SizedBox(height: 20),
-            Text(
-              TerangaBrandedLoading.defaultLoadingMessage,
-              textAlign: TextAlign.center,
-              style: GoogleFonts.poppins(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: context.tp.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 22),
-            SizedBox(
-              width: 168,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(99),
-                child: LinearProgressIndicator(
-                  minHeight: 3,
-                  backgroundColor: AppTheme.primaryGreen.withValues(alpha: 0.12),
-                  color: AppTheme.primaryGreen,
-                ),
-              ),
-            ),
-          ],
-        ),
+      body: const Center(
+        child: TerangaBrandedLoading(showSkeletonList: false, dense: true),
       ),
     );
   }

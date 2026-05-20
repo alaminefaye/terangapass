@@ -38,6 +38,9 @@ Route::get('/conditions-utilisation', [LegalController::class, 'termsOfUse'])->n
 Route::get('/terms-of-use', [LegalController::class, 'termsOfUseEn'])->name('legal.terms.en');
 Route::get('/politique-confidentialite', [LegalController::class, 'privacyPolicy'])->name('legal.privacy');
 Route::get('/privacy-policy', [LegalController::class, 'privacyPolicyEn'])->name('legal.privacy.en');
+Route::get('/assistance', [LegalController::class, 'support'])->name('legal.support');
+Route::get('/support', [LegalController::class, 'supportEn'])->name('legal.support.en');
+Route::redirect('/aide', '/assistance');
 Route::redirect('/cgu', '/conditions-utilisation');
 Route::redirect('/terms', '/conditions-utilisation');
 

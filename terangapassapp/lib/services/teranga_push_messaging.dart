@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:firebase_core/firebase_core.dart';
@@ -42,18 +43,42 @@ class TerangaPushMessaging {
       _handleTapFromRemote(m, navigatorKey);
     });
 
+    FirebaseMessaging.instance.onTokenRefresh.listen((newToken) async {
+      await _sendTokenIfAuthed(newToken);
+    });
+
+    // iOS : getInitialMessage peut bloquer longtemps — ne pas retarder le bootstrap.
+    unawaited(_resolveInitialMessage(navigatorKey));
+  }
+
+  static Future<void> _resolveInitialMessage(
+    GlobalKey<NavigatorState> navigatorKey,
+  ) async {
     try {
-      final initial = await _fm.getInitialMessage();
+      final initial = await _fm
+          .getInitialMessage()
+          .timeout(const Duration(seconds: 4));
       if (initial != null) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           _handleTapFromRemote(initial, navigatorKey);
         });
       }
     } catch (_) {}
+  }
 
-    FirebaseMessaging.instance.onTokenRefresh.listen((newToken) async {
-      await _sendTokenIfAuthed(newToken);
-    });
+  /// Sur iOS, le jeton FCM nécessite le jeton APNS (délai au premier lancement).
+  static Future<String?> _resolveFcmToken() async {
+    if (Platform.isIOS) {
+      for (var attempt = 0; attempt < 24; attempt++) {
+        final apns = await _fm.getAPNSToken();
+        if (apns != null) {
+          return _fm.getToken();
+        }
+        await Future<void>.delayed(const Duration(milliseconds: 500));
+      }
+      return null;
+    }
+    return _fm.getToken();
   }
 
   static Future<void> registerDeviceTokenIfAuthed() async {
@@ -62,15 +87,19 @@ class TerangaPushMessaging {
         return;
       }
       await _fm.requestPermission(alert: true, badge: true, sound: true);
-      final t = await _fm.getToken();
+      final t = await _resolveFcmToken();
       if (kDebugMode && t != null && t.isNotEmpty) {
-        debugPrint('[FCM] FirebaseMessaging token: ${t.substring(0, t.length.clamp(0, 32))}…');
+        debugPrint(
+          '[FCM] token: ${t.substring(0, t.length.clamp(0, 32))}…',
+        );
       }
       if (t != null && t.isNotEmpty) {
         await _sendTokenIfAuthed(t);
       }
     } catch (e) {
-      debugPrint('TerangaPushMessaging.registerDeviceTokenIfAuthed: $e');
+      if (kDebugMode) {
+        debugPrint('TerangaPushMessaging.registerDeviceTokenIfAuthed: $e');
+      }
     }
   }
 

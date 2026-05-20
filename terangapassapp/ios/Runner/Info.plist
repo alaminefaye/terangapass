@@ -38,6 +38,8 @@
 		<string>Cette application a besoin d'accéder à vos photos pour joindre des images à un signalement.</string>
 		<key>FirebaseAppDelegateProxyEnabled</key>
 		<true/>
+		<key>GMSApiKey</key>
+		<string>AIzaSyCN1MyOGuAiD1EE7WSp74lSMHX2scGHn-A</string>
 		<key>UIBackgroundModes</key>
 		<array>
 			<string>remote-notification</string>
@@ -83,6 +85,8 @@
 			<string>UIInterfaceOrientationLandscapeRight</string>
 		</array>
 		<key>UIStatusBarHidden</key>
+		<false/>
+		<key>ITSAppUsesNonExemptEncryption</key>
 		<false/>
 	</dict>
 </plist>

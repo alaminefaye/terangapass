@@ -55,6 +55,7 @@ enum _HomeFeatureId {
 }
 
 enum _HomeNavId { home, medicalAlert, aiAssistant, incidentReport, profile }
+
 enum _HomePillarId { discover, move, joj, help }
 
 class HomeScreen extends StatefulWidget {
@@ -257,8 +258,8 @@ class _HomeScreenState extends State<HomeScreen>
       setState(() {
         _weather = data;
         _weatherHasGps = location.isGpsBased;
-        _weatherPlaceName = location.isGpsBased &&
-                location.placeLabel.trim().isNotEmpty
+        _weatherPlaceName =
+            location.isGpsBased && location.placeLabel.trim().isNotEmpty
             ? location.placeLabel.trim()
             : null;
         _weatherLoadFailed = false;
@@ -322,8 +323,8 @@ class _HomeScreenState extends State<HomeScreen>
         });
       }
     } catch (_) {
-      final offline =
-          await OfflinePackService().readOfflineAudioAnnouncementsList();
+      final offline = await OfflinePackService()
+          .readOfflineAudioAnnouncementsList();
       Map<String, dynamic>? next;
       if (offline.isNotEmpty) {
         next = offline.first;
@@ -377,8 +378,8 @@ class _HomeScreenState extends State<HomeScreen>
       }
     } catch (e) {
       if (!mounted) return;
-      final offline =
-          await OfflinePackService().readOfflineCompetitionSitesList();
+      final offline = await OfflinePackService()
+          .readOfflineCompetitionSitesList();
       if (offline.isNotEmpty) {
         setState(() {
           _competitionSites = offline;
@@ -611,9 +612,7 @@ class _HomeScreenState extends State<HomeScreen>
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: JojCountdownStrip(
-                    daysRemaining: _jojDaysRemaining,
-                  ),
+                  child: JojCountdownStrip(daysRemaining: _jojDaysRemaining),
                 ),
               ),
               const SliverToBoxAdapter(child: SizedBox(height: 14)),
@@ -726,7 +725,9 @@ class _HomeScreenState extends State<HomeScreen>
           onTap: () async {
             await Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const NotificationsScreen()),
+              MaterialPageRoute(
+                builder: (context) => const NotificationsScreen(),
+              ),
             );
             await _loadUnreadNotificationsCount();
           },
@@ -748,7 +749,10 @@ class _HomeScreenState extends State<HomeScreen>
                   right: -4,
                   top: -4,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 5,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFFC73E1D),
                       borderRadius: BorderRadius.circular(999),
@@ -803,10 +807,10 @@ class _HomeScreenState extends State<HomeScreen>
                 label: _isLoadingWeather
                     ? '…'
                     : _weatherLoadFailed
-                        ? l10n.weatherUnavailable
-                        : ((_weather?['label'] ?? '').toString().isNotEmpty
-                            ? (_weather!['label'] ?? '').toString()
-                            : l10n.weatherDefaultLabel),
+                    ? l10n.weatherUnavailable
+                    : ((_weather?['label'] ?? '').toString().isNotEmpty
+                          ? (_weather!['label'] ?? '').toString()
+                          : l10n.weatherDefaultLabel),
                 iconKey: (_weather?['icon'] ?? 'cloudy').toString(),
               ),
             ),
@@ -866,14 +870,12 @@ class _HomeScreenState extends State<HomeScreen>
     final l10n = AppLocalizations.of(context)!;
     final parsed = TypewriterSearchField.termsFromHint(l10n.homeSearchHint);
     final terms = parsed.isEmpty ? [l10n.homeSearchHint] : parsed;
-    final hintStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(
-      fontSize: 13,
-      color: tp.textSecondary,
-    );
-    final textStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(
-      fontSize: 14,
-      color: tp.textPrimary,
-    );
+    final hintStyle = Theme.of(
+      context,
+    ).textTheme.bodyMedium?.copyWith(fontSize: 13, color: tp.textSecondary);
+    final textStyle = Theme.of(
+      context,
+    ).textTheme.bodyMedium?.copyWith(fontSize: 14, color: tp.textPrimary);
 
     return Material(
       color: tp.surface,
@@ -890,11 +892,7 @@ class _HomeScreenState extends State<HomeScreen>
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             const SizedBox(width: 14),
-            Icon(
-              Icons.search_rounded,
-              color: tp.textSecondary,
-              size: 22,
-            ),
+            Icon(Icons.search_rounded, color: tp.textSecondary, size: 22),
             const SizedBox(width: 8),
             Expanded(
               child: TypewriterSearchField(
@@ -1019,9 +1017,9 @@ class _HomeScreenState extends State<HomeScreen>
                   pillar.subtitle,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: tp.textSecondary,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: tp.textSecondary),
                 ),
               ],
             ),
@@ -1050,9 +1048,7 @@ class _HomeScreenState extends State<HomeScreen>
           onTap: () {
             Navigator.push(
               context,
-              MaterialPageRoute(
-                builder: (context) => const EsimComingScreen(),
-              ),
+              MaterialPageRoute(builder: (context) => const EsimComingScreen()),
             );
           },
         ),
@@ -1065,9 +1061,7 @@ class _HomeScreenState extends State<HomeScreen>
           onTap: () {
             Navigator.push(
               context,
-              MaterialPageRoute(
-                builder: (context) => const NearbyScreen(),
-              ),
+              MaterialPageRoute(builder: (context) => const NearbyScreen()),
             );
           },
         ),
@@ -1163,10 +1157,7 @@ class _HomeScreenState extends State<HomeScreen>
             const SizedBox(height: 3),
             Text(
               subtitle,
-              style: TextStyle(
-                fontSize: 12,
-                color: tp.textSecondary,
-              ),
+              style: TextStyle(fontSize: 12, color: tp.textSecondary),
             ),
           ],
         ),
@@ -1266,7 +1257,9 @@ class _HomeScreenState extends State<HomeScreen>
                     Navigator.of(context).pop();
                     AuthGuard.openProtected(
                       rootContext,
-                      featureName: AppLocalizations.of(context)!.authFeatureMedicalAlert,
+                      featureName: AppLocalizations.of(
+                        context,
+                      )!.authFeatureMedicalAlert,
                       screenBuilder: () => const MedicalAlertScreen(),
                     );
                   },
@@ -1280,7 +1273,9 @@ class _HomeScreenState extends State<HomeScreen>
                     Navigator.of(context).pop();
                     AuthGuard.openProtected(
                       rootContext,
-                      featureName: AppLocalizations.of(context)!.authFeatureReport,
+                      featureName: AppLocalizations.of(
+                        context,
+                      )!.authFeatureReport,
                       screenBuilder: () => const IncidentReportScreen(),
                     );
                   },
@@ -1357,7 +1352,11 @@ class _HomeScreenState extends State<HomeScreen>
             color: tp.textPrimary,
           ),
         ),
-        trailing: Icon(Icons.arrow_forward_ios_rounded, size: 14, color: tp.textSecondary),
+        trailing: Icon(
+          Icons.arrow_forward_ios_rounded,
+          size: 14,
+          color: tp.textSecondary,
+        ),
       ),
     );
   }
@@ -1897,9 +1896,7 @@ class _HomeScreenState extends State<HomeScreen>
                 height: 72,
                 decoration: BoxDecoration(
                   color: context.tp.bottomBar,
-                  border: Border(
-                    top: BorderSide(color: context.tp.border),
-                  ),
+                  border: Border(top: BorderSide(color: context.tp.border)),
                   borderRadius: BorderRadius.circular(18),
                 ),
                 child: Row(
@@ -2030,7 +2027,11 @@ class _HomeScreenState extends State<HomeScreen>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.public_rounded, color: Color(0xFF2E8B57), size: 20),
+            const Icon(
+              Icons.public_rounded,
+              color: Color(0xFF2E8B57),
+              size: 20,
+            ),
             const SizedBox(height: 2),
             Text(
               l10n.homePillarDiscoverTitle,

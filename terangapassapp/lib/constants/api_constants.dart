@@ -30,9 +30,12 @@ class ApiConstants {
   /// Utiliser l’hôte **canonique** pour limiter les 307/308 hébergeur.
   static const String _productionUrl = 'https://www.terangapass.com/api/v1';
 
-  // Mode de configuration
+  // Mode : production par défaut (stores). Surcharge CI : --dart-define=API_MODE=dev
   // Options: 'dev', 'android_emulator', 'physical_device', 'production'
-  static const String _mode = 'production';
+  static const String _mode = String.fromEnvironment(
+    'API_MODE',
+    defaultValue: 'production',
+  );
 
   /// Retourne l'URL de base selon le mode configuré
   static String get baseUrl {

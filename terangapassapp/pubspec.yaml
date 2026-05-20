@@ -1,5 +1,5 @@
 name: teranga_pass
-description: "A new Flutter project."
+description: "Teranga Pass — application mobile tourisme, sécurité et services au Sénégal."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev

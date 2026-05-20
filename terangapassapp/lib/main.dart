@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:country_code_picker/country_code_picker.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -23,13 +25,18 @@ import 'services/api_service.dart';
 import 'services/notification_service.dart';
 import 'services/teranga_push_messaging.dart';
 import 'state/app_state.dart';
+import 'utils/app_log.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 Future<void> main() async {
-  final stopwatch = Stopwatch()..start();
   final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
+
+  // Filet de sécurité : ne jamais bloquer indéfiniment sur le splash natif.
+  unawaited(
+    Future<void>.delayed(const Duration(seconds: 6), FlutterNativeSplash.remove),
+  );
 
   final prefs = await SharedPreferences.getInstance();
   final language =
@@ -42,18 +49,25 @@ Future<void> main() async {
 
   await ThemeModeService.load();
 
-  await Firebase.initializeApp();
-  FirebaseMessaging.onBackgroundMessage(TerangaPushMessaging.firebaseBackgroundHandler);
-
-  await NotificationService().initialize(navigatorKey: navigatorKey);
-  await TerangaPushMessaging.bindHandlers(navigatorKey);
   runApp(const TerangaPassApp());
 
-  final remainingMs = 3000 - stopwatch.elapsedMilliseconds;
-  if (remainingMs > 0) {
-    await Future.delayed(Duration(milliseconds: remainingMs));
+  // Firebase / notifications en arrière-plan — l’UI ne doit pas attendre.
+  unawaited(_initializeDeferredServices());
+}
+
+Future<void> _initializeDeferredServices() async {
+  try {
+    await Firebase.initializeApp().timeout(const Duration(seconds: 12));
+    FirebaseMessaging.onBackgroundMessage(
+      TerangaPushMessaging.firebaseBackgroundHandler,
+    );
+    await NotificationService()
+        .initialize(navigatorKey: navigatorKey)
+        .timeout(const Duration(seconds: 12));
+    await TerangaPushMessaging.bindHandlers(navigatorKey);
+  } catch (e, st) {
+    appLog('[Bootstrap] deferred services failed: $e\n$st');
   }
-  FlutterNativeSplash.remove();
 }
 
 class TerangaPassApp extends StatelessWidget {
@@ -68,39 +82,41 @@ class TerangaPassApp extends StatelessWidget {
           valueListenable: AppConstants.localeNotifier,
           builder: (context, locale, _) {
             return MaterialApp(
-          debugShowCheckedModeBanner: false,
-          theme: AppTheme.lightTheme,
-          darkTheme: AppTheme.darkTheme,
-          themeMode: themeMode,
-          navigatorKey: navigatorKey,
-          locale: locale ?? const Locale(AppConstants.defaultLanguage),
-          supportedLocales: AppLocalizations.supportedLocales,
-          localizationsDelegates: const [
-            AppLocalizations.delegate,
-            CountryLocalizations.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          onGenerateTitle: (context) => AppLocalizations.of(context)!.appTitle,
-          home: const AuthWrapper(),
-          routes: {
-            '/home': (context) => const HomeScreen(),
-            '/notifications': (context) => const NotificationsScreen(),
-            '/incidents-history': (context) => const IncidentHistoryScreen(),
-            '/login': (context) => const LoginScreen(),
-            '/register': (context) => const RegisterScreen(),
-          },
-          builder: (context, child) => ValueListenableBuilder<bool>(
-            valueListenable: isAuthenticatedNotifier,
-            builder: (context, authed, _) {
-              return _GlobalSosOverlay(
-                navigatorKey: navigatorKey,
-                showSos: authed,
-                child: child ?? const SizedBox.shrink(),
-              );
-            },
-          ),
+              debugShowCheckedModeBanner: false,
+              theme: AppTheme.lightTheme,
+              darkTheme: AppTheme.darkTheme,
+              themeMode: themeMode,
+              navigatorKey: navigatorKey,
+              locale: locale ?? const Locale(AppConstants.defaultLanguage),
+              supportedLocales: AppLocalizations.supportedLocales,
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                CountryLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              onGenerateTitle: (context) =>
+                  AppLocalizations.of(context)!.appTitle,
+              home: const AuthWrapper(),
+              routes: {
+                '/home': (context) => const HomeScreen(),
+                '/notifications': (context) => const NotificationsScreen(),
+                '/incidents-history': (context) =>
+                    const IncidentHistoryScreen(),
+                '/login': (context) => const LoginScreen(),
+                '/register': (context) => const RegisterScreen(),
+              },
+              builder: (context, child) => ValueListenableBuilder<bool>(
+                valueListenable: isAuthenticatedNotifier,
+                builder: (context, authed, _) {
+                  return _GlobalSosOverlay(
+                    navigatorKey: navigatorKey,
+                    showSos: authed,
+                    child: child ?? const SizedBox.shrink(),
+                  );
+                },
+              ),
             );
           },
         );
@@ -123,10 +139,35 @@ class _AuthWrapperState extends State<AuthWrapper> {
   @override
   void initState() {
     super.initState();
-    _checkAuth();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      FlutterNativeSplash.remove();
+    });
+    unawaited(_checkAuth());
   }
 
   Future<void> _checkAuth() async {
+    try {
+      await _checkAuthImpl().timeout(const Duration(seconds: 15));
+    } on TimeoutException {
+      appLog('[AuthWrapper] session check timed out — guest mode');
+      if (!mounted) return;
+      setState(() {
+        _languageChosen = true;
+        _isLoading = false;
+      });
+      isAuthenticatedNotifier.value = false;
+    } catch (e, st) {
+      appLog('[AuthWrapper] session check failed: $e\n$st');
+      if (!mounted) return;
+      setState(() {
+        _languageChosen = true;
+        _isLoading = false;
+      });
+      isAuthenticatedNotifier.value = false;
+    }
+  }
+
+  Future<void> _checkAuthImpl() async {
     try {
       final prefs = await SharedPreferences.getInstance();
 
@@ -135,21 +176,20 @@ class _AuthWrapperState extends State<AuthWrapper> {
           prefs.getBool(AppConstants.languageChosenKey) ?? false;
       final savedLanguage = prefs.getString(AppConstants.languageKey);
       final hasLanguage =
-          languageChosen ||
-          (savedLanguage != null && savedLanguage.isNotEmpty);
+          languageChosen || (savedLanguage != null && savedLanguage.isNotEmpty);
 
       var token = prefs.getString('auth_token');
       // Session « sans souvenir » : ne pas garder la connexion après fermeture de l’app.
       final persistSession = prefs.getBool(AppConstants.authPersistSessionKey);
-      if (token != null &&
-          token.isNotEmpty &&
-          persistSession == false) {
+      if (token != null && token.isNotEmpty && persistSession == false) {
         await ApiService().clearLocalAuth();
         token = null;
       }
       // Un cookie HTTP seul ne prouve pas un compte API Teranga Pass (sessions hébergés / WAF).
       if (token != null && token.isNotEmpty) {
-        await ApiService().validateStoredSession();
+        await ApiService()
+            .validateStoredSession()
+            .timeout(const Duration(seconds: 12));
         final prefsAfter = await SharedPreferences.getInstance();
         token = prefsAfter.getString('auth_token');
       }
@@ -166,14 +206,17 @@ class _AuthWrapperState extends State<AuthWrapper> {
         _registerDeviceToken();
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _languageChosen = true;
       });
       isAuthenticatedNotifier.value = false;
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 

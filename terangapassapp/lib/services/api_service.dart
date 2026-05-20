@@ -189,7 +189,7 @@ class ApiService {
     );
     _debugLog('==================================');
 
-    debugPrint('[API] baseUrl effectif = ${_normalizedDioBaseUrl(_effectiveBaseUrl)}');
+    _debugLog('[API] baseUrl effectif = ${_normalizedDioBaseUrl(_effectiveBaseUrl)}');
 
     _dio = Dio(
       BaseOptions(
@@ -362,7 +362,7 @@ class ApiService {
     final loc = err.response?.headers.value('location') ??
         err.response?.headers.value('Location');
     if (loc == null || loc.trim().isEmpty) {
-      debugPrint('[API] 307/redirect sans Location header — abandon');
+      _debugLog('[API] 307/redirect sans Location header — abandon');
       handler.next(err);
       return;
     }
@@ -373,12 +373,12 @@ class ApiService {
     if (redirectCookie != null && redirectCookie.isNotEmpty) {
       _cookieHeader = redirectCookie;
       await _saveCookie(redirectCookie);
-      debugPrint('[API] cookie WAF extrait du 307 : $redirectCookie');
+      _debugLog('[API] cookie WAF extrait du 307 : $redirectCookie');
     }
 
     try {
       final target = _absoluteRedirectUri(err.requestOptions.uri, loc);
-      debugPrint('[API] retry redirection: ${err.requestOptions.uri} → $target');
+      _debugLog('[API] retry redirection: ${err.requestOptions.uri} → $target');
 
       // Construire les en-têtes avec le cookie WAF inclus
       final retryHeaders = Map<String, dynamic>.from(err.requestOptions.headers);
@@ -401,7 +401,7 @@ class ApiService {
       final response = await _dio.fetch(next);
       handler.resolve(response);
     } catch (e, st) {
-      debugPrint('[API] redirection HTTP suivie sans succès: $e\n$st');
+      _debugLog('[API] redirection HTTP suivie sans succès: $e\n$st');
       // Propager l'erreur RÉELLE du retry (ex: 422 validation Laravel),
       // pas l'erreur 307 d'origine qui n'a plus de sens pour l'appelant.
       if (e is DioException) {
